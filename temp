@@ -1,0 +1,104 @@
+import {
+  CheckCircleOutlined,
+  CloseCircleOutlined,
+  TeamOutlined,
+} from "@ant-design/icons";
+import { Card, Col, Row, Statistic, Typography } from "antd";
+import {
+  CartesianGrid,
+  Legend,
+  Line,
+  LineChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis
+} from "recharts";
+
+const { Title } = Typography;
+
+const Dashboardd = () => {
+  const totalEmployees = 50;
+  const present = 42;
+  const absent = 8;
+
+  // 🔥 Employee Login/Logout Data
+  const employeeAttendance = [
+    { name: "Aniket", loginTime: "09:12", logoutTime: "18:05" },
+    { name: "Rahul", loginTime: "09:45", logoutTime: "17:40" },
+    { name: "Priya", loginTime: "10:05", logoutTime: "18:10" },
+    { name: "Aman", loginTime: "08:55", logoutTime: "17:20" },
+    { name: "Sneha", loginTime: "09:30", logoutTime: "16:50" },
+    { name: "Karan", loginTime: "11:10", logoutTime: "19:00" },
+    { name: "Megha", loginTime: "08:40", logoutTime: "17:30" },
+  ];
+
+  // 🔥 Convert to Hourly Aggregation
+  const generateHourlyData = (data) => {
+    const hours = {};
+
+    data.forEach((emp) => {
+      const loginHour = parseInt(emp.loginTime.split(":")[0]);
+      const logoutHour = parseInt(emp.logoutTime.split(":")[0]);
+
+      if (!hours[loginHour]) hours[loginHour] = { login: 0, logout: 0 };
+      hours[loginHour].login += 1;
+
+      if (!hours[logoutHour]) hours[logoutHour] = { login: 0, logout: 0 };
+      hours[logoutHour].logout += 1;
+    });
+
+    return Object.keys(hours)
+      .sort((a, b) => a - b)
+      .map((hour) => ({
+        time: `${hour}:00`,
+        login: hours[hour]?.login || 0,
+        logout: hours[hour]?.logout || 0,
+      }));
+  };
+
+  const loginLogoutData = generateHourlyData(employeeAttendance);
+
+  return (
+    <div style={{ padding: 24 }}>
+      <Title level={3}>HR Attendance Dashboard (Version 1)</Title>
+
+      {/* KPI */}
+      <Row gutter={[16, 16]} style={{ marginBottom: 32 }}>
+        <Col span={8}>
+          <Card>
+            <Statistic title="Total Employees" value={totalEmployees} prefix={<TeamOutlined />} />
+          </Card>
+        </Col>
+        <Col span={8}>
+          <Card>
+            <Statistic title="Present" value={present} valueStyle={{ color: "green" }} prefix={<CheckCircleOutlined />} />
+          </Card>
+        </Col>
+        <Col span={8}>
+          <Card>
+            <Statistic title="Absent" value={absent} valueStyle={{ color: "red" }} prefix={<CloseCircleOutlined />} />
+          </Card>
+        </Col>
+      </Row>
+
+      {/* Login Logout Chart */}
+      <Card title="Hourly Login / Logout Activity">
+        <ResponsiveContainer width="100%" height={400}>
+          <LineChart data={loginLogoutData}>
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis dataKey="time" label={{ value: "Time (Hours)", position: "insideBottom", offset: -5 }} />
+            <YAxis yAxisId="left" label={{ value: "Login Count", angle: -90, position: "insideLeft" }} />
+            <YAxis yAxisId="right" orientation="right" label={{ value: "Logout Count", angle: 90, position: "insideRight" }} />
+            <Tooltip />
+            <Legend />
+            <Line yAxisId="left" type="monotone" dataKey="login" stroke="#1677ff" strokeWidth={3} />
+            <Line yAxisId="right" type="monotone" dataKey="logout" stroke="#ff4d4f" strokeWidth={3} />
+          </LineChart>
+        </ResponsiveContainer>
+      </Card>
+    </div>
+  );
+};
+
+export default Dashboardd;

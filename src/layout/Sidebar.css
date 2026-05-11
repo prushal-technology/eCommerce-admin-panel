@@ -1,0 +1,102 @@
+/* ===== Sidebar Background =====
+.ant-layout-sider {
+    background: #6f79d8;
+}
+
+/* ===== Menu Base ===== */
+.premium-sidebar-menu {
+    background: transparent !important;
+    font-size: 12px;
+    font-weight: 500;
+}
+
+/* ===== Menu Item ===== */
+.premium-sidebar-menu .ant-menu-item,
+.premium-sidebar-menu .ant-menu-submenu-title {
+    height: 36px !important;
+    line-height: 36px !important;
+    margin: 4px 10px !important;
+    border-radius: 8px !important;
+    transition: all .25s ease;
+}
+.ant-menu-light .ant-menu-submenu-selected > .ant-menu-submenu-title {
+    color: #ffffff !important;
+}
+/* ===== Sub Menu Item ===== */
+.premium-sidebar-menu .ant-menu-sub .ant-menu-item {
+    height: 32px !important;
+    line-height: 32px !important;
+    font-size: 11.5px;
+}
+
+/* ===== Hover Effect ===== */
+.premium-sidebar-menu .ant-menu-item:hover,
+.premium-sidebar-menu .ant-menu-submenu-title:hover {
+    background: rgba(255,255,255,0.15) !important;
+}
+
+.premium-sidebar-menu .ant-menu-item-selected {
+    background: rgba(255,255,255,0.15) !important;
+    color: #ffffff !important;
+    font-weight: 600;
+}
+
+.premium-sidebar-menu .ant-menu-item-selected .anticon {
+    color: #ffffff !important;
+}
+
+/* ===== Default Text Color ===== */
+.premium-sidebar-menu .ant-menu-item,
+.premium-sidebar-menu .ant-menu-submenu-title {
+    color: #eaeaff !important;
+}
+
+/* ===== Icon Size ===== */
+.premium-sidebar-menu .anticon {
+    font-size: 15px;
+}
+
+/* ===== Scrollbar Styling ===== */
+.ant-layout-sider::-webkit-scrollbar {
+    width: 5px;
+}
+
+.ant-layout-sider::-webkit-scrollbar-thumb {
+    background: rgba(255,255,255,0.3);
+    border-radius: 10px;
+} */
+
+/* Keep structure, remove color overrides */
+
+.premium-sidebar-menu {
+    background: transparent !important;
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.premium-sidebar-menu .ant-menu-item,
+.premium-sidebar-menu .ant-menu-submenu-title {
+    height: 36px !important;
+    line-height: 36px !important;
+    margin: 4px 10px !important;
+    border-radius: 8px !important;
+    transition: all .25s ease;
+}
+
+/* ✅ Keep hover effect but don't force color */
+.premium-sidebar-menu .ant-menu-item:hover,
+.premium-sidebar-menu .ant-menu-submenu-title:hover {
+    background: rgba(255,255,255,0.15) !important;
+}
+
+/* ✅ Keep selected style but not color override */
+.premium-sidebar-menu .ant-menu-item-selected {
+    background: rgba(255,255,255,0.15) !important;
+    font-weight: 600;
+}
+
+/* ❌ REMOVE THESE */
+/*
+color: #eaeaff !important;
+color: #ffffff !important;
+*/
