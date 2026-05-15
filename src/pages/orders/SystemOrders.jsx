@@ -64,11 +64,14 @@ const SystemOrders = () => {
   const [manualOrderLoading, setManualOrderLoading] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState(null);
   const [orderItems, setOrderItems] = useState([]);
+  const [orderType, setOrderType] = useState('normal');
   const [customers, setCustomers] = useState([]);
   const [products, setProducts] = useState([]);
   const [customersLoading, setCustomersLoading] = useState(false);
   const [productsLoading, setProductsLoading] = useState(false);
   const [selectedAddress, setSelectedAddress] = useState(null);
+  const [advanceBooking, setAdvanceBooking] = useState(false);
+  const [deliveryDate, setDeliveryDate] = useState(null);
   const [addAddressModalVisible, setAddAddressModalVisible] = useState(false);
   const [addAddressLoading, setAddAddressLoading] = useState(false);
   const [addressForm] = Form.useForm();
@@ -125,9 +128,20 @@ const SystemOrders = () => {
 
   const handleOpenManualOrder = () => {
     setManualOrderVisible(true);
+    setOrderType('normal');
+    setAdvanceBooking(false);
+    setDeliveryDate(null);
     fetchCustomersForOrder();
     fetchProductsForOrder();
-    setOrderItems([{ id: Date.now(), productId: null, price: 0, quantity: 1, total: 0 }]);
+    setOrderItems([{ id: Date.now(), productId: null, price: 0, discountPrice: 0, bulkPrice: 0, customPrice: null, quantity: 1, total: 0 }]);
+  };
+
+  const handleOrderTypeChange = (value) => {
+    setOrderType(value);
+    setOrderItems(prevItems => prevItems.map(item => ({
+      ...item,
+      total: calculateItemTotal({ ...item, customPrice: item.customPrice }, value)
+    })));
   };
 
   const handleCustomerSelect = (customerId) => {
@@ -197,7 +211,7 @@ const SystemOrders = () => {
   };
 
   const handleAddItem = () => {
-    setOrderItems([...orderItems, { id: Date.now(), productId: null, price: 0, quantity: 1, total: 0 }]);
+    setOrderItems([...orderItems, { id: Date.now(), productId: null, price: 0, discountPrice: 0, bulkPrice: 0, customPrice: null, quantity: 1, total: 0 }]);
   };
 
   const handleRemoveItem = (itemId) => {
@@ -208,15 +222,40 @@ const SystemOrders = () => {
     setOrderItems(orderItems.filter(item => item.id !== itemId));
   };
 
+  const getItemUnitPrice = (item, type = orderType) => {
+    const actualPrice = parseFloat(item.price || 0);
+    const discountPrice = parseFloat(item.discountPrice || 0);
+    const bulkPrice = parseFloat(item.bulkPrice || 0) || (discountPrice > 0 ? discountPrice : actualPrice);
+    const customPrice = parseFloat(item.customPrice || 0);
+
+    if (type === 'bulk') {
+      return bulkPrice;
+    }
+
+    if (type === 'custom') {
+      return customPrice > 0 ? customPrice : actualPrice;
+    }
+
+    return (discountPrice > 0 && discountPrice < actualPrice) ? discountPrice : actualPrice;
+  };
+
+  const calculateItemTotal = (item, type = orderType) => {
+    const unitPrice = getItemUnitPrice(item, type);
+    return (unitPrice || 0) * (item.quantity || 1);
+  };
+
   const handleItemChange = (itemId, field, value) => {
     setOrderItems(orderItems.map(item => {
       if (item.id === itemId) {
         const updatedItem = { ...item, [field]: value };
         if (field === 'productId') {
           const product = products.find(p => p.id.toString() === value);
-          updatedItem.price = product?.price || 0;
+          updatedItem.price = parseFloat(product?.price || 0);
+          updatedItem.discountPrice = parseFloat(product?.discountPrice || 0);
+          updatedItem.bulkPrice = parseFloat(product?.bulkPrice || product?.discountPrice || product?.price || 0);
+          updatedItem.customPrice = null;
         }
-        updatedItem.total = (updatedItem.price || 0) * (updatedItem.quantity || 1);
+        updatedItem.total = calculateItemTotal(updatedItem, orderType);
         return updatedItem;
       }
       return item;
@@ -542,7 +581,7 @@ const SystemOrders = () => {
             <Button type="primary" icon={<PlusOutlined />} onClick={handleOpenManualOrder} size="small">
               Take Order
             </Button>
-            
+
             <Button icon={<PrinterOutlined />} onClick={handlePrint} size="small">
               Print
             </Button>
@@ -849,7 +888,14 @@ const SystemOrders = () => {
             <Row gutter={16}>
               <Col xs={24} md={12}>
                 <Form.Item label="Select Customer" required>
-                  <Space.Compact style={{ width: '100%' }}>
+                  <Space
+                    style={{
+                      width: '100%',
+                      display: 'flex',
+                      gap: '10px',
+                      alignItems: 'center'
+                    }}
+                  >
                     <Select
                       showSearch
                       placeholder="Type to search customers by name or email..."
@@ -858,7 +904,10 @@ const SystemOrders = () => {
                       onChange={handleCustomerSelect}
                       value={selectedCustomer ? selectedCustomer.id : undefined}
                       notFoundContent={customersLoading ? <Spin size="small" /> : null}
-                      style={{ width: 'calc(100% - 120px)' }}
+                      style={{
+                        flex: 1,
+                        borderRadius: '5px'
+                      }}
                       allowClear
                       onClear={() => {
                         setSelectedCustomer(null);
@@ -875,12 +924,18 @@ const SystemOrders = () => {
                       type="primary"
                       icon={<PlusOutlined />}
                       onClick={() => setAddCustomerModalVisible(true)}
-                      style={{ width: '120px' }}
                       size="small"
+                      style={{
+                        
+                        borderRadius: '5px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center'
+                      }}
                     >
                       Add New
                     </Button>
-                  </Space.Compact>
+                  </Space>
                 </Form.Item>
               </Col>
               <Col xs={24} md={12}>
@@ -889,7 +944,7 @@ const SystemOrders = () => {
                   label="Customer Name"
                   rules={[{ required: true, message: 'Please enter customer name' }]}
                 >
-                  <Input placeholder="Enter customer name" />
+                  <Input placeholder="Enter customer name" disabled={!!selectedCustomer} />
                 </Form.Item>
               </Col>
             </Row>
@@ -901,7 +956,7 @@ const SystemOrders = () => {
                   label="Email"
                   rules={[{ type: 'email', message: 'Please enter valid email' }]}
                 >
-                  <Input placeholder="Enter email address" />
+                  <Input placeholder="Enter email address" disabled={!!selectedCustomer} />
                 </Form.Item>
               </Col>
               <Col xs={24} md={12}>
@@ -910,7 +965,7 @@ const SystemOrders = () => {
                   label="Phone"
                   rules={[{ required: true, message: 'Please enter phone number' }]}
                 >
-                  <Input placeholder="Enter phone number" />
+                  <Input placeholder="Enter phone number" disabled={!!selectedCustomer} />
                 </Form.Item>
               </Col>
             </Row>
@@ -973,26 +1028,76 @@ const SystemOrders = () => {
                   label="Delivery Address"
                   rules={[{ required: true, message: 'Please enter delivery address' }]}
                 >
-                  <TextArea rows={2} placeholder="Enter delivery address" />
+                  <TextArea rows={2} placeholder="Enter delivery address" disabled={!!selectedCustomer} />
                 </Form.Item>
               </Col>
+            </Row>
+
+            <Row gutter={16} style={{ marginTop: 8 }}>
+              <Col xs={24} md={12}>
+                <Form.Item label="Advance Booking">
+                  <Switch
+                    checked={advanceBooking}
+                    onChange={(checked) => {
+                      setAdvanceBooking(checked);
+                      if (!checked) {
+                        setDeliveryDate(null);
+                        manualOrderForm.setFieldsValue({ deliveryDate: null });
+                      }
+                    }}
+                  />
+                </Form.Item>
+              </Col>
+              {advanceBooking && (
+                <Col xs={24} md={12}>
+                  <Form.Item
+                    name="deliveryDate"
+                    label="Delivery Date"
+                    rules={[{ required: true, message: 'Please select delivery date' }]}
+                  >
+                    <DatePicker
+                      value={deliveryDate}
+                      onChange={(date) => {
+                        setDeliveryDate(date);
+                        manualOrderForm.setFieldsValue({ deliveryDate: date });
+                      }}
+                      style={{ width: '100%' }}
+                      disabledDate={(current) => current && current < dayjs().startOf('day')}
+                    />
+                  </Form.Item>
+                  <div style={{ fontSize: 12, color: '#888' }}>
+                    Note: Puja garlands delivery date must be at least 1 day from today, and festive torans delivery date must be at least 2 days from today.
+                  </div>
+                </Col>
+              )}
             </Row>
           </Card>
 
           <Card title="Order Items" size="small" style={{ marginTop: 16 }}>
-            <div style={{ marginBottom: 16 }}>
-              <Button
-                type="dashed"
-                icon={<PlusOutlined />}
-                onClick={handleAddItem}
-                size="small"
-              >
-                Add Item
-              </Button>
-            </div>
+            <Row gutter={[16, 16]} style={{ marginBottom: 16, alignItems: 'center' }}>
+              <Col xs={24} sm={12}>
+                <Form.Item label="Order Type" name="orderType" initialValue={orderType}>
+                  <Select value={orderType} onChange={handleOrderTypeChange}>
+                    <Option value="normal">Normal Order</Option>
+                    <Option value="bulk">Bulk Order</Option>
+                    <Option value="custom">Custom Order</Option>
+                  </Select>
+                </Form.Item>
+              </Col>
+              <Col xs={24} sm={12} style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                <Button
+                  type="dashed"
+                  icon={<PlusOutlined />}
+                  onClick={handleAddItem}
+                  size="small"
+                >
+                  Add Item
+                </Button>
+              </Col>
+            </Row>
 
             <Table
-              columns={[
+              columns={[ 
                 {
                   title: 'Product',
                   dataIndex: 'productId',
@@ -1004,28 +1109,95 @@ const SystemOrders = () => {
                       value={productId}
                       onChange={(value) => handleItemChange(record.id, 'productId', value)}
                       showSearch
+                      optionLabelProp="label"
                       filterOption={(input, option) =>
-                        option.children.props.children[0].props.children.toLowerCase().indexOf(input.toLowerCase()) >= 0
+                        option?.label?.toLowerCase().includes(input.toLowerCase())
                       }
                     >
-                      {products.filter(p => p.status === 'active').map(product => (
-                        <Option key={product.id} value={product.id.toString()}>
-                          <div>
-                            <div style={{ fontWeight: 'bold' }}>{product.name}</div>
-                            <div style={{ fontSize: '12px', color: '#666' }}>
-                              SKU: {product.sku} | ID: {product.id}
+                      {products.filter(p => p.isActive).map(product => {
+                        const validImage = product.images?.find(img => img.image && img.image.trim() !== '');
+                        const imageSrc = validImage
+                          ? (validImage.image.startsWith('data:')
+                            ? validImage.image
+                            : `${import.meta.env.VITE_GRAPHQL_URI.replace('/graphql/', '').replace('/graphql', '')}/media/${validImage.image}`)
+                          : null;
+                        const stockQty = product.stock?.quantity ?? 0;
+
+                        return (
+                          <Option key={product.id} value={product.id.toString()} label={product.name}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%' }}>
+                              <div style={{
+                                width: 40,
+                                height: 40,
+                                borderRadius: 8,
+                                overflow: 'hidden',
+                                backgroundColor: '#f5f5f5',
+                                border: '1px solid #f0f0f0',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center'
+                              }}>
+                                {imageSrc ? (
+                                  <img
+                                    src={imageSrc}
+                                    alt={product.name}
+                                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                  />
+                                ) : (
+                                  <span style={{ fontSize: 18, color: '#999' }}>📦</span>
+                                )}
+                              </div>
+                              <div style={{ minWidth: 0 }}>
+                                <div style={{ fontWeight: 'bold' }}>{product.name}</div>
+                                <div style={{ fontSize: 12, color: '#666' }}>
+                                  Stock: {stockQty}
+                                </div>
+                              </div>
                             </div>
-                          </div>
-                        </Option>
-                      ))}
+                          </Option>
+                        );
+                      })}
                     </Select>
                   ),
                 },
                 {
-                  title: 'Price',
+                  title: orderType === 'bulk' ? 'Bulk Price' : orderType === 'custom' ? 'Custom Price' : 'Price',
                   dataIndex: 'price',
                   key: 'price',
-                  render: (price) => <span>{formatCurrency(price)}</span>,
+                  render: (price, record) => {
+                    const actualPrice = parseFloat(price || 0);
+                    const discountPrice = parseFloat(record.discountPrice || 0);
+                    const bulkPrice = parseFloat(record.bulkPrice || 0) || (discountPrice > 0 ? discountPrice : actualPrice);
+                    const hasDiscount = discountPrice > 0 && discountPrice < actualPrice;
+
+                    if (orderType === 'bulk') {
+                      return <span>{formatCurrency(bulkPrice)}</span>;
+                    }
+
+                    if (orderType === 'custom') {
+                      return (
+                        <InputNumber
+                          min={0}
+                          value={record.customPrice != null ? record.customPrice : actualPrice}
+                          onChange={(value) => handleItemChange(record.id, 'customPrice', value)}
+                          style={{ width: '100%' }}
+                        />
+                      );
+                    }
+
+                    return hasDiscount ? (
+                      <div>
+                        <div style={{ fontWeight: 'bold' }}>
+                          {formatCurrency(discountPrice)}
+                        </div>
+                        <div style={{ fontSize: 12, color: '#999', textDecoration: 'line-through' }}>
+                          {formatCurrency(actualPrice)}
+                        </div>
+                      </div>
+                    ) : (
+                      <span>{formatCurrency(actualPrice)}</span>
+                    );
+                  },
                 },
                 {
                   title: 'Quantity',

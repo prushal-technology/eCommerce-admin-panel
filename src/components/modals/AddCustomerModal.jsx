@@ -1,4 +1,4 @@
-import { Button, Form, Input, Modal, Space, message } from 'antd';
+import { Button, Col, Form, Input, Modal, Row, Space, message } from 'antd';
 import { useState } from 'react';
 import { graphqlRequest } from '../../api/graphql';
 
@@ -26,6 +26,26 @@ const AddCustomerModal = ({ open, onCancel, onSuccess }) => {
       });
 
       if (data?.adminCreateCustomer?.customer?.id) {
+        const customerId = data.adminCreateCustomer.customer.id;
+        if (values.address) {
+          try {
+            await graphqlRequest(`
+              mutation AddCustomerAddress($customerId: ID!, $input: CreateAddressInput!) {
+                addCustomerAddress(customerId: $customerId, input: $input) {
+                  id
+                }
+              }
+            `, {
+              customerId,
+              input: {
+                street: values.address
+              }
+            });
+          } catch (addressError) {
+            message.warning('Customer created, but address was not saved.');
+          }
+        }
+
         message.success('Customer created successfully');
         form.resetFields();
         onSuccess?.(data.adminCreateCustomer.customer);
@@ -56,54 +76,75 @@ const AddCustomerModal = ({ open, onCancel, onSuccess }) => {
         layout="vertical"
         onFinish={handleSubmit}
       >
-        <Form.Item
-          name="firstName"
-          label="First Name"
-          rules={[{ required: true, message: 'Please enter first name' }]}
-        >
-          <Input placeholder="Enter first name" />
-        </Form.Item>
+        <Row gutter={[16, 16]}>
+          <Col span={12}>
+            <Form.Item
+              name="firstName"
+              label="First Name"
+              rules={[{ required: true, message: 'Please enter first name' }]}
+            >
+              <Input placeholder="Enter first name" />
+            </Form.Item>
+          </Col>
 
-        <Form.Item
-          name="lastName"
-          label="Last Name"
-          rules={[{ required: true, message: 'Please enter last name' }]}
-        >
-          <Input placeholder="Enter last name" />
-        </Form.Item>
+          <Col span={12}>
+            <Form.Item
+              name="lastName"
+              label="Last Name"
+              rules={[{ required: true, message: 'Please enter last name' }]}
+            >
+              <Input placeholder="Enter last name" />
+            </Form.Item>
+          </Col>
 
-        <Form.Item
-          name="email"
-          label="Email"
-          rules={[
-            { required: true, message: 'Please enter email' },
-            { type: 'email', message: 'Please enter a valid email' }
-          ]}
-        >
-          <Input placeholder="customer@example.com" />
-        </Form.Item>
+          <Col span={12}>
+            <Form.Item
+              name="email"
+              label="Email"
+              rules={[
+                { required: true, message: 'Please enter email' },
+                { type: 'email', message: 'Please enter a valid email' }
+              ]}
+            >
+              <Input placeholder="customer@example.com" />
+            </Form.Item>
+          </Col>
 
-        <Form.Item
-          name="phone"
-          label="Phone"
-          rules={[
-            { required: true, message: 'Please enter phone number' },
-            { pattern: /^\d{10}$/, message: 'Phone number must be exactly 10 digits' }
-          ]}
-        >
-          <Input placeholder="9999999999" maxLength={10} />
-        </Form.Item>
+          <Col span={12}>
+            <Form.Item
+              name="phone"
+              label="Phone"
+              rules={[
+                { required: true, message: 'Please enter phone number' },
+                { pattern: /^\d{10}$/, message: 'Phone number must be exactly 10 digits' }
+              ]}
+            >
+              <Input placeholder="9999999999" maxLength={10} />
+            </Form.Item>
+          </Col>
 
-        <Form.Item
-          name="password"
-          label="Password"
-          rules={[
-            { required: true, message: 'Please enter password' },
-            { min: 6, message: 'Password must be at least 6 characters' }
-          ]}
-        >
-          <Input.Password placeholder="Enter password" />
-        </Form.Item>
+          <Col span={12}>
+            <Form.Item
+              name="password"
+              label="Password"
+              rules={[
+                { required: true, message: 'Please enter password' },
+                { min: 6, message: 'Password must be at least 6 characters' }
+              ]}
+            >
+              <Input.Password placeholder="Enter password" />
+            </Form.Item>
+          </Col>
+
+          <Col span={12}>
+            <Form.Item
+              name="address"
+              label="Customer Address"
+            >
+              <Input.TextArea rows={3} placeholder="Enter address (optional)" />
+            </Form.Item>
+          </Col>
+        </Row>
 
         <Form.Item style={{ marginBottom: 0, marginTop: 24 }}>
           <Space style={{ width: '100%', justifyContent: 'flex-end' }}>

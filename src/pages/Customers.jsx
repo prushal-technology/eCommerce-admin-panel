@@ -1,4 +1,4 @@
-import { DeleteOutlined, EditOutlined, PlusOutlined, ReloadOutlined } from '@ant-design/icons';
+import { DeleteOutlined, EditOutlined, PlusOutlined } from '@ant-design/icons';
 import { Button, Card, Form, Input, message, Modal, Popconfirm, Select, Space, Spin, Table } from 'antd';
 import { useEffect, useRef, useState } from 'react';
 import AddCustomerModal from '../components/modals/AddCustomerModal';
@@ -336,15 +336,10 @@ const Customers = () => {
       title="Customers Management"
       extra={
         <Space>
-          <Button
-            icon={<ReloadOutlined />}
-            onClick={() => loadCustomers(null, true)}
-            loading={loading}
-          >
-            Refresh
-          </Button>
+          
           <Button
             type="primary"
+            size="small"
             icon={<PlusOutlined />}
             onClick={handleAdd}
           >

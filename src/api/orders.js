@@ -38,7 +38,7 @@ export const getProductsForOrder = async () => {
 export const createAdminOrder = async (userId, shippingAddress, items) => {
   try {
     const data = await graphqlRequest(GRAPHQL_QUERIES.CREATE_ADMIN_ORDER, {
-      userId,
+      userId: parseInt(userId, 10),
       shippingAddress,
       items
     });

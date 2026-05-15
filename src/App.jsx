@@ -16,8 +16,8 @@ import AllProducts from "./pages/products/AllProducts";
 import ProductDetail from "./pages/products/ProductDetail";
 
 // Order pages
-import AllOrders from "./pages/orders/AllOrders";
-import ManualOrder from "./pages/orders/ManualOrder";
+//import AllOrders from "./pages/orders/AllOrders";
+//import ManualOrder from "./pages/orders/ManualOrder";
 import SystemOrders from "./pages/orders/SystemOrders";
 import UserOrders from "./pages/orders/UserOrders";
 
@@ -38,10 +38,10 @@ export default function App() {
           <Route path="/products/:id" element={<ProductDetail />} />
 
           {/* Order Routes */}
-          <Route path="/orders/all" element={<AllOrders />} />
+          {/* <Route path="/orders/all" element={<AllOrders />} /> */}
           <Route path="/orders/system" element={<SystemOrders />} />
           <Route path="/orders/user" element={<UserOrders />} />
-          <Route path="/orders/manual" element={<ManualOrder />} />
+          {/* <Route path="/orders/manual" element={<ManualOrder />} /> */}
 
           {/* Other Routes */}
           <Route path="/customers" element={<Customers />} />
