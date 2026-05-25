@@ -1,5 +1,5 @@
-import { BellOutlined, CloseOutlined, LogoutOutlined, MenuOutlined, UserOutlined, } from "@ant-design/icons";
-import { Avatar, Badge, Dropdown, Layout } from "antd";
+import { CloseOutlined, LogoutOutlined, MenuOutlined, UserOutlined, } from "@ant-design/icons";
+import { Avatar, Dropdown, Layout } from "antd";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { getDecryptedUser } from "../utils/crypto";
@@ -114,17 +114,7 @@ export default function HeaderBar({ collapsed, setCollapsed }) {
 
       {/* RIGHT SECTION */}
       <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
-        {/* Notifications */}
-        <Badge count={notifications} size="small">
-          <BellOutlined
-            style={{
-              fontSize: 20,
-              cursor: "pointer",
-              color: "#fff"
-            }}
-            onClick={() => console.log('Notifications clicked')}
-          />
-        </Badge>
+        
 
         {/* User Profile Dropdown */}
         <Dropdown

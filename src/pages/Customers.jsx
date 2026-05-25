@@ -352,9 +352,11 @@ const Customers = () => {
 
       <div style={{ marginBottom: 16 }}>
         <Search
+        size="small"
+        className="small-search"
           placeholder="Search customers by name or email..."
           allowClear
-          style={{ width: 300 }}
+          style={{ width: 250 }}
           onChange={(e) => setSearchText(e.target.value)}
           value={searchText}
         />

@@ -26,42 +26,43 @@ import {
 } from 'antd';
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { addProductImage, createProduct, getAllProducts, getProductCategories, updateStock } from '../api/products';
 import ProductModal from '../components/modals/ProductModal';
+import InfoTooltip from '../components/ui/InfoTooltip';
+import useProducts from '../hooks/useProducts';
 
 const { Search } = Input;
 const { Option } = Select;
 
 const Stock = () => {
   const navigate = useNavigate();
-  const [stocks, setStocks] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const {
+    products: stocks,
+    categories,
+    loadingProducts,
+    actionLoading,
+    fetchProducts,
+    fetchCategories,
+    createProduct,
+    addProductImage,
+    updateProductStock,
+  } = useProducts();
   const [searchText, setSearchText] = useState('');
   const [stockFilter, setStockFilter] = useState('all');
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [selectedStockItem, setSelectedStockItem] = useState(null);
   const [form] = Form.useForm();
-  
+
   // Product modal state
   const [isProductModalVisible, setIsProductModalVisible] = useState(false);
   const [productForm] = Form.useForm();
-  const [categories, setCategories] = useState([]);
   const [imageList, setImageList] = useState([]);
   const [productLoading, setProductLoading] = useState(false);
 
   const loadStocks = async () => {
-    setLoading(true);
     try {
-      const response = await getAllProducts(50);
-      if (response.success) {
-        setStocks(response.products || []);
-      } else {
-        message.error(response.message || 'Failed to fetch stocks');
-      }
+      await fetchProducts(50);
     } catch (error) {
       message.error('An error occurred while fetching stock data.');
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -72,10 +73,7 @@ const Stock = () => {
 
   const loadCategories = async () => {
     try {
-      const response = await getProductCategories();
-      if (response.success) {
-        setCategories(response.categories);
-      }
+      await fetchCategories();
     } catch (error) {
       console.error('Failed to load categories:', error);
     }
@@ -96,7 +94,7 @@ const Stock = () => {
   const handleProductSubmit = async (values) => {
     setProductLoading(true);
     try {
-      const result = await createProduct({
+      const newProduct = await createProduct({
         ...values,
         categoryId: Number(values.categoryId),
         price: Number(values.price),
@@ -106,7 +104,7 @@ const Stock = () => {
         isFeatured: values.isFeatured,
       });
 
-      if (result.success && result.product?.id) {
+      if (newProduct?.id) {
         // Upload images if any
         const newImages = imageList.filter(img => !img.id);
         for (const img of newImages) {
@@ -116,7 +114,7 @@ const Stock = () => {
             await new Promise((resolve) => {
               reader.onload = async () => {
                 const base64 = reader.result;
-                await addProductImage(result.product.id, base64, 0);
+                await addProductImage(newProduct.id, base64, 0);
                 resolve();
               };
             });
@@ -127,9 +125,9 @@ const Stock = () => {
         productForm.resetFields();
         setImageList([]);
         // Reload stocks to show new product
-        loadStocks();
+        await fetchProducts(50);
       } else {
-        message.error(result.message || 'Failed to add product');
+        message.error('Failed to add product');
       }
     } catch (error) {
       message.error('An error occurred while adding product');
@@ -181,21 +179,17 @@ const Stock = () => {
         newStock = Math.max(0, currentQty - values.quantity);
       }
 
-      setLoading(true);
-      const res = await updateStock(selectedStockItem.id, newStock);
+      const res = await updateProductStock(selectedStockItem.id, newStock);
 
-      if (res.success) {
-        message.success('Stock updated successfully');
-        loadStocks();
+      if (res) {
+        await fetchProducts(50);
         setIsModalVisible(false);
         form.resetFields();
       } else {
-        message.error(res.message || 'Failed to update stock');
+        message.error('Failed to update stock');
       }
     } catch (error) {
       message.error('Failed to update stock');
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -341,7 +335,7 @@ const Stock = () => {
   return (
     <Space direction="vertical" size="middle" style={{ display: 'flex' }}>
       {/* API Status Alert */}
-      
+
 
       {/* Stock Statistics */}
       <Row gutter={[16, 16]}>
@@ -357,7 +351,7 @@ const Stock = () => {
         <Col xs={24} sm={12} md={6}>
           <Card>
             <Statistic
-              title="Low Stock"
+              title={<InfoTooltip title="Low Stock" text="Products with quantity between 6 and 15" />}
               value={stockStats.low}
               valueStyle={{ color: '#faad14' }}
               prefix={<WarningOutlined />}
@@ -367,7 +361,7 @@ const Stock = () => {
         <Col xs={24} sm={12} md={6}>
           <Card>
             <Statistic
-              title="Critical"
+              title={<InfoTooltip title="Critical" text="Products with quantity 5 or below" />}
               value={stockStats.critical}
               valueStyle={{ color: '#fa8c16' }}
               prefix={<ExclamationCircleOutlined />}
@@ -377,7 +371,7 @@ const Stock = () => {
         <Col xs={24} sm={12} md={6}>
           <Card>
             <Statistic
-              title="Out of Stock"
+              title={<InfoTooltip title="Out of Stock" text="Products with 0 quantity" />}
               value={stockStats.outOfStock}
               valueStyle={{ color: '#ff4d4f' }}
               prefix={<ExclamationCircleOutlined />}
@@ -420,11 +414,16 @@ const Stock = () => {
         <Space direction="vertical" size="middle" style={{ display: 'flex' }}>
           <Space>
             <Search
+              size="small"
+              className="small-search"
               placeholder="Search products..."
               allowClear
               onChange={(e) => setSearchText(e.target.value)}
+              style={{ width: 250 }}
+
             />
             <Select
+              size="small"
               value={stockFilter}
               onChange={setStockFilter}
               defaultValue="all"
@@ -439,7 +438,7 @@ const Stock = () => {
           <Table
             columns={columns}
             dataSource={filteredStocks}
-            loading={loading}
+            loading={loadingProducts}
             size="small"
             rowKey="id"
             pagination={{
@@ -509,10 +508,10 @@ const Stock = () => {
 
           <Form.Item>
             <Space>
-              <Button type="primary" htmlType="submit" loading={loading}>
+              <Button type="primary" htmlType="submit" loading={actionLoading}>
                 Update Stock
               </Button>
-              <Button onClick={() => setIsModalVisible(false)} disabled={loading}>
+              <Button onClick={() => setIsModalVisible(false)} disabled={actionLoading}>
                 Cancel
               </Button>
             </Space>
@@ -522,8 +521,8 @@ const Stock = () => {
 
       {/* Add Product Modal */}
       <ProductModal
-        open={isProductModalVisible}
-        onClose={handleProductModalClose}
+        visible={isProductModalVisible}
+        onCancel={handleProductModalClose}
         onSubmit={handleProductSubmit}
         form={productForm}
         categories={categories}

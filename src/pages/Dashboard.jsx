@@ -1,13 +1,13 @@
 import {
-  DollarCircleOutlined,
   ExclamationCircleOutlined,
   ProductOutlined,
   ShoppingCartOutlined,
   UserOutlined,
-  WarningOutlined,
+  WarningOutlined
 } from '@ant-design/icons';
 import { Card, Col, Row, Skeleton, Statistic, Table, Tag, Typography } from 'antd';
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Bar,
   BarChart,
@@ -20,33 +20,26 @@ import {
   XAxis,
   YAxis,
 } from 'recharts';
-import { getDashboard } from '../api/products';
+import InfoTooltip from '../components/ui/InfoTooltip';
+import useDashboard from '../hooks/useDashboard';
 
 const { Title, Text } = Typography;
 
 const Dashboard = () => {
-  const [loading, setLoading] = useState(true);
-  const [stats, setStats] = useState(null);
-  const [salesTrend, setSalesTrend] = useState([]);
-  const [topProducts, setTopProducts] = useState([]);
-  const [recentProducts, setRecentProducts] = useState([]);
-  const [recentOrders, setRecentOrders] = useState([]);
+  const navigate = useNavigate();
+  const {
+    stats,
+    salesTrend,
+    topProducts,
+    recentProducts,
+    recentOrders,
+    loading,
+    fetchDashboard,
+  } = useDashboard();
 
   useEffect(() => {
-    const fetchDashboard = async () => {
-      setLoading(true);
-      const result = await getDashboard();
-      if (result.success) {
-        setStats(result.dashboardStats);
-        setSalesTrend(result.salesTrend);
-        setTopProducts(result.topProducts);
-        setRecentProducts(result.recentProducts);
-        setRecentOrders(result.recentOrders);
-      }
-      setLoading(false);
-    };
     fetchDashboard();
-  }, []);
+  }, [fetchDashboard]);
 
   const getStatusColor = (status) => {
     const colors = {
@@ -130,7 +123,10 @@ const Dashboard = () => {
       {/* ── STAT CARDS ─────────────────────────────── */}
       <Row gutter={[16, 16]} style={{ marginBottom: 16 }}>
         <Col xs={24} sm={12} lg={6}>
-          <Card>
+          <Card 
+            hoverable 
+            onClick={() => navigate('/orders')}
+          >
             {loading ? <Skeleton active paragraph={{ rows: 1 }} /> : (
               <Statistic
                 title="Orders Today"
@@ -153,17 +149,21 @@ const Dashboard = () => {
               <Statistic
                 title="Total Revenue"
                 value={stats?.totalRevenue ?? 0}
-                prefix={<DollarCircleOutlined />}
+                //prefix={<DollarCircleOutlined />}
+                prefix="₹"
                 precision={2}
                 valueStyle={{ color: '#3f8600' }}
-                formatter={(v) => `₹${Number(v).toLocaleString('en-IN')}`}
+                formatter={(v) => `${Number(v).toLocaleString('en-IN')}`}
               />
             )}
           </Card>
         </Col>
 
         <Col xs={24} sm={12} lg={6}>
-          <Card>
+          <Card 
+            hoverable 
+            onClick={() => navigate('/products')}
+          >
             {loading ? <Skeleton active paragraph={{ rows: 1 }} /> : (
               <Statistic
                 title="Total Products"
@@ -207,7 +207,7 @@ const Dashboard = () => {
           <Card>
             {loading ? <Skeleton active paragraph={{ rows: 1 }} /> : (
               <Statistic
-                title="Low Stock Products"
+                title={<InfoTooltip title="Low Stock Products" text="Products with quantity between 6 and 15" />}
                 value={stats?.lowStockProducts ?? 0}
                 prefix={<WarningOutlined />}
                 valueStyle={{ color: '#ff4d4f' }}
@@ -220,7 +220,7 @@ const Dashboard = () => {
       {/* ── CHARTS ─────────────────────────────────── */}
       <Row gutter={[16, 16]} style={{ marginBottom: 16 }}>
         <Col xs={24} lg={16}>
-          <Card title="Sales Trend" style={{ height: 380 }}>
+          <Card title={<InfoTooltip title="Sales Trend" text="Monthly sales revenue vs number of orders" />} style={{ height: 380 }}>
             {loading ? <Skeleton active /> : (
               <ResponsiveContainer width="100%" height={290}>
                 <LineChart data={salesTrend}>
@@ -238,7 +238,7 @@ const Dashboard = () => {
           </Card>
         </Col>
         <Col xs={24} lg={8}>
-          <Card title="Orders Trend" style={{ height: 380 }}>
+          <Card title={<InfoTooltip title="Orders Trend" text="Monthly order volume distribution" />} style={{ height: 380 }}>
             {loading ? <Skeleton active /> : (
               <ResponsiveContainer width="100%" height={290}>
                 <BarChart data={salesTrend}>

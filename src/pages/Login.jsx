@@ -1,5 +1,4 @@
 import {
-  DollarCircleOutlined,
   EyeInvisibleOutlined,
   EyeOutlined,
   LockOutlined,
@@ -78,7 +77,7 @@ export default function Login() {
               <ShoppingOutlined /> Product Management
             </div>
             <div className="feature-card">
-              <DollarCircleOutlined /> Sales Analytics
+              ₹ Sales Analytics
             </div>
             <div className="feature-card">
               <SafetyOutlined /> Secure & Role-based Access

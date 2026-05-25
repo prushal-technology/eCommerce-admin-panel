@@ -1,7 +1,7 @@
 import { DeleteOutlined, EditOutlined, PlusOutlined } from '@ant-design/icons';
 import { Button, Card, Form, Input, InputNumber, Modal, Select, Space, Table, Tag, Upload, message } from 'antd';
 import { useEffect, useState } from 'react';
-import { getAllProducts, getProductCategories } from '../api/products';
+import useProducts from '../hooks/useProducts';
 
 const { Search } = Input;
 const { Option } = Select;
@@ -11,43 +11,23 @@ const Products = () => {
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
   const [searchText, setSearchText] = useState('');
-  const [products, setProducts] = useState([]);
-  const [categories, setCategories] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const {
+    products,
+    categories,
+    loadingProducts,
+    fetchProducts,
+    fetchCategories,
+    createProduct,
+    updateProduct,
+    deleteProduct,
+  } = useProducts();
   const [form] = Form.useForm();
 
   // Load products and categories on component mount
   useEffect(() => {
-    loadProducts();
-    loadCategories();
-  }, []);
-
-  const loadProducts = async () => {
-    setLoading(true);
-    try {
-      const result = await getAllProducts();
-      if (result.success) {
-        setProducts(result.products);
-      } else {
-        message.error(result.message || 'Failed to load products');
-      }
-    } catch (error) {
-      message.error('Failed to load products');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const loadCategories = async () => {
-    try {
-      const result = await getProductCategories();
-      if (result.success) {
-        setCategories(result.categories);
-      }
-    } catch (error) {
-      console.error('Failed to load categories:', error);
-    }
-  };
+    fetchProducts();
+    fetchCategories();
+  }, [fetchProducts, fetchCategories]);
 
   const columns = [
     {
@@ -65,7 +45,7 @@ const Products = () => {
       title: 'Category',
       dataIndex: 'category',
       key: 'category',
-      render: (category) => <Tag color="blue">{category}</Tag>,
+      render: (category) => <Tag color="blue">{category?.name || 'N/A'}</Tag>,
     },
     {
       title: 'Price',
@@ -130,35 +110,32 @@ const Products = () => {
 
   const handleEdit = (product) => {
     setEditingProduct(product);
-    form.setFieldsValue(product);
+    form.setFieldsValue({
+      ...product,
+      category: product.category?.id,
+      status: product.isActive,
+      stock: product.stock?.quantity,
+    });
     setIsModalVisible(true);
   };
 
   const handleSubmit = async (values) => {
     try {
       if (editingProduct) {
-        // Update existing product
-        const result = await updateProduct(editingProduct.id, values);
-        if (result.success) {
-          setProducts(products.map(product =>
-            product.id === editingProduct.id ? result.product : product
-          ));
-          message.success('Product updated successfully');
-        } else {
-          message.error(result.message || 'Failed to update product');
+        const updated = await updateProduct(editingProduct.id, values);
+        if (updated) {
+          await fetchProducts();
+          setIsModalVisible(false);
+          form.resetFields();
         }
       } else {
-        // Create new product
-        const result = await createProduct(values);
-        if (result.success) {
-          setProducts([result.product, ...products]);
-          message.success('Product created successfully');
-        } else {
-          message.error(result.message || 'Failed to create product');
+        const created = await createProduct(values);
+        if (created) {
+          await fetchProducts();
+          setIsModalVisible(false);
+          form.resetFields();
         }
       }
-      setIsModalVisible(false);
-      form.resetFields();
     } catch (error) {
       message.error('Error saving product');
     }
@@ -166,22 +143,25 @@ const Products = () => {
 
   const handleDelete = async (id) => {
     try {
-      const result = await deleteProduct(id);
-      if (result.success) {
-        setProducts(products.filter(product => product.id !== id));
-        message.success('Product deleted successfully');
-      } else {
-        message.error(result.message || 'Failed to delete product');
+      const deleted = await deleteProduct(id);
+      if (deleted) {
+        await fetchProducts();
       }
     } catch (error) {
       message.error('Error deleting product');
     }
   };
 
-  const filteredProducts = products.filter(product =>
-    product.name.toLowerCase().includes(searchText.toLowerCase()) ||
-    product.category.toLowerCase().includes(searchText.toLowerCase())
-  );
+  const filteredProducts = products.filter(product => {
+    const categoryName = typeof product.category === 'string'
+      ? product.category
+      : product.category?.name || '';
+
+    return (
+      product.name.toLowerCase().includes(searchText.toLowerCase()) ||
+      categoryName.toLowerCase().includes(searchText.toLowerCase())
+    );
+  });
 
   return (
     <Card title="Products Management">
@@ -197,7 +177,7 @@ const Products = () => {
           <Search
             placeholder="Search products..."
             allowClear
-            style={{ width: 300 }}
+            style={{ width: 250 }}
             onChange={(e) => setSearchText(e.target.value)}
           />
         </Space>
@@ -208,7 +188,7 @@ const Products = () => {
         dataSource={filteredProducts}
         rowKey="id"
         size="small"
-        loading={loading}
+        loading={loadingProducts}
         pagination={{
           pageSize: 10,
           showSizeChanger: true,

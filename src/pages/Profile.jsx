@@ -2,14 +2,13 @@ import {
   BankOutlined,
   CalendarOutlined,
   CreditCardOutlined,
-  DollarCircleOutlined,
   HomeOutlined,
   MailOutlined,
   PhoneOutlined,
   SettingOutlined,
   ShoppingOutlined,
   TeamOutlined,
-  UserOutlined,
+  UserOutlined
 } from "@ant-design/icons";
 
 import { Avatar, Card, Col, Descriptions, Grid, Row, Tag } from "antd";
@@ -97,7 +96,7 @@ export default function Profile() {
               {u?.department || "E-Commerce Operations"}
             </Descriptions.Item>
 
-            <Descriptions.Item label={<><DollarCircleOutlined /> Sales Target</>}>
+            <Descriptions.Item label={<>₹ Sales Target</>}>
               {show(u.salesTarget || "Not Assigned")}
             </Descriptions.Item>
 

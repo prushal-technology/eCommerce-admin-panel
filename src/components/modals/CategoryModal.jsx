@@ -41,9 +41,9 @@ export default function CategoryModal({
             onCancel={onClose}
             footer={null}
             destroyOnHidden
-            width={480}   // 🔥 reduced width
+            width={480}
         >
-            <Form form={form} layout="vertical" onFinish={onSubmit} size="small">
+            <Form form={form} layout="vertical" onFinish={onSubmit}>
 
                 {/* ROW 1 */}
                 <Row gutter={10}>   {/* 🔥 reduced gap */}
@@ -54,8 +54,7 @@ export default function CategoryModal({
                             rules={[{ required: true, message: "Required" }]}
                         >
                             <Input
-                                size="small"
-                                placeholder="Enter name"
+                                placeholder="e.g., Electronics, Clothing"
                             />
                         </Form.Item>
                     </Col>
@@ -66,11 +65,8 @@ export default function CategoryModal({
                             label={<span>Main Category</span>}
                         >
                             <Select
-                                size="small"
                                 allowClear
-                                placeholder="Select Main Category"
-                                className="small-select"
-                                popupClassName="small-select-dropdown"
+                                placeholder="Select parent category (Optional)"
                                 options={parentCategories.map((cat) => ({
                                     label: cat.name,
                                     value: Number(cat.id),
@@ -92,7 +88,7 @@ export default function CategoryModal({
                         >
                             <Input.TextArea
                                 rows={2}
-                                placeholder="Enter description"
+                                placeholder="Description of the product"
                             />
                         </Form.Item>
                     </Col>
@@ -133,12 +129,11 @@ export default function CategoryModal({
 
                 {/* BUTTONS */}
                 <Space>
-                    <Button size="small" onClick={onClose}>
+                    <Button onClick={onClose}>
                         Cancel
                     </Button>
 
                     <Button
-                        size="small"
                         type="primary"
                         htmlType="submit"
                         loading={loading}

@@ -1,4 +1,4 @@
-import { ArrowUpOutlined, DollarCircleOutlined, ShoppingCartOutlined, UserOutlined } from '@ant-design/icons';
+import { ArrowUpOutlined, ShoppingCartOutlined, UserOutlined } from '@ant-design/icons';
 import { Card, Col, DatePicker, Row, Select, Statistic } from 'antd';
 import { Bar, BarChart, CartesianGrid, Cell, Legend, Line, LineChart, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 
@@ -64,7 +64,8 @@ const Analytics = () => {
             <Statistic
               title="Total Revenue"
               value={28950}
-              prefix={<DollarCircleOutlined />}
+              //prefix={<DollarCircleOutlined />}
+              prefix="₹"
               precision={2}
               valueStyle={{ color: '#3f8600' }}
             />

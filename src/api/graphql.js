@@ -353,8 +353,8 @@ mutation UpdateStock($productId: Int!, $quantity: Int!) {
   `,
 
   GET_ALL_ORDERS: `
-    query GetAllOrders($orderFrom: String) {
-      allOrders(orderFrom: $orderFrom) {
+    query GetAllOrders($orderFrom: String, $query: String) {
+      allOrders(orderFrom: $orderFrom, query: $query) {
         id
         orderNumber
         status

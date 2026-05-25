@@ -1,26 +1,25 @@
 import {
-    DeleteOutlined,
-    EditOutlined,
-    EyeOutlined
+  DeleteOutlined,
+  EditOutlined,
+  EyeOutlined
 } from '@ant-design/icons';
 import {
-    Button,
-    Card,
-    Input,
-    message,
-    Popconfirm,
-    Select,
-    Space,
-    Spin,
-    Table,
-    Tag
+  Button,
+  Card,
+  Input,
+  message,
+  Popconfirm,
+  Select,
+  Space,
+  Spin,
+  Table,
+  Tag
 } from 'antd';
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getAllCategories } from '../../api/categories';
-import { addProductImage, createProduct, deleteProduct, deleteProductImage, getAllProducts, updateProduct } from '../../api/products';
 import ImagePreviewModal from '../../components/modals/ImagePreviewModal';
 import ProductModal from '../../components/modals/ProductModal';
+import useProducts from '../../hooks/useProducts';
 import { getDecryptedUser } from "../../utils/crypto"; // adjust path
 
 const { Search } = Input;
@@ -36,14 +35,25 @@ const AllProducts = () => {
   const isAdmin = ["admin", "manager"].includes(normalizedRole);
   const isEmployee = ["employee", "sales associate"].includes(normalizedRole);
 
-  const [products, setProducts] = useState([]);
+  const {
+    products,
+    categories,
+    loadingProducts,
+    actionLoading,
+    fetchProducts,
+    fetchCategories,
+    createProduct,
+    updateProduct,
+    deleteProduct,
+    addProductImage,
+    deleteProductImage,
+  } = useProducts();
   const [loading, setLoading] = useState(false);
   const [searchText, setSearchText] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
-  const [categories, setCategories] = useState([]);
   const [selectedImage, setSelectedImage] = useState(null);
   const [imageModalVisible, setImageModalVisible] = useState(false);
   const [imageList, setImageList] = useState([]);
@@ -90,10 +100,7 @@ const AllProducts = () => {
 
   const loadCategories = async () => {
     try {
-      const result = await getAllCategories();
-      if (result.success) {
-        setCategories(result.categories);
-      }
+      await fetchCategories();
     } catch (error) {
       message.error('Failed to load categories');
     }
@@ -113,25 +120,19 @@ const AllProducts = () => {
     }
 
     try {
-      let categoryId = categoryFilter === 'all' ? null : categoryFilter;
-      let search = searchText ? searchText : null;
+      const categoryId = categoryFilter === 'all' ? null : categoryFilter;
+      const search = searchText ? searchText : null;
 
-      const result = await getAllProducts(10, cursor, search, categoryId);
+      const result = await fetchProducts(10, cursor, search, categoryId, !isNewSearch);
 
-      if (result.success) {
+      if (result) {
         if (isNewSearch) {
-          setProducts(result.products);
+          setNextCursor(result.nextCursor);
+          setHasMore(result.hasMore);
         } else {
-          setProducts(prev => {
-            const newIds = new Set(result.products.map(p => p.id));
-            const filteredPrev = prev.filter(p => !newIds.has(p.id));
-            return [...filteredPrev, ...result.products];
-          });
+          setNextCursor(result.nextCursor);
+          setHasMore(result.hasMore);
         }
-        setNextCursor(result.nextCursor);
-        setHasMore(result.hasMore);
-      } else {
-        message.error(result.message || 'Failed to load products');
       }
     } catch (error) {
       message.error('Failed to load products');
@@ -190,12 +191,9 @@ const AllProducts = () => {
 
   const handleDelete = async (id) => {
     try {
-      const result = await deleteProduct(id);
-      if (result.success) {
-        setProducts(products.filter(p => p.id !== id));
-        message.success(result.message);
-      } else {
-        message.error(result.message || 'Failed to delete product');
+      const deleted = await deleteProduct(id);
+      if (deleted) {
+        await loadProducts(null, true);
       }
     } catch (error) {
       message.error('Failed to delete product');
@@ -415,7 +413,7 @@ const AllProducts = () => {
           placeholder="Search products..."
           allowClear
           onChange={(e) => setSearchText(e.target.value)}
-          style={{ width: 200 }}
+          style={{ width: 250 }}
         />
 
         <Select
@@ -495,54 +493,35 @@ const AllProducts = () => {
           visible={isModalVisible}
           onCancel={() => setIsModalVisible(false)}
           onSubmit={async (productData, imageData) => {
-            if (editingProduct) {
-              // const result = await updateProduct(editingProduct.id, productData);
-              const payload = {
-                ...productData,
-                price: Number(productData.price),
-                discountPrice: productData.discountPrice
-                  ? Number(productData.discountPrice)
-                  : null
-              };
+            const payload = {
+              ...productData,
+              price: Number(productData.price),
+              discountPrice: productData.discountPrice
+                ? Number(productData.discountPrice)
+                : null,
+            };
 
-              const result = await updateProduct(editingProduct.id, payload);
-              if (result.success) {
-                // Refresh products list to get updated data
+            if (editingProduct) {
+              const updated = await updateProduct(editingProduct.id, payload);
+              if (updated) {
                 await loadProducts(null, true);
-                message.success(result.message);
-              } else {
-                message.error(result.message || 'Failed to update product');
               }
             } else {
-              // const result = await createProduct(productData);
-              const payload = {
-                ...productData,
-                price: Number(productData.price),
-                discountPrice: productData.discountPrice
-                  ? Number(productData.discountPrice)
-                  : null
-              };
-
-              const result = await createProduct(payload);
-              if (result.success) {
-                // Upload images if any
+              const created = await createProduct(payload);
+              if (created?.id) {
                 if (imageData.length > 0) {
                   for (const image of imageData) {
-                    await addProductImage(result.product.id, image);
+                    await addProductImage(created.id, image);
                   }
                 }
-                // Refresh products list to get updated data with images
                 await loadProducts(null, true);
-                message.success('Product added successfully!');
-              } else {
-                message.error(result.message || 'Failed to add product');
               }
             }
             setIsModalVisible(false);
           }}
           initialValues={editingProduct}
           categories={categories}
-          loading={loading}
+          loading={actionLoading}
           imageList={imageList}
           setImageList={setImageList}
           title={editingProduct ? 'Edit Product' : 'Add Product'}

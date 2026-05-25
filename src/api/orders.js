@@ -63,9 +63,13 @@ export const createAdminOrder = async (userId, shippingAddress, items) => {
 };
 
 // Get all orders
-export const getAllOrders = async () => {
+export const getAllOrders = async (orderFrom = null, query = null) => {
   try {
-    const data = await graphqlRequest(GRAPHQL_QUERIES.GET_ALL_ORDERS);
+    const variables = {
+      ...(orderFrom ? { orderFrom } : {}),
+      ...(query ? { query } : {})
+    };
+    const data = await graphqlRequest(GRAPHQL_QUERIES.GET_ALL_ORDERS, variables);
     return {
       success: true,
       orders: data.allOrders || []
@@ -109,5 +113,46 @@ export const updateOrderStatus = async (orderId, status, note = "") => {
       success: false,
       message: error.message || 'Failed to update order status'
     };
+  }
+};
+
+// Add shipping address (used by manual order workflows)
+export const addShippingAddress = async (values) => {
+  try {
+    const mutation = `
+      mutation AddShippingAddress($name: String!, $phone: String!, $city: String!, $state: String!, $pincode: String!, $landmark: String, $isDefault: Boolean) {
+        addShippingAddress(name: $name, phone: $phone, city: $city, state: $state, pincode: $pincode, landmark: $landmark, isDefault: $isDefault) {
+          addressId
+        }
+      }
+    `;
+    const data = await graphqlRequest(mutation, values);
+    if (data?.addShippingAddress?.addressId) {
+      return { success: true, addressId: data.addShippingAddress.addressId };
+    }
+    return { success: false, message: 'Failed to add address' };
+  } catch (error) {
+    return { success: false, message: error.message || 'Failed to add address' };
+  }
+};
+
+// Fetch order tracking data
+export const getOrderTracking = async (orderId) => {
+  try {
+    const query = `
+      query GetOrderTracking($orderId: Int!) {
+        orderTracking(orderId: $orderId) {
+          status
+          notes
+          updatedAt
+          date
+          time
+        }
+      }
+    `;
+    const data = await graphqlRequest(query, { orderId: Number(orderId) });
+    return { success: true, tracking: data.orderTracking || [] };
+  } catch (error) {
+    return { success: false, message: error.message || 'Failed to fetch tracking' };
   }
 };

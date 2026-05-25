@@ -260,7 +260,6 @@ import {
   DashboardOutlined,
   LogoutOutlined,
   ProductOutlined,
-  SettingOutlined,
   ShoppingOutlined,
   TeamOutlined,
   UserOutlined
@@ -307,16 +306,16 @@ const menuItems = {
       label: "Employees",
       icon: <TeamOutlined />,
     },
-    {
-      key: "/delivery",
-      label: "Delivery Partners*",
-      icon: <ShoppingOutlined />,
-    },
-    {
-      key: "/settings",
-      label: "Store Settings*",
-      icon: <SettingOutlined />,
-    },
+    // {
+    //   key: "/delivery",
+    //   label: "Delivery Partners*",
+    //   icon: <ShoppingOutlined />,
+    // },
+    // {
+    //   key: "/settings",
+    //   label: "Store Settings*",
+    //   icon: <SettingOutlined />,
+    // },
     { key: "logout", label: "Logout", icon: <LogoutOutlined /> },
   ],
 
@@ -350,11 +349,11 @@ const menuItems = {
       label: "Customers",
       icon: <UserOutlined />,
     },
-    {
-      key: "/delivery",
-      label: "Delivery Partners*",
-      icon: <ShoppingOutlined />,
-    },
+    // {
+    //   key: "/delivery",
+    //   label: "Delivery Partners*",
+    //   icon: <ShoppingOutlined />,
+    // },
     { key: "logout", label: "Logout", icon: <LogoutOutlined /> },
   ],
   customer: [

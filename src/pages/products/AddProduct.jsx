@@ -9,21 +9,24 @@ import {
 } from 'antd';
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getAllCategories } from '../../api/categories';
-import { addProductImage, createProduct } from '../../api/products';
 import ProductModal from '../../components/modals/ProductModal';
+import useProducts from '../../hooks/useProducts';
 
 const { TextArea } = Input;
 const { Option } = Select;
 
 const AddProduct = () => {
   const [form] = Form.useForm();
-  const [loading, setLoading] = useState(false);
   const [imageList, setImageList] = useState([]);
   const [variants, setVariants] = useState([]);
-  const [categories, setCategories] = useState([]);
-  const [categoriesLoading, setCategoriesLoading] = useState(false);
   const navigate = useNavigate();
+  const {
+    categories,
+    fetchCategories,
+    createProduct,
+    addProductImage,
+    actionLoading,
+  } = useProducts();
 
   // Load categories on component mount
   useEffect(() => {
@@ -31,27 +34,15 @@ const AddProduct = () => {
   }, []);
 
   const loadCategories = async () => {
-  setCategoriesLoading(true);
-  try {
-    const result = await getAllCategories();
-
-    if (result.success) {
-      setCategories(result.categories);
-    } else {
-      message.error(result.message || 'Failed to load categories');
+    try {
+      await fetchCategories();
+    } catch (error) {
+      message.error('Failed to load categories');
     }
-
-  } catch (error) {
-    message.error('Failed to load categories');
-  } finally {
-    setCategoriesLoading(false);
-  }
-};
+  };
 
   const handleSubmit = async (values) => {
-    setLoading(true);
     try {
-      // Prepare product data
       const productData = {
         categoryId: values.category,
         name: values.name,
@@ -59,45 +50,32 @@ const AddProduct = () => {
         sku: values.sku,
         price: values.price,
         discountPrice: values.discountPrice,
-        isActive: values.status
+        isActive: values.status,
       };
 
-      const result = await createProduct(productData);
-      
-      if (result.success) {
-        // Upload images if any
+      const created = await createProduct(productData);
+      if (created?.id) {
         if (imageList.length > 0) {
           for (let i = 0; i < imageList.length; i++) {
             const file = imageList[i].originFileObj || imageList[i];
             if (file) {
-              await addProductImage(result.product.id, file, i + 1);
+              await addProductImage(created.id, file, i + 1);
             }
           }
         }
-        
         message.success('Product added successfully!');
-        
-        // Reset form
         form.resetFields();
         setImageList([]);
         setVariants([]);
-        
-        // Navigate back to products list
         navigate('/products/all');
-      } else {
-        message.error(result.message || 'Failed to add product');
       }
     } catch (error) {
       message.error('Failed to add product');
-    } finally {
-      setLoading(false);
     }
   };
 
   const handleSaveAndAddAnother = async (values) => {
-    setLoading(true);
     try {
-      // Prepare product data
       const productData = {
         categoryId: values.category,
         name: values.name,
@@ -105,35 +83,26 @@ const AddProduct = () => {
         sku: values.sku,
         price: values.price,
         discountPrice: values.discountPrice,
-        isActive: values.status
+        isActive: values.status,
       };
 
-      const result = await createProduct(productData);
-      
-      if (result.success) {
-        // Upload images if any
+      const created = await createProduct(productData);
+      if (created?.id) {
         if (imageList.length > 0) {
           for (let i = 0; i < imageList.length; i++) {
             const file = imageList[i].originFileObj || imageList[i];
             if (file) {
-              await addProductImage(result.product.id, file, i + 1);
+              await addProductImage(created.id, file, i + 1);
             }
           }
         }
-        
         message.success('Product added successfully!');
-        
-        // Reset form for next product
         form.resetFields();
         setImageList([]);
         setVariants([]);
-      } else {
-        message.error(result.message || 'Failed to add product');
       }
     } catch (error) {
       message.error('Failed to add product');
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -227,7 +196,7 @@ const AddProduct = () => {
           }}
           initialValues={null}
           categories={categories}
-          loading={loading}
+          loading={actionLoading}
           imageList={imageList}
           setImageList={setImageList}
           title="Add New Product"

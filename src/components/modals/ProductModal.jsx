@@ -1,17 +1,17 @@
 import {
-    Button,
-    Col,
-    Divider,
-    Form,
-    Input,
-    InputNumber,
-    message,
-    Modal,
-    Row,
-    Select,
-    Switch,
-    Typography,
-    Upload
+  Button,
+  Col,
+  Divider,
+  Form,
+  Input,
+  InputNumber,
+  message,
+  Modal,
+  Row,
+  Select,
+  Switch,
+  Typography,
+  Upload
 } from 'antd';
 import { useEffect } from 'react';
 
@@ -339,8 +339,10 @@ const ProductModal = ({
         <Divider />
 
         <div style={{ display: "flex", justifyContent: "flex-end", gap: 10 }}>
-          <Button onClick={onCancel}>Cancel</Button>
-          <Button type="primary" htmlType="submit" loading={loading}>
+          <Button size="small" onClick={onCancel}>
+            Cancel
+          </Button>
+          <Button type="primary" size="small" htmlType="submit" loading={loading}>
             {initialValues ? "Update Product" : "Add Product"}
           </Button>
         </div>

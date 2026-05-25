@@ -100,9 +100,9 @@ const Employees = () => {
     try {
       const newIsActive = !record.isActive;
       const { graphqlRequest } = await import('../api/graphql');
-      await graphqlRequest(UPDATE_EMPLOYEE_STATUS, { 
-        employeeId: record.employeeId, 
-        isActive: newIsActive 
+      await graphqlRequest(UPDATE_EMPLOYEE_STATUS, {
+        employeeId: record.employeeId,
+        isActive: newIsActive
       });
       message.success(`Employee ${newIsActive ? 'activated' : 'deactivated'} successfully`);
       loadEmployees();
@@ -133,8 +133,8 @@ const Employees = () => {
 
   const filteredEmployees = employees.filter(employee => {
     const matchesSearch = employee.name.toLowerCase().includes(searchText.toLowerCase()) ||
-                         employee.email.toLowerCase().includes(searchText.toLowerCase()) ||
-                         employee.phone.includes(searchText);
+      employee.email.toLowerCase().includes(searchText.toLowerCase()) ||
+      employee.phone.includes(searchText);
     const matchesRole = roleFilter === 'all' || employee.role === roleFilter;
     const matchesStatus = statusFilter === 'all' || employee.status === statusFilter;
     return matchesSearch && matchesRole && matchesStatus;
@@ -312,12 +312,15 @@ const Employees = () => {
       >
         <Space style={{ marginBottom: 16 }}>
           <Search
+            size="small"
+            className="small-search"
             placeholder="Search employees..."
             allowClear
-            style={{ width: 300 }}
+            style={{ width: 250 }}
             onChange={(e) => setSearchText(e.target.value)}
           />
           <Select
+            size="small"
             value={roleFilter}
             onChange={setRoleFilter}
             style={{ width: 120 }}
@@ -333,6 +336,7 @@ const Employees = () => {
             ))}
           </Select>
           <Select
+            size="small"
             value={statusFilter}
             onChange={setStatusFilter}
             style={{ width: 120 }}

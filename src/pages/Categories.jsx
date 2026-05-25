@@ -292,6 +292,7 @@ const Categories = () => {
           <Search
             placeholder="Search categories..."
             size="small"
+            className="small-search"
             value={searchText}
             onChange={(e) => setSearchText(e.target.value)}
             style={{ width: 250 }} // 🔥 control width here
