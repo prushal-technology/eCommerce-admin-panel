@@ -263,22 +263,90 @@ mutation UpdateStock($productId: Int!, $quantity: Int!) {
 `,
 
   GET_ALL_STOCKS: `
-    query GetAllStocks {
-      allStocks {
+    query GetAllStocks($query: String) {
+      allStocks(query: $query) {
         id
+        quantity
+        reservedQuantity
+        availableQuantity
+        isOutOfStock
         product {
           id
           name
-          sku
-          category {
-            name
+          price
+          unit
+          images {
+            id
+            image
           }
         }
-        quantity
-        reservedQuantity
       }
     }
   `,
+
+  GET_BULK_ORDERS: `
+    query GetBulkOrders($query: String) {
+      allBulkOrderEnquiries(query: $query) {
+        id
+        status
+        bulkOrderDetails
+        createdAt
+        items {
+          id
+          quantity
+          product {
+            id
+            name
+            images {
+              image
+            }
+          }
+        }
+      }
+    }
+  `,
+
+  CREATE_BULK_ORDER_ENQUIRY: `
+    mutation CreateBulkOrderEnquiry($bulkOrderDetails: String!, $items: [BulkOrderItemInput!]!) {
+      createBulkOrderEnquiry(bulkOrderDetails: $bulkOrderDetails, items: $items) {
+        bulkOrder {
+          id
+          status
+          bulkOrderDetails
+          items {
+            id
+            quantity
+            product {
+              id
+              name
+            }
+          }
+        }
+      }
+    }
+  `,
+
+  UPDATE_BULK_ORDER_ENQUIRY: `
+    mutation UpdateBulkOrderEnquiry($bulkOrderId: Int!, $status: String!, $bulkOrderDetails: String!) {
+      updateBulkOrderEnquiry(bulkOrderId: $bulkOrderId, status: $status, bulkOrderDetails: $bulkOrderDetails) {
+        bulkOrder {
+          id
+          status
+          bulkOrderDetails
+          items {
+            id
+            quantity
+            product {
+              id
+              name
+            }
+          }
+        }
+      }
+    }
+  `,
+
+
 
   GET_DASHBOARD: `
     query AdminDashboard {
@@ -320,11 +388,13 @@ mutation UpdateStock($productId: Int!, $quantity: Int!) {
   `,
 
   CREATE_ADMIN_ORDER: `
-    mutation CreateAdminOrder($userId: Int!, $shippingAddress: String!, $items: [OrderItemInput!]!) {
-      createAdminOrder(userId: $userId, shippingAddress: $shippingAddress, items: $items) {
+    mutation CreateAdminOrder($userId: Int!, $shippingAddress: String!, $orderType: String!, $paymentMethod: String, $items: [OrderItemInput!]!) {
+      createAdminOrder(userId: $userId, shippingAddress: $shippingAddress, orderType: $orderType, paymentMethod: $paymentMethod, items: $items) {
         order {
           id
           orderNumber
+          orderType
+          finalAmount
           customerName
           items {
             product {
@@ -353,10 +423,11 @@ mutation UpdateStock($productId: Int!, $quantity: Int!) {
   `,
 
   GET_ALL_ORDERS: `
-    query GetAllOrders($orderFrom: String, $query: String) {
-      allOrders(orderFrom: $orderFrom, query: $query) {
+    query GetAllOrders($orderFrom: String, $query: String, $orderType: String) {
+      allOrders(orderFrom: $orderFrom, query: $query, orderType: $orderType) {
         id
         orderNumber
+        orderType
         status
         totalAmount
         finalAmount
@@ -373,6 +444,7 @@ mutation UpdateStock($productId: Int!, $quantity: Int!) {
           quantity
           subtotal
           product {
+            id
             name
             unit
             measureValue
@@ -421,17 +493,26 @@ mutation UpdateStock($productId: Int!, $quantity: Int!) {
   `,
 
   GET_PRODUCTS_SIMPLE: `
-    query GetProductsSimple {
-      products {
-        id
-        name
-        sku
-        price
-        stock
-        status
-        category {
+    query GetProductsSimple($first: Int = 100) {
+      products(first: $first) {
+        products {
+          id
           name
+          sku
+          price
+          isActive
+          stock {
+            quantity
+            reservedQuantity
+            availableQuantity
+            isOutOfStock
+          }
+          category {
+            name
+          }
         }
+        nextCursor
+        hasMore
       }
     }
   `,

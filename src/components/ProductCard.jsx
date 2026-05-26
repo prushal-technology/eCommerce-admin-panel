@@ -11,6 +11,8 @@ const ProductCard = ({ product, onEdit, onDelete, onView }) => {
     return colors[status] || 'default';
   };
 
+  const productStatus = product.isActive ? 'active' : 'inactive';
+
   const getStockColor = (stock) => {
     if (stock === 0) return 'red';
     if (stock < 10) return 'orange';
@@ -49,7 +51,7 @@ const ProductCard = ({ product, onEdit, onDelete, onView }) => {
         title={
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <span>{product.name}</span>
-            <Tag color={getStatusColor(product.status)}>{product.status}</Tag>
+            <Tag color={getStatusColor(productStatus)}>{productStatus}</Tag>
           </div>
         }
         description={

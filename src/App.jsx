@@ -18,6 +18,8 @@ import ProductDetail from "./pages/products/ProductDetail";
 // Order pages
 //import AllOrders from "./pages/orders/AllOrders";
 //import ManualOrder from "./pages/orders/ManualOrder";
+import BulkOrders from "./pages/orders/BulkOrders";
+import CustomOrders from "./pages/orders/CustomOrders";
 import SystemOrders from "./pages/orders/SystemOrders";
 import UserOrders from "./pages/orders/UserOrders";
 
@@ -33,26 +35,28 @@ export default function App() {
           <Route path="/" element={<Dashboard />} />
 
           {/* Product Routes */}
-          <Route path="/products/all" element={<AllProducts />} />
-          <Route path="/products/add" element={<AddProduct />} />
-          <Route path="/products/:id" element={<ProductDetail />} />
+          <Route path="products/all" element={<AllProducts />} />
+          <Route path="products/add" element={<AddProduct />} />
+          <Route path="products/:id" element={<ProductDetail />} />
 
           {/* Order Routes */}
-          {/* <Route path="/orders/all" element={<AllOrders />} /> */}
-          <Route path="/orders/system" element={<SystemOrders />} />
-          <Route path="/orders/user" element={<UserOrders />} />
-          {/* <Route path="/orders/manual" element={<ManualOrder />} /> */}
+          {/* <Route path="orders/all" element={<AllOrders />} /> */}
+          <Route path="orders/system" element={<SystemOrders />} />
+          <Route path="orders/bulk" element={<BulkOrders />} />
+          <Route path="orders/custom" element={<CustomOrders />} />
+          <Route path="orders/user" element={<UserOrders />} />
+          {/* <Route path="orders/manual" element={<ManualOrder />} /> */}
 
           {/* Other Routes */}
-          <Route path="/customers" element={<Customers />} />
-          <Route path="/categories" element={<Categories />} />
-          <Route path="/stock" element={<Stock />} />
+          <Route path="customers" element={<Customers />} />
+          <Route path="categories" element={<Categories />} />
+          <Route path="stock" element={<Stock />} />
 
-          <Route path="/employees" element={<Employees />} />
-          <Route path="/delivery" element={<Delivery />} />
-          <Route path="/analytics" element={<Analytics />} />
-          <Route path="/settings" element={<Settings />} />
-          <Route path="/profile" element={<Profile />} />
+          <Route path="employees" element={<Employees />} />
+          <Route path="delivery" element={<Delivery />} />
+          <Route path="analytics" element={<Analytics />} />
+          <Route path="settings" element={<Settings />} />
+          <Route path="profile" element={<Profile />} />
         </Route>
 
         <Route>

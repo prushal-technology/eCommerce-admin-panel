@@ -1,24 +1,24 @@
 import {
-    HomeOutlined,
-    MinusCircleOutlined,
-    PlusOutlined,
-    ShoppingCartOutlined
+  HomeOutlined,
+  MinusCircleOutlined,
+  PlusOutlined,
+  ShoppingCartOutlined
 } from '@ant-design/icons';
 import {
-    Button,
-    Card,
-    Col,
-    Divider,
-    Form,
-    Input,
-    InputNumber,
-    message,
-    Modal,
-    Row,
-    Select,
-    Space,
-    Switch,
-    Table
+  Button,
+  Card,
+  Col,
+  Divider,
+  Form,
+  Input,
+  InputNumber,
+  message,
+  Modal,
+  Row,
+  Select,
+  Space,
+  Switch,
+  Table
 } from 'antd';
 import dayjs from 'dayjs';
 import { useEffect, useMemo, useState } from 'react';
@@ -34,22 +34,21 @@ const buildEmptyItem = () => ({
   productId: null,
   price: 0,
   discountPrice: 0,
-  bulkPrice: 0,
-  customPrice: null,
   quantity: 1,
   total: 0,
 });
 
-const ManualOrderModal = ({ visible, onClose, onOrderCreated }) => {
+const ManualOrderModal = ({ visible, onClose, onOrderCreated, defaultOrderType = 'normal' }) => {
   const [form] = Form.useForm();
   const [addressForm] = Form.useForm();
   const [loading, setLoading] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState(null);
   const [selectedAddress, setSelectedAddress] = useState(null);
   const [orderItems, setOrderItems] = useState([buildEmptyItem()]);
-  const [orderType, setOrderType] = useState('normal');
   const [advanceBooking, setAdvanceBooking] = useState(false);
   const [deliveryDate, setDeliveryDate] = useState(null);
+  const [orderType, setOrderType] = useState('normal');
+  const [paymentMethod, setPaymentMethod] = useState('cod');
   const [addAddressModalVisible, setAddAddressModalVisible] = useState(false);
   const [addAddressLoading, setAddAddressLoading] = useState(false);
   const [addCustomerModalVisible, setAddCustomerModalVisible] = useState(false);
@@ -71,13 +70,13 @@ const ManualOrderModal = ({ visible, onClose, onOrderCreated }) => {
       setOrderItems([buildEmptyItem()]);
       setSelectedCustomer(null);
       setSelectedAddress(null);
-      setOrderType('normal');
       setAdvanceBooking(false);
       setDeliveryDate(null);
+      setOrderType(defaultOrderType);
+      setPaymentMethod('cod');
       form.resetFields();
     }
-  }, [visible]);
-
+  }, [visible, defaultOrderType]);
   const formatAddress = (address) => {
     if (!address) return '';
     const parts = [address.name, address.phone, address.city, address.state, address.pincode];
@@ -130,13 +129,11 @@ const ManualOrderModal = ({ visible, onClose, onOrderCreated }) => {
   };
 
   const getItemUnitPrice = (item, type = orderType) => {
+    if (type === 'custom' && item.customPrice !== undefined && item.customPrice !== null) {
+      return parseFloat(item.customPrice || 0);
+    }
     const actualPrice = parseFloat(item.price || 0);
     const discountPrice = parseFloat(item.discountPrice || 0);
-    const bulkPrice = parseFloat(item.bulkPrice || 0) || (discountPrice > 0 ? discountPrice : actualPrice);
-    const customPrice = parseFloat(item.customPrice || 0);
-
-    if (type === 'bulk') return bulkPrice;
-    if (type === 'custom') return customPrice > 0 ? customPrice : actualPrice;
     return discountPrice > 0 && discountPrice < actualPrice ? discountPrice : actualPrice;
   };
 
@@ -166,12 +163,19 @@ const ManualOrderModal = ({ visible, onClose, onOrderCreated }) => {
         const product = products.find((p) => p.id?.toString() === value?.toString());
         updatedItem.price = parseFloat(product?.price || 0);
         updatedItem.discountPrice = parseFloat(product?.discountPrice || 0);
-        updatedItem.bulkPrice = parseFloat(product?.bulkPrice || product?.discountPrice || product?.price || 0);
-        updatedItem.customPrice = null;
       }
 
-      updatedItem.total = calculateItemTotal(updatedItem, orderType);
+      updatedItem.total = calculateItemTotal(updatedItem);
       return updatedItem;
+    }));
+  };
+
+  const handleOrderTypeChange = (value) => {
+    setOrderType(value);
+    setOrderItems((prev) => prev.map((item) => {
+      const updated = { ...item };
+      updated.total = calculateItemTotal(updated, value);
+      return updated;
     }));
   };
 
@@ -199,8 +203,9 @@ const ManualOrderModal = ({ visible, onClose, onOrderCreated }) => {
       const items = validItems.map((item) => ({
         productId: parseInt(item.productId, 10),
         quantity: item.quantity,
+        ...(orderType === 'custom' && item.customPrice ? { customPrice: parseFloat(item.customPrice) } : {}),
       }));
-      const result = await createOrder(selectedCustomer.id, values.deliveryAddress, items);
+      const result = await createOrder(selectedCustomer.id, values.deliveryAddress, items, orderType, paymentMethod);
 
       if (result.success) {
         message.success('Order created successfully');
@@ -407,19 +412,21 @@ const ManualOrderModal = ({ visible, onClose, onOrderCreated }) => {
             </Row>
           </Card>
 
+          <Row gutter={[16, 16]} style={{ marginTop: 12 }}>
+            <Col xs={24} sm={12}>
+              <Form.Item label="Payment Method">
+                <Select value={paymentMethod} onChange={setPaymentMethod} style={{ width: 200 }} size="small">
+                  <Option value="cod">Cash on Delivery</Option>
+                  <Option value="prepaid">Prepaid</Option>
+                </Select>
+              </Form.Item>
+            </Col>
+          </Row>
+
           <Card title="Order Items" size="small" style={{ marginTop: 16 }}>
             <Row gutter={[16, 16]} style={{ marginBottom: 16, alignItems: 'center' }}>
-              <Col xs={24} sm={12}>
-                <Form.Item label="Order Type" name="orderType" initialValue={orderType}>
-                  <Select value={orderType} onChange={(value) => setOrderType(value)}>
-                    <Option value="normal">Normal Order</Option>
-                    <Option value="bulk">Bulk Order</Option>
-                    <Option value="custom">Custom Order</Option>
-                  </Select>
-                </Form.Item>
-              </Col>
-              <Col xs={24} sm={12} style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                <Button type="dashed" icon={<PlusOutlined />} onClick={handleAddItem} size="small">
+              <Col xs={24} sm={24} style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                <Button type="dashed" icon={<PlusOutlined />} onClick={handleAddItem}>
                   Add Item
                 </Button>
               </Col>
@@ -443,7 +450,7 @@ const ManualOrderModal = ({ visible, onClose, onOrderCreated }) => {
                         option?.label?.toLowerCase().includes(input.toLowerCase())
                       }
                     >
-                      {products.filter((p) => p.status === 'active').map((product) => {
+                      {products.filter((p) => p.isActive).map((product) => {
                         const imageSrc = getProductImage(product);
                         return (
                           <Option key={product.id} value={product.id} label={product.name}>
@@ -467,39 +474,43 @@ const ManualOrderModal = ({ visible, onClose, onOrderCreated }) => {
                   ),
                 },
                 {
-                  title: orderType === 'bulk' ? 'Bulk Price' : orderType === 'custom' ? 'Custom Price' : 'Price',
+                  title: 'Price',
                   dataIndex: 'price',
                   key: 'price',
                   render: (price, record) => {
                     const actualPrice = parseFloat(price || 0);
                     const discountPrice = parseFloat(record.discountPrice || 0);
-                    const bulkPrice = parseFloat(record.bulkPrice || 0) || (discountPrice > 0 ? discountPrice : actualPrice);
+                    const displayPrice = discountPrice > 0 && discountPrice < actualPrice ? discountPrice : actualPrice;
                     const hasDiscount = discountPrice > 0 && discountPrice < actualPrice;
-
-                    if (orderType === 'bulk') {
-                      return <span>{formatCurrency(bulkPrice)}</span>;
-                    }
-
-                    if (orderType === 'custom') {
-                      return (
-                        <InputNumber
-                          min={0}
-                          value={record.customPrice != null ? record.customPrice : actualPrice}
-                          onChange={(value) => handleItemChange(record.id, 'customPrice', value)}
-                          style={{ width: '100%' }}
-                        />
-                      );
-                    }
 
                     return hasDiscount ? (
                       <div>
-                        <div style={{ fontWeight: 'bold' }}>{formatCurrency(discountPrice)}</div>
+                        <div style={{ fontWeight: 'bold' }}>{formatCurrency(displayPrice)}</div>
                         <div style={{ fontSize: 12, color: '#999', textDecoration: 'line-through' }}>{formatCurrency(actualPrice)}</div>
                       </div>
                     ) : (
-                      <span>{formatCurrency(actualPrice)}</span>
+                      <span>{formatCurrency(displayPrice)}</span>
                     );
                   },
+                },
+                {
+                  title: 'Custom Price',
+                  dataIndex: 'customPrice',
+                  key: 'customPrice',
+                  render: (customPrice, record) => (
+                    orderType === 'custom' ? (
+                      <InputNumber
+                        min={0}
+                        value={customPrice}
+                        onChange={(value) => handleItemChange(record.id, 'customPrice', value)}
+                        style={{ width: 120 }}
+                        formatter={(v) => v ? `₹${v}` : ''}
+                        parser={(v) => v.replace(/[^0-9.]/g, '')}
+                      />
+                    ) : (
+                      <span style={{ color: '#999' }}>—</span>
+                    )
+                  ),
                 },
                 {
                   title: 'Quantity',

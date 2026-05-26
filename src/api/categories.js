@@ -2,8 +2,8 @@ import { graphqlRequest } from './graphql';
 
 // GraphQL Queries and Mutations for Categories
 const GET_ALL_CATEGORIES = `
-  query GetAllCategories {
-    allCategories {
+  query GetAllCategories($query: String) {
+    allCategories(query: $query) {
       id
       name
       description
@@ -71,9 +71,10 @@ const DELETE_CATEGORY = `
 
 
 
-export const getAllCategories = async () => {
+export const getAllCategories = async (query = null) => {
   try {
-    const data = await graphqlRequest(GET_ALL_CATEGORIES);
+    const variables = query ? { query } : {};
+    const data = await graphqlRequest(GET_ALL_CATEGORIES, variables);
 
     return {
       success: true,

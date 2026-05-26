@@ -257,12 +257,12 @@
 
 
 import {
-  DashboardOutlined,
-  LogoutOutlined,
-  ProductOutlined,
-  ShoppingOutlined,
-  TeamOutlined,
-  UserOutlined
+    DashboardOutlined,
+    LogoutOutlined,
+    ProductOutlined,
+    ShoppingOutlined,
+    TeamOutlined,
+    UserOutlined
 } from "@ant-design/icons";
 import { Layout, Menu, Modal } from "antd";
 import { useEffect, useState } from "react";
@@ -293,6 +293,8 @@ const menuItems = {
       icon: <ShoppingOutlined />,
       children: [
         { key: "/orders/system", label: "System Orders" },
+        { key: "/orders/bulk", label: "Bulk Orders" },
+        { key: "/orders/custom", label: "Custom Orders" },
         { key: "/orders/user", label: "User Orders" },
       ],
     },
@@ -341,6 +343,8 @@ const menuItems = {
       icon: <ShoppingOutlined />,
       children: [
         { key: "/orders/system", label: "System Orders" },
+        { key: "/orders/bulk", label: "Bulk Orders" },
+        { key: "/orders/custom", label: "Custom Orders" },
         { key: "/orders/user", label: "User Orders" },
       ],
     },
@@ -391,6 +395,8 @@ const menuItems = {
       icon: <ShoppingOutlined />,
       children: [
         { key: "/orders/system", label: "System Orders" },
+        { key: "/orders/bulk", label: "Bulk Orders" },
+        { key: "/orders/custom", label: "Custom Orders" },
         { key: "/orders/user", label: "User Orders" },
       ],
     },

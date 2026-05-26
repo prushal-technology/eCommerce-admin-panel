@@ -357,9 +357,10 @@ export const updateStock = async (productId, quantity) => {
 };
 
 // Helper function to convert file to base64
-export const getAllStocks = async () => {
+export const getAllStocks = async (query = null) => {
   try {
-    const data = await graphqlRequest(GRAPHQL_QUERIES.GET_ALL_STOCKS);
+    const variables = query ? { query } : {};
+    const data = await graphqlRequest(GRAPHQL_QUERIES.GET_ALL_STOCKS, variables);
     if (data && data.allStocks) {
       return { success: true, allStocks: data.allStocks };
     }

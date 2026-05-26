@@ -320,13 +320,19 @@ const AllProducts = () => {
 
         return (
           <div>
-            <div>₹{p.toLocaleString('en-IN')}</div>
             {hasDiscount && (
               <div>
                 ₹{dp.toLocaleString('en-IN')}{' '}
                 <span className="text-muted">(Save ₹{(p - dp).toFixed(2)})</span>
               </div>
             )}
+            <div
+              style={{
+                textDecoration: hasDiscount ? 'line-through' : 'none'
+              }}
+            >
+              ₹{p.toLocaleString('en-IN')}
+            </div>
             {invalidDiscount && (
               <div style={{ color: '#fa8c16', fontSize: 11 }}>
                 ⚠️ Discount price must be lower than regular price
@@ -451,7 +457,7 @@ const AllProducts = () => {
             <Button type="primary" size="small" onClick={handleAdd}>
               Add Product
             </Button>
-          ) : null
+          ) : null  
         }
       >
         <div ref={tableContainerRef}>

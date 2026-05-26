@@ -55,14 +55,19 @@ export default function useOrders() {
       // reuse existing products API - keep consistent with current behavior
       const res = await getAllProducts(50, null);
       if (!res.success) throw new Error(res.message || 'Failed to fetch products');
-      const transformed = (res.products || []).map(p => ({
+      const transformed = (res.products || []).map((p) => ({
         id: p.id,
         name: p.name,
         price: p.price || 0,
-        stock: p.stock?.quantity || 0,
+        discountPrice: p.discountPrice || 0,
+        stock: p.stock || {},
         status: p.isActive ? 'active' : 'inactive',
-        category: p.category?.name || 'N/A',
-        sku: p.sku || `PRD-${p.id}`
+        isActive: p.isActive,
+        category: p.category || null,
+        sku: p.sku || `PRD-${p.id}`,
+        images: p.images || [],
+        unit: p.unit,
+        measureValue: p.measureValue,
       }));
       setProducts(transformed);
       return transformed;
@@ -75,9 +80,9 @@ export default function useOrders() {
     }
   }, []);
 
-  const createOrder = useCallback(async (userId, shippingAddress, items) => {
+  const createOrder = useCallback(async (userId, shippingAddress, items, orderType = null, paymentMethod = null) => {
     try {
-      const res = await createAdminOrder(userId, shippingAddress, items);
+      const res = await createAdminOrder(userId, shippingAddress, items, orderType, paymentMethod);
       if (res.success) {
         message.success(`Order ${res.order?.orderNumber || ''} created`);
         fetchOrders();

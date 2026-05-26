@@ -40,15 +40,17 @@ const Categories = () => {
 
   // Load categories on component mount
   useEffect(() => {
-    loadCategories();
-  }, []);
+    const timer = setTimeout(() => {
+      loadCategories(searchText);
+    }, 300);
 
+    return () => clearTimeout(timer);
+  }, [searchText]);
 
-
-  const loadCategories = async () => {
+  const loadCategories = async (query = '') => {
     try {
       setLoading(true);
-      const res = await getAllCategories();
+      const res = await getAllCategories(query || null);
 
       if (res.success) {
         setCategories(res.categories);

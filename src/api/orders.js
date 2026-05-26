@@ -21,10 +21,10 @@ export const getCustomers = async (search = null) => {
 // Get all products for manual order
 export const getProductsForOrder = async () => {
   try {
-    const data = await graphqlRequest(GRAPHQL_QUERIES.GET_PRODUCTS_SIMPLE);
+    const data = await graphqlRequest(GRAPHQL_QUERIES.GET_PRODUCTS_SIMPLE, { first: 5 });
     return {
       success: true,
-      products: data.products || []
+      products: data.products?.products || []
     };
   } catch (error) {
     return {
@@ -35,21 +35,25 @@ export const getProductsForOrder = async () => {
 };
 
 // Create admin order
-export const createAdminOrder = async (userId, shippingAddress, items) => {
+export const createAdminOrder = async (userId, shippingAddress, items, orderType = null, paymentMethod = null) => {
   try {
-    const data = await graphqlRequest(GRAPHQL_QUERIES.CREATE_ADMIN_ORDER, {
+    const variables = {
       userId: parseInt(userId, 10),
       shippingAddress,
-      items
-    });
-    
+      items: items,
+      ...(orderType ? { orderType } : {}),
+      ...(paymentMethod ? { paymentMethod } : {}),
+    };
+
+    const data = await graphqlRequest(GRAPHQL_QUERIES.CREATE_ADMIN_ORDER, variables);
+
     if (data && data.createAdminOrder) {
       return {
         success: true,
         order: data.createAdminOrder.order
       };
     }
-    
+
     return {
       success: false,
       message: 'Failed to create order'
@@ -63,11 +67,12 @@ export const createAdminOrder = async (userId, shippingAddress, items) => {
 };
 
 // Get all orders
-export const getAllOrders = async (orderFrom = null, query = null) => {
+export const getAllOrders = async (orderFrom = null, query = null, orderType = null) => {
   try {
     const variables = {
       ...(orderFrom ? { orderFrom } : {}),
-      ...(query ? { query } : {})
+      ...(query ? { query } : {}),
+      ...(orderType ? { orderType } : {})
     };
     const data = await graphqlRequest(GRAPHQL_QUERIES.GET_ALL_ORDERS, variables);
     return {
@@ -90,7 +95,7 @@ export const updateOrderStatus = async (orderId, status, note = "") => {
       status,
       note
     });
-    
+
     if (data && data.updateOrderStatus) {
       if (data.updateOrderStatus.success === false) {
         return {
@@ -103,7 +108,7 @@ export const updateOrderStatus = async (orderId, status, note = "") => {
         order: data.updateOrderStatus.order
       };
     }
-    
+
     return {
       success: false,
       message: 'Failed to update order status'

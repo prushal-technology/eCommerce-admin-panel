@@ -26,6 +26,7 @@ import {
 } from 'antd';
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { getAllStocks } from '../api/products';
 import ProductModal from '../components/modals/ProductModal';
 import InfoTooltip from '../components/ui/InfoTooltip';
 import useProducts from '../hooks/useProducts';
@@ -36,16 +37,15 @@ const { Option } = Select;
 const Stock = () => {
   const navigate = useNavigate();
   const {
-    products: stocks,
     categories,
     loadingProducts,
     actionLoading,
-    fetchProducts,
     fetchCategories,
     createProduct,
     addProductImage,
     updateProductStock,
   } = useProducts();
+  const [stockItems, setStockItems] = useState([]);
   const [searchText, setSearchText] = useState('');
   const [stockFilter, setStockFilter] = useState('all');
   const [isModalVisible, setIsModalVisible] = useState(false);
@@ -58,16 +58,42 @@ const Stock = () => {
   const [imageList, setImageList] = useState([]);
   const [productLoading, setProductLoading] = useState(false);
 
-  const loadStocks = async () => {
+  const loadStocks = async (query = '') => {
     try {
-      await fetchProducts(50);
+      const res = await getAllStocks(query || null);
+      if (res.success) {
+        const mapped = (res.allStocks || []).map(stock => ({
+          id: stock.id,
+          name: stock.product?.name || 'Unknown Product',
+          price: stock.product?.price,
+          stock: {
+            quantity: Number(stock.quantity || 0),
+            reservedQuantity: Number(stock.reservedQuantity || 0),
+            availableQuantity: Number(stock.availableQuantity || 0),
+            isOutOfStock: stock.isOutOfStock,
+          },
+          images: stock.product?.images || [],
+          isFeatured: false,
+          unit: stock.product?.unit || '',
+        }));
+        setStockItems(mapped);
+      } else {
+        message.error(res.message || 'Failed to load stock data');
+      }
     } catch (error) {
       message.error('An error occurred while fetching stock data.');
     }
   };
 
   useEffect(() => {
-    loadStocks();
+    const timer = setTimeout(() => {
+      loadStocks(searchText);
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [searchText]);
+
+  useEffect(() => {
     loadCategories();
   }, []);
 
@@ -182,7 +208,7 @@ const Stock = () => {
       const res = await updateProductStock(selectedStockItem.id, newStock);
 
       if (res) {
-        await fetchProducts(50);
+        await loadStocks(searchText);
         setIsModalVisible(false);
         form.resetFields();
       } else {
@@ -193,24 +219,21 @@ const Stock = () => {
     }
   };
 
-  const filteredStocks = stocks.filter(item => {
-    const matchesSearch = (item.name || '').toLowerCase().includes(searchText.toLowerCase());
-
+  const filteredStocks = stockItems.filter(item => {
     const qty = getStockQuantity(item);
-    if (stockFilter === 'all') return matchesSearch;
-    if (stockFilter === 'low') return matchesSearch && qty <= 15 && qty > 5;
-    if (stockFilter === 'critical') return matchesSearch && qty <= 5 && qty > 0;
-    if (stockFilter === 'out') return matchesSearch && qty === 0;
-
-    return matchesSearch;
+    if (stockFilter === 'all') return true;
+    if (stockFilter === 'low') return qty <= 15 && qty > 5;
+    if (stockFilter === 'critical') return qty <= 5 && qty > 0;
+    if (stockFilter === 'out') return qty === 0;
+    return true;
   });
 
   const stockStats = {
-    total: stocks.length,
-    normal: stocks.filter(p => getStockStatus(p).status === 'normal').length,
-    low: stocks.filter(p => getStockStatus(p).status === 'low').length,
-    critical: stocks.filter(p => getStockStatus(p).status === 'critical').length,
-    outOfStock: stocks.filter(p => getStockStatus(p).status === 'out_of_stock').length,
+    total: stockItems.length,
+    normal: stockItems.filter(p => getStockStatus(p).status === 'normal').length,
+    low: stockItems.filter(p => getStockStatus(p).status === 'low').length,
+    critical: stockItems.filter(p => getStockStatus(p).status === 'critical').length,
+    outOfStock: stockItems.filter(p => getStockStatus(p).status === 'out_of_stock').length,
   };
 
   const getImageUrl = (image) => {
