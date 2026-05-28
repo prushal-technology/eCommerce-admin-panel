@@ -1,5 +1,5 @@
 import { message } from 'antd';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { createAdminOrder, getAllOrders, getCustomers, updateOrderStatus } from '../api/orders';
 import { getAllProducts } from '../api/products';
 
@@ -84,7 +84,7 @@ export default function useOrders() {
     try {
       const res = await createAdminOrder(userId, shippingAddress, items, orderType, paymentMethod);
       if (res.success) {
-        message.success(`Order ${res.order?.orderNumber || ''} created`);
+        //message.success(`Order ${res.order?.orderNumber || ''} created`);
         fetchOrders();
       } else {
         message.error(res.message || 'Failed to create order');
@@ -113,9 +113,9 @@ export default function useOrders() {
     }
   }, []);
 
-  useEffect(() => {
-    fetchOrders();
-  }, [fetchOrders]);
+  // useEffect(() => {
+  //   fetchOrders();
+  // }, [fetchOrders]);
 
   return {
     orders,

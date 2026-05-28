@@ -1,71 +1,32 @@
 import { message } from 'antd';
 import { useCallback, useState } from 'react';
-import {
-    createBulkOrder,
-    deleteBulkOrder,
-    getBulkOrders,
-    getProductsForBulkOrder,
-    updateBulkOrder
-} from '../api/bulkOrders';
+import { getBulkOrders, updateBulkOrderStatus } from '../api/bulkOrders';
 
 export default function useBulkOrders() {
-  const [bulkOrders, setBulkOrders] = useState([]);
-  const [products, setProducts] = useState([]);
+  const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [loadingProducts, setLoadingProducts] = useState(false);
 
-  const fetchBulkOrders = useCallback(async (query = null) => {
+  const fetchOrders = useCallback(async (query = null) => {
     setLoading(true);
     try {
       const res = await getBulkOrders(query);
       if (res.success) {
-        setBulkOrders(res.bulkOrders || []);
+        setOrders(res.orders || []);
       } else {
         throw new Error(res.message || 'Failed to load bulk orders');
       }
     } catch (err) {
       message.error(err.message || 'Failed to load bulk orders');
-      setBulkOrders([]);
+      setOrders([]);
     } finally {
       setLoading(false);
     }
   }, []);
 
-  const fetchProducts = useCallback(async () => {
-    setLoadingProducts(true);
-    try {
-      const res = await getProductsForBulkOrder();
-      if (res.success) {
-        setProducts(res.products || []);
-      } else {
-        throw new Error(res.message || 'Failed to load products');
-      }
-    } catch (err) {
-      message.error(err.message || 'Failed to load products');
-      setProducts([]);
-    } finally {
-      setLoadingProducts(false);
-    }
-  }, []);
-
-  const createOrder = useCallback(async (details, items) => {
+  const updateOrder = useCallback(async (orderId, status, note = '') => {
     setLoading(true);
     try {
-      const res = await createBulkOrder(details, items);
-      if (!res.success) throw new Error(res.message || 'Failed to create bulk order');
-      return res;
-    } catch (err) {
-      message.error(err.message || 'Failed to create bulk order');
-      return { success: false, message: err.message };
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  const updateOrder = useCallback(async (bulkOrderId, status, bulkOrderDetails) => {
-    setLoading(true);
-    try {
-      const res = await updateBulkOrder(bulkOrderId, status, bulkOrderDetails);
+      const res = await updateBulkOrderStatus(orderId, status, note);
       if (!res.success) throw new Error(res.message || 'Failed to update bulk order');
       return res;
     } catch (err) {
@@ -76,29 +37,10 @@ export default function useBulkOrders() {
     }
   }, []);
 
-  const deleteOrder = useCallback(async (bulkOrderId) => {
-    setLoading(true);
-    try {
-      const res = await deleteBulkOrder(bulkOrderId);
-      if (!res.success) throw new Error(res.message || 'Failed to delete bulk order');
-      return res;
-    } catch (err) {
-      message.error(err.message || 'Failed to delete bulk order');
-      return { success: false, message: err.message };
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
   return {
-    bulkOrders,
-    products,
+    orders,
     loading,
-    loadingProducts,
-    fetchBulkOrders,
-    fetchProducts,
-    createOrder,
+    fetchOrders,
     updateOrder,
-    deleteOrder,
   };
 }

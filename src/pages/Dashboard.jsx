@@ -55,33 +55,116 @@ const Dashboard = () => {
   const formatCurrency = (val) =>
     `₹${Number(val || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}`;
 
+  const skeletonRows = Array.from({ length: 5 }).map((_, index) => ({
+    id: `skeleton-${index}`,
+    isSkeleton: true,
+  }));
+
   const recentOrderColumns = [
     {
       title: 'Order #',
       dataIndex: 'orderNumber',
       key: 'orderNumber',
-      render: (val) => <span className="fw-bold">#{val}</span>,
+      render: (val, record) => {
+
+        if (record.isSkeleton) {
+          return (
+            <Skeleton.Input
+              active
+              size="small"
+              style={{
+                width: 90,
+                height: 20,
+                borderRadius: 6
+              }}
+            />
+          );
+        }
+
+        return (
+          <span className="fw-bold">
+            #{val}
+          </span>
+        );
+      },
     },
+
     {
       title: 'Customer',
       dataIndex: 'customerName',
       key: 'customerName',
+      render: (val, record) => {
+
+        if (record.isSkeleton) {
+          return (
+            <Skeleton.Input
+              active
+              size="small"
+              style={{
+                width: 120,
+                height: 20,
+                borderRadius: 6
+              }}
+            />
+          );
+        }
+
+        return val;
+      },
     },
+
     {
       title: 'Status',
       dataIndex: 'status',
       key: 'status',
-      render: (status) => (
-        <Tag color={getStatusColor(status)}>
-          {(status || '—').toUpperCase()}
-        </Tag>
-      ),
+      render: (status, record) => {
+
+        if (record.isSkeleton) {
+          return (
+            <Skeleton.Button
+              active
+              size="small"
+              style={{
+                width: 80,
+                height: 24,
+                borderRadius: 20
+              }}
+            />
+          );
+        }
+
+        return (
+          <Tag color={getStatusColor(status)}>
+            {(status || '—').toUpperCase()}
+          </Tag>
+        );
+      },
     },
+
     {
       title: 'Date',
       dataIndex: 'createdAt',
       key: 'createdAt',
-      render: (val) => val ? new Date(val).toLocaleDateString('en-IN') : '—',
+      render: (val, record) => {
+
+        if (record.isSkeleton) {
+          return (
+            <Skeleton.Input
+              active
+              size="small"
+              style={{
+                width: 100,
+                height: 20,
+                borderRadius: 6
+              }}
+            />
+          );
+        }
+
+        return val
+          ? new Date(val).toLocaleDateString('en-IN')
+          : '—';
+      },
     },
   ];
 
@@ -90,32 +173,139 @@ const Dashboard = () => {
       title: 'Product',
       dataIndex: 'name',
       key: 'name',
-      render: (val) => <span className="fw-bold">{val}</span>,
+      render: (val, record) => {
+
+        if (record.isSkeleton) {
+          return (
+            <Skeleton.Input
+              active
+              size="small"
+              style={{
+                width: 140,
+                height: 20,
+                borderRadius: 6
+              }}
+            />
+          );
+        }
+
+        return (
+          <span className="fw-bold">
+            {val}
+          </span>
+        );
+      },
     },
+
     {
       title: 'Price',
       dataIndex: 'price',
       key: 'price',
-      render: (val) => formatCurrency(val),
+      render: (val, record) => {
+
+        if (record.isSkeleton) {
+          return (
+            <Skeleton.Input
+              active
+              size="small"
+              style={{
+                width: 90,
+                height: 20,
+                borderRadius: 6
+              }}
+            />
+          );
+        }
+
+        return formatCurrency(val);
+      },
     },
+
     {
       title: 'Stock',
       dataIndex: 'stock',
       key: 'stock',
-      render: (qty) => (
-        <Tag color={qty === 0 ? 'red' : qty < 10 ? 'orange' : 'green'}>
-          {qty} units
-        </Tag>
-      ),
+      render: (qty, record) => {
+
+        if (record.isSkeleton) {
+          return (
+            <Skeleton.Button
+              active
+              size="small"
+              style={{
+                width: 85,
+                height: 24,
+                borderRadius: 20
+              }}
+            />
+          );
+        }
+
+        return (
+          <Tag
+            color={
+              qty === 0
+                ? 'red'
+                : qty < 10
+                  ? 'orange'
+                  : 'green'
+            }
+          >
+            {qty} units
+          </Tag>
+        );
+      },
     },
+
     {
       title: 'Sold',
       dataIndex: 'totalSold',
       key: 'totalSold',
-      render: (val) => <span>{val}</span>,
+      render: (val, record) => {
+
+        if (record.isSkeleton) {
+          return (
+            <Skeleton.Input
+              active
+              size="small"
+              style={{
+                width: 50,
+                height: 20,
+                borderRadius: 6
+              }}
+            />
+          );
+        }
+
+        return <span>{val}</span>;
+      },
     },
   ];
-
+  const statisticFormatter = (value) => (
+    loading ? (
+      <div
+        style={{
+          width: '100%',
+          display: 'flex',
+          alignItems: 'center'
+        }}
+      >
+        <Skeleton.Input
+          active
+          size="small"
+          style={{
+            width: '60%',
+            minWidth: 50,
+            maxWidth: 90,
+            height: 22,
+            borderRadius: 6
+          }}
+        />
+      </div>
+    ) : (
+      value
+    )
+  );
   return (
     <div>
       <Title level={4} style={{ marginBottom: 20 }}>Dashboard</Title>
@@ -123,18 +313,17 @@ const Dashboard = () => {
       {/* ── STAT CARDS ─────────────────────────────── */}
       <Row gutter={[16, 16]} style={{ marginBottom: 16 }}>
         <Col xs={24} sm={12} lg={6}>
-          <Card 
-            hoverable 
-            onClick={() => navigate('/orders')}
+          <Card
+            hoverable
+            onClick={() => navigate('/orders/all')}
           >
-            {loading ? <Skeleton active paragraph={{ rows: 1 }} /> : (
-              <Statistic
-                title="Orders Today"
-                value={stats?.totalOrdersToday ?? 0}
-                prefix={<ShoppingCartOutlined />}
-                valueStyle={{ color: '#1890ff' }}
-              />
-            )}
+            <Statistic
+              title="Orders Today"
+              value={loading ? 0 : stats?.totalOrdersToday ?? 0}
+              prefix={!loading ? <ShoppingCartOutlined /> : null}
+              valueStyle={{ color: '#1890ff' }}
+              formatter={statisticFormatter}
+            />
             {!loading && (
               <Text className="text-muted" style={{ fontSize: 12 }}>
                 This month: {stats?.totalOrdersMonth ?? 0}
@@ -145,46 +334,45 @@ const Dashboard = () => {
 
         <Col xs={24} sm={12} lg={6}>
           <Card>
-            {loading ? <Skeleton active paragraph={{ rows: 1 }} /> : (
-              <Statistic
-                title="Total Revenue"
-                value={stats?.totalRevenue ?? 0}
-                //prefix={<DollarCircleOutlined />}
-                prefix="₹"
-                precision={2}
-                valueStyle={{ color: '#3f8600' }}
-                formatter={(v) => `${Number(v).toLocaleString('en-IN')}`}
-              />
-            )}
+            <Statistic
+              title="Total Revenue"
+              value={loading ? 0 : stats?.totalRevenue ?? 0}
+              prefix={!loading ? "₹" : null}
+              precision={2}
+              valueStyle={{ color: '#3f8600' }}
+              formatter={(v) =>
+                loading
+                  ? statisticFormatter(v)
+                  : `${Number(v).toLocaleString('en-IN')}`
+              }
+            />
           </Card>
         </Col>
 
         <Col xs={24} sm={12} lg={6}>
-          <Card 
-            hoverable 
-            onClick={() => navigate('/products')}
+          <Card
+            hoverable
+            onClick={() => navigate('/products/all')}
           >
-            {loading ? <Skeleton active paragraph={{ rows: 1 }} /> : (
-              <Statistic
-                title="Total Products"
-                value={stats?.totalProducts ?? 0}
-                prefix={<ProductOutlined />}
-                valueStyle={{ color: '#faad14' }}
-              />
-            )}
+            <Statistic
+              title="Total Products"
+              value={loading ? 0 : stats?.totalProducts ?? 0}
+              prefix={!loading ? <ProductOutlined /> : null}
+              valueStyle={{ color: '#faad14' }}
+              formatter={statisticFormatter}
+            />
           </Card>
         </Col>
 
         <Col xs={24} sm={12} lg={6}>
           <Card>
-            {loading ? <Skeleton active paragraph={{ rows: 1 }} /> : (
-              <Statistic
-                title="Total Customers"
-                value={stats?.totalCustomers ?? 0}
-                prefix={<UserOutlined />}
-                valueStyle={{ color: '#722ed1' }}
-              />
-            )}
+            <Statistic
+              title="Total Customers"
+              value={loading ? 0 : stats?.totalCustomers ?? 0}
+              prefix={!loading ? <UserOutlined /> : null}
+              valueStyle={{ color: '#722ed1' }}
+              formatter={statisticFormatter}
+            />
           </Card>
         </Col>
       </Row>
@@ -193,26 +381,24 @@ const Dashboard = () => {
       <Row gutter={[16, 16]} style={{ marginBottom: 16 }}>
         <Col xs={24} sm={12}>
           <Card>
-            {loading ? <Skeleton active paragraph={{ rows: 1 }} /> : (
-              <Statistic
-                title="Pending Orders"
-                value={stats?.pendingOrders ?? 0}
-                prefix={<ExclamationCircleOutlined />}
-                valueStyle={{ color: '#fa8c16' }}
-              />
-            )}
+            <Statistic
+              title="Pending Orders"
+              value={loading ? 0 : stats?.pendingOrders ?? 0}
+              prefix={!loading ? <ExclamationCircleOutlined /> : null}
+              valueStyle={{ color: '#fa8c16' }}
+              formatter={statisticFormatter}
+            />
           </Card>
         </Col>
         <Col xs={24} sm={12}>
           <Card>
-            {loading ? <Skeleton active paragraph={{ rows: 1 }} /> : (
-              <Statistic
-                title={<InfoTooltip title="Low Stock Products" text="Products with quantity between 6 and 15" />}
-                value={stats?.lowStockProducts ?? 0}
-                prefix={<WarningOutlined />}
-                valueStyle={{ color: '#ff4d4f' }}
-              />
-            )}
+            <Statistic
+              title={<InfoTooltip title="Low Stock Products" text="Products with quantity between 6 and 15" />}
+              value={loading ? 0 : stats?.lowStockProducts ?? 0}
+              prefix={!loading ? <WarningOutlined /> : null}
+              valueStyle={{ color: '#ff4d4f' }}
+              formatter={statisticFormatter}
+            />
           </Card>
         </Col>
       </Row>
@@ -221,7 +407,29 @@ const Dashboard = () => {
       <Row gutter={[16, 16]} style={{ marginBottom: 16 }}>
         <Col xs={24} lg={16}>
           <Card title={<InfoTooltip title="Sales Trend" text="Monthly sales revenue vs number of orders" />} style={{ height: 380 }}>
-            {loading ? <Skeleton active /> : (
+            {loading ? (
+              <div
+                style={{
+                  height: 290,
+                  display: 'flex',
+                  alignItems: 'flex-end',
+                  gap: 12,
+                  padding: 20
+                }}
+              >
+                {[40, 80, 60, 120, 90, 150].map((h, i) => (
+                  <Skeleton.Node
+                    key={i}
+                    active
+                    style={{
+                      width: 40,
+                      height: h,
+                      borderRadius: 6
+                    }}
+                  />
+                ))}
+              </div>
+            ) : (
               <ResponsiveContainer width="100%" height={290}>
                 <LineChart data={salesTrend}>
                   <CartesianGrid strokeDasharray="3 3" />
@@ -239,7 +447,29 @@ const Dashboard = () => {
         </Col>
         <Col xs={24} lg={8}>
           <Card title={<InfoTooltip title="Orders Trend" text="Monthly order volume distribution" />} style={{ height: 380 }}>
-            {loading ? <Skeleton active /> : (
+            {loading ? (
+              <div
+                style={{
+                  height: 290,
+                  display: 'flex',
+                  alignItems: 'flex-end',
+                  gap: 12,
+                  padding: 20
+                }}
+              >
+                {[40, 80, 60, 120, 90, 150].map((h, i) => (
+                  <Skeleton.Node
+                    key={i}
+                    active
+                    style={{
+                      width: 40,
+                      height: h,
+                      borderRadius: 6
+                    }}
+                  />
+                ))}
+              </div>
+            ) : (
               <ResponsiveContainer width="100%" height={290}>
                 <BarChart data={salesTrend}>
                   <CartesianGrid strokeDasharray="3 3" />
@@ -258,49 +488,168 @@ const Dashboard = () => {
       <Row gutter={[16, 16]} style={{ marginBottom: 16 }}>
         <Col xs={24} lg={14}>
           <Card title="Top Products">
-            {loading ? <Skeleton active /> : (
-              <Table
-                rowKey="id"
-                dataSource={topProducts}
-                columns={topProductColumns}
-                pagination={false}
-                size="small"
-              />
-            )}
+
+            <Table
+              rowKey="id"
+              dataSource={loading ? skeletonRows : topProducts}
+              columns={topProductColumns}
+              pagination={false}
+              size="small"
+            />
+
           </Card>
         </Col>
         <Col xs={24} lg={10}>
-          <Card title="Recently Added Products" style={{ height: '100%' }}>
-            {loading ? <Skeleton active /> : (
-              <div style={{ maxHeight: 300, overflowY: 'auto' }}>
-                {recentProducts.map(product => (
+          <Card
+            title="Recently Added Products"
+            style={{ height: '100%' }}
+          >
+            <div
+              style={{
+                maxHeight: 300,
+                overflowY: 'auto'
+              }}
+            >
+
+              {loading ? (
+
+                Array.from({ length: 5 }).map((_, index) => (
                   <div
-                    key={product.id}
+                    key={index}
                     style={{
                       display: 'flex',
                       justifyContent: 'space-between',
                       alignItems: 'center',
-                      padding: '8px 0',
+                      padding: '10px 0',
                       borderBottom: '1px solid #f0f0f0',
+                      gap: 12
                     }}
                   >
-                    <div>
-                      <div className="fw-bold" style={{ fontSize: 13 }}>{product.name}</div>
-                      <div className="text-muted" style={{ fontSize: 12 }}>
-                        Stock:&nbsp;
-                        <Tag color={product.stock === 0 ? 'red' : product.stock < 10 ? 'orange' : 'green'} style={{ fontSize: 11 }}>
-                          {product.stock} units
-                        </Tag>
+
+                    {/* Left Side */}
+                    <div style={{ flex: 1 }}>
+
+                      <Skeleton.Input
+                        active
+                        size="small"
+                        style={{
+                          width: '70%',
+                          minWidth: 100,
+                          maxWidth: 180,
+                          height: 20,
+                          borderRadius: 6,
+                          marginBottom: 8
+                        }}
+                      />
+
+                      <div
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 8
+                        }}
+                      >
+
+                        <Skeleton.Input
+                          active
+                          size="small"
+                          style={{
+                            width: 40,
+                            height: 16,
+                            borderRadius: 6
+                          }}
+                        />
+
+                        <Skeleton.Button
+                          active
+                          size="small"
+                          style={{
+                            width: 80,
+                            height: 22,
+                            borderRadius: 20
+                          }}
+                        />
+
                       </div>
                     </div>
-                    <div className="fw-bold" style={{ color: '#1890ff', fontSize: 13 }}>
-                      {formatCurrency(product.price)}
-                    </div>
+
+                    {/* Right Side Price */}
+                    <Skeleton.Input
+                      active
+                      size="small"
+                      style={{
+                        width: 70,
+                        height: 20,
+                        borderRadius: 6
+                      }}
+                    />
+
                   </div>
-                ))}
-                {recentProducts.length === 0 && <Text className="text-muted">No products yet.</Text>}
-              </div>
-            )}
+                ))
+
+              ) : (
+
+                <>
+                  {recentProducts.map(product => (
+                    <div
+                      key={product.id}
+                      style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        padding: '8px 0',
+                        borderBottom: '1px solid #f0f0f0',
+                      }}
+                    >
+                      <div>
+                        <div
+                          className="fw-bold"
+                          style={{ fontSize: 13 }}
+                        >
+                          {product.name}
+                        </div>
+
+                        <div
+                          className="text-muted"
+                          style={{ fontSize: 12 }}
+                        >
+                          Stock:&nbsp;
+
+                          <Tag
+                            color={
+                              product.stock === 0
+                                ? 'red'
+                                : product.stock < 10
+                                  ? 'orange'
+                                  : 'green'
+                            }
+                            style={{ fontSize: 11 }}
+                          >
+                            {product.stock} units
+                          </Tag>
+                        </div>
+                      </div>
+
+                      <div
+                        className="fw-bold"
+                        style={{
+                          color: '#1890ff',
+                          fontSize: 13
+                        }}
+                      >
+                        {formatCurrency(product.price)}
+                      </div>
+                    </div>
+                  ))}
+
+                  {recentProducts.length === 0 && ( 
+                    <Text className="text-muted">
+                      No products yet.
+                    </Text>
+                  )}
+                </>
+              )}
+            </div>
           </Card>
         </Col>
       </Row>
@@ -309,16 +658,16 @@ const Dashboard = () => {
       <Row gutter={[16, 16]}>
         <Col xs={24}>
           <Card title="Recent Orders">
-            {loading ? <Skeleton active /> : (
-              <Table
-                rowKey="id"
-                dataSource={recentOrders}
-                columns={recentOrderColumns}
-                pagination={false}
-                size="small"
-                locale={{ emptyText: 'No recent orders' }}
-              />
-            )}
+
+            <Table
+              rowKey="id"
+              dataSource={loading ? skeletonRows : recentOrders}
+              columns={recentOrderColumns}
+              pagination={false}
+              size="small"
+              locale={{ emptyText: 'No recent orders' }}
+            />
+
           </Card>
         </Col>
       </Row>

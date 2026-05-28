@@ -57,7 +57,7 @@ export const createProduct = async (productData) => {
       return {
         success: true,
         product: data.createProduct.product,
-        message: 'Product created successfully'
+        //message: 'Product created successfully'
       };
     }
     
@@ -269,7 +269,7 @@ export const addProductImage = async (productId, imageFile, sortOrder = 1) => {
       return {
         success: true,
         product: data.addProductImage.product,
-        message: 'Image added successfully'
+        //message: 'Image added successfully'
       };
     }
     

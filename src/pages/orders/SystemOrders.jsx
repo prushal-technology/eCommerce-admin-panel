@@ -27,7 +27,7 @@ const SystemOrders = () => {
 
   useEffect(() => {
     const timeout = setTimeout(() => {
-      fetchOrders(null, searchText || null);
+      fetchOrders('admin_panel', searchText || null);
     }, 300);
 
     return () => clearTimeout(timeout);
@@ -60,7 +60,7 @@ const SystemOrders = () => {
     try {
       const res = await changeOrderStatus(selectedOrder.id, newStatus, statusNote);
       if (res.success) {
-        fetchOrders();
+        fetchOrders('admin_panel');
         setDetailModalVisible(false);
       }
     } catch (error) {
@@ -90,7 +90,7 @@ const SystemOrders = () => {
 
   return (
     <div>
-      <SystemOrdersStats stats={orderStats} />
+      <SystemOrdersStats stats={orderStats} loading={loading} />
 
       <Card
         title="System Orders (Panel)"
@@ -143,7 +143,7 @@ const SystemOrders = () => {
         onClose={() => setManualOrderVisible(false)}
         onOrderCreated={() => {
           setManualOrderVisible(false);
-          fetchOrders();
+          fetchOrders('admin_panel');
         }}
       />
     </div>

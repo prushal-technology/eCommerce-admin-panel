@@ -227,7 +227,7 @@ const UserOrders = () => {
   return (
     <div>
       {/* Order Statistics */}
-      <SystemOrdersStats stats={orderStats} />
+      <SystemOrdersStats stats={orderStats} loading={loading}/>
 
       <Card
         title="User Orders (Storefront)"

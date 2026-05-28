@@ -1,10 +1,9 @@
 import { DeleteOutlined, EditOutlined, PlusOutlined } from '@ant-design/icons';
-import { Button, Card, Form, Input, message, Modal, Popconfirm, Select, Space, Spin, Table } from 'antd';
-import { useEffect, useRef, useState } from 'react';
+import { Button, Card, Form, Input, message, Modal, Popconfirm, Skeleton, Space, Table } from 'antd';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import AddCustomerModal from '../components/modals/AddCustomerModal';
 
 const { Search } = Input;
-const { Option } = Select;
 
 const Customers = () => {
   const [isModalVisible, setIsModalVisible] = useState(false);
@@ -20,43 +19,96 @@ const Customers = () => {
   const [nextCursor, setNextCursor] = useState(null);
   const [hasMore, setHasMore] = useState(false);
   const [fetchingMore, setFetchingMore] = useState(false);
-  const isFirstRender = useRef(true);
+  const initialFetchDone = useRef(false);
+const skipSearchEffect = useRef(true);
 
-  // Load customers on mount
-  useEffect(() => {
+
+// Initial Load
+useEffect(() => {
+
+  if (initialFetchDone.current) return;
+
+  initialFetchDone.current = true;
+
+  loadCustomers(null, true);
+
+}, []);
+
+
+// Search Effect
+useEffect(() => {
+
+  // Skip first render
+  if (skipSearchEffect.current) {
+
+    skipSearchEffect.current = false;
+
+    return;
+  }
+
+  const timer = setTimeout(() => {
+
     loadCustomers(null, true);
-  }, []);
 
-  // Re-fetch customers when search changes (with debounce)
-  useEffect(() => {
-    if (isFirstRender.current) {
-      isFirstRender.current = false;
-      return;
+  }, 500);
+
+  return () => clearTimeout(timer);
+
+}, [searchText]);
+
+
+// Infinite Scroll
+useEffect(() => {
+
+  const tableBody =
+    tableContainerRef.current?.querySelector(
+      '.ant-table-body'
+    );
+
+  if (!tableBody) return;
+
+  const handleScroll = (e) => {
+
+    const {
+      scrollTop,
+      scrollHeight,
+      clientHeight
+    } = e.target;
+
+    const reachedBottom =
+      scrollHeight - scrollTop <= clientHeight + 50;
+
+    if (
+      reachedBottom &&
+      hasMore &&
+      nextCursor &&
+      !loading &&
+      !fetchingMore
+    ) {
+
+      loadCustomers(nextCursor, false);
     }
-    const timer = setTimeout(() => {
-      loadCustomers(null, true);
-    }, 500);
-    return () => clearTimeout(timer);
-  }, [searchText]);
+  };
 
-  // Infinite scroll handler
-  useEffect(() => {
-    const tableBody = tableContainerRef.current?.querySelector('.ant-table-body');
-    if (tableBody) {
-      const handleScroll = (e) => {
-        const { scrollTop, scrollHeight, clientHeight } = e.target;
-        if (scrollHeight - scrollTop <= clientHeight + 50) {
-          if (hasMore && !loading && !fetchingMore) {
-            loadCustomers(nextCursor, false);
-          }
-        }
-      };
+  tableBody.addEventListener(
+    'scroll',
+    handleScroll
+  );
 
-      tableBody.addEventListener('scroll', handleScroll);
-      return () => tableBody.removeEventListener('scroll', handleScroll);
-    }
-  }, [hasMore, loading, fetchingMore, nextCursor]);
+  return () => {
 
+    tableBody.removeEventListener(
+      'scroll',
+      handleScroll
+    );
+  };
+
+}, [
+  hasMore,
+  nextCursor,
+  loading,
+  fetchingMore
+]);
   const loadCustomers = async (cursor = null, isNewSearch = false) => {
     if (isNewSearch) {
       setLoading(true);
@@ -67,11 +119,12 @@ const Customers = () => {
 
     try {
       const search = searchText ? searchText : null;
-      
+
       // Build query with optional search and cursor
       let queryArgs = 'first: 10';
       if (cursor) queryArgs += `, after: "${cursor}"`;
-      if (search) queryArgs += `, search: "${search}"`;
+      if (search) {queryArgs += `, search: ${JSON.stringify(search)}`;
+    }
 
       const response = await fetch(import.meta.env.VITE_GRAPHQL_URI || 'http://192.168.1.40:8000/graphql/', {
         method: 'POST',
@@ -104,7 +157,7 @@ const Customers = () => {
       });
 
       const result = await response.json();
-      
+
       if (result.errors) {
         throw new Error(result.errors[0].message);
       }
@@ -130,7 +183,7 @@ const Customers = () => {
           return [...filteredPrev, ...transformedCustomers];
         });
       }
-      
+
       setNextCursor(result.data?.customers?.nextCursor);
       setHasMore(result.data?.customers?.hasMore);
     } catch (error) {
@@ -142,66 +195,202 @@ const Customers = () => {
     }
   };
 
+  const skeletonRows = useMemo(
+  () =>
+    Array.from({ length: 8 }).map((_, index) => ({
+      id: `skeleton-${index}`,
+      isSkeleton: true,
+    })),
+  []
+);
+
   const columns = [
     {
       title: 'ID',
       dataIndex: 'id',
       key: 'id',
       width: 80,
+
+      render: (id, record) => {
+
+        if (record.isSkeleton) {
+          return (
+            <Skeleton.Input
+              active
+              size="small"
+              style={{
+                width: 40,
+                height: 18,
+                borderRadius: 6
+              }}
+            />
+          );
+        }
+
+        return id;
+      },
     },
+
     {
       title: 'Customer',
       dataIndex: 'fullName',
       key: 'fullName',
-      render: (text) => (
-        <div style={{ fontWeight: 500 }}>{text}</div>
-      ),
+
+      render: (text, record) => {
+
+        if (record.isSkeleton) {
+          return (
+            <div>
+
+              <Skeleton.Input
+                active
+                size="small"
+                style={{
+                  width: 140,
+                  height: 18,
+                  borderRadius: 6,
+                  marginBottom: 6
+                }}
+              />
+
+            </div>
+          );
+        }
+
+        return (
+          <div style={{ fontWeight: 500 }}>
+            {text}
+          </div>
+        );
+      },
     },
+
     {
       title: 'Phone',
       dataIndex: 'phone',
       key: 'phone',
-      render: (phone) => (
-        <span style={{ color: phone ? '#1890ff' : '#999' }}>
-          {phone || 'N/A'}
-        </span>
-      ),
+
+      render: (phone, record) => {
+
+        if (record.isSkeleton) {
+          return (
+            <Skeleton.Input
+              active
+              size="small"
+              style={{
+                width: 110,
+                height: 18,
+                borderRadius: 6
+              }}
+            />
+          );
+        }
+
+        return (
+          <span
+            style={{
+              color: phone
+                ? '#1890ff'
+                : '#999'
+            }}
+          >
+            {phone || 'N/A'}
+          </span>
+        );
+      },
     },
+
     {
       title: 'Email',
       dataIndex: 'email',
       key: 'email',
-      render: (email) => (
-        <span style={{ color: email === 'N/A' ? '#999' : '#1890ff' }}>
-          {email}
-        </span>
-      ),
+
+      render: (email, record) => {
+
+        if (record.isSkeleton) {
+          return (
+            <Skeleton.Input
+              active
+              size="small"
+              style={{
+                width: 180,
+                height: 18,
+                borderRadius: 6
+              }}
+            />
+          );
+        }
+
+        return (
+          <span
+            style={{
+              color:
+                email === 'N/A'
+                  ? '#999'
+                  : '#1890ff'
+            }}
+          >
+            {email}
+          </span>
+        );
+      },
     },
+
     {
       title: 'Actions',
       key: 'actions',
       width: 100,
-      render: (_, record) => (
-        <Space size="small">
-          <Button
-            size="small"
-            icon={<EditOutlined />}
-            onClick={() => handleEdit(record)}
-          />
-          <Popconfirm
-            title="Delete Customer"
-            description="Are you sure you want to delete this customer?"
-            onConfirm={() => handleDelete(record.id)}
-            okText="Yes"
-            cancelText="No"
-          >
-            <Button size="small" danger icon={<DeleteOutlined />} />
-          </Popconfirm>
-        </Space>
-      ),
+
+      render: (_, record) => {
+
+        if (record.isSkeleton) {
+          return (
+            <Space size="small">
+
+              <Skeleton.Button
+                active
+                size="small"
+                shape="circle"
+              />
+
+              <Skeleton.Button
+                active
+                size="small"
+                shape="circle"
+              />
+
+            </Space>
+          );
+        }
+
+        return (
+          <Space size="small">
+
+            <Button
+              size="small"
+              icon={<EditOutlined />}
+              onClick={() => handleEdit(record)}
+            />
+
+            <Popconfirm
+              title="Delete Customer"
+              description="Are you sure you want to delete this customer?"
+              onConfirm={() => handleDelete(record.id)}
+              okText="Yes"
+              cancelText="No"
+            >
+              <Button
+                size="small"
+                danger
+                icon={<DeleteOutlined />}
+              />
+            </Popconfirm>
+
+          </Space>
+        );
+      },
     },
   ];
-
   const handleAdd = () => {
     setEditingCustomer(null);
     form.resetFields();
@@ -240,7 +429,7 @@ const Customers = () => {
       });
 
       const result = await response.json();
-      
+
       if (result.errors) {
         throw new Error(result.errors[0].message);
       }
@@ -263,7 +452,7 @@ const Customers = () => {
     try {
       if (editingCustomer) {
         // Update existing customer via GraphQL
-        const response = await fetch(import.meta.env.VITE_GRAPHQL_URI , {
+        const response = await fetch(import.meta.env.VITE_GRAPHQL_URI, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -290,7 +479,7 @@ const Customers = () => {
         });
 
         const result = await response.json();
-        
+
         if (result.errors) {
           throw new Error(result.errors[0].message);
         }
@@ -299,12 +488,12 @@ const Customers = () => {
           // Update local state
           const updatedCustomers = customers.map(customer =>
             customer.id === editingCustomer.id
-              ? { 
-                  ...customer, 
-                  firstName: values.firstName,
-                  lastName: values.lastName,
-                  fullName: `${values.firstName || ''} ${values.lastName || ''}`.trim() || 'N/A'
-                }
+              ? {
+                ...customer,
+                firstName: values.firstName,
+                lastName: values.lastName,
+                fullName: `${values.firstName || ''} ${values.lastName || ''}`.trim() || 'N/A'
+              }
               : customer
           );
           setCustomers(updatedCustomers);
@@ -332,11 +521,11 @@ const Customers = () => {
   };
 
   return (
-    <Card 
+    <Card
       title="Customers Management"
       extra={
         <Space>
-          
+
           <Button
             type="primary"
             size="small"
@@ -348,12 +537,12 @@ const Customers = () => {
         </Space>
       }
     >
-      
+
 
       <div style={{ marginBottom: 16 }}>
         <Search
-        size="small"
-        className="small-search"
+          size="small"
+          className="small-search"
           placeholder="Search customers by name or email..."
           allowClear
           style={{ width: 250 }}
@@ -365,32 +554,57 @@ const Customers = () => {
       <div ref={tableContainerRef}>
         <Table
           columns={columns}
-          dataSource={customers}
+          dataSource={
+            loading
+              ? skeletonRows
+              : customers
+          }
           rowKey="id"
-          loading={{
-            spinning: loading || fetchingMore,
-            indicator: <Spin size="large" />,
-            tip: loading ? "Loading customers..." : "Loading more customers..."
-          }}
           pagination={false}
           scroll={{ x: 'max-content', y: 500 }}
           locale={{
-            emptyText: loading ? '' : 'No customers found'
+            emptyText: 'No customers found'
           }}
         />
-        
-        {/* No more data indicator at bottom */}
-        {!hasMore && customers.length > 0 && !loading && !fetchingMore && (
-          <div style={{ 
-            textAlign: "center", 
-            padding: "10px",
-            color: '#999',
-            fontSize: '12px',
-            borderTop: '1px solid #f0f0f0'
-          }}>
-            No more customers to load
+        {fetchingMore && (
+          <div
+            style={{
+              padding: 16,
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 12
+            }}
+          >
+            {Array.from({ length: 3 }).map((_, index) => (
+              <Skeleton.Input
+                key={index}
+                active
+                size="small"
+                style={{
+                  width: '98%',
+                  height: 32,
+                  borderRadius: 6
+                }}
+              />
+            ))}
           </div>
         )}
+
+        {/* No more data indicator at bottom */}
+        {!hasMore &&
+          customers.length > 0 &&
+          !loading &&
+          !fetchingMore && (
+            <div style={{
+              textAlign: "center",
+              padding: "10px",
+              color: '#999',
+              fontSize: '12px',
+              borderTop: '1px solid #f0f0f0'
+            }}>
+              No more customers to load
+            </div>
+          )}
       </div>
 
       <Modal

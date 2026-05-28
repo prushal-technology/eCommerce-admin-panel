@@ -5,77 +5,122 @@ import {
   ShoppingCartOutlined,
   TruckOutlined
 } from '@ant-design/icons';
-import { Card, Col, Row, Statistic } from 'antd';
+import { Card, Col, Row, Skeleton, Statistic } from 'antd';
 
-const SystemOrdersStats = ({ stats }) => (
-  <Row gutter={16} style={{ marginBottom: 16 }}>
-    <Col xs={24} sm={12} md={4}>
-      <Card>
-        <Statistic
-          title="Total Orders"
-          value={stats.total}
-          prefix={<ShoppingCartOutlined />}
-        />
-      </Card>
-    </Col>
+const SystemOrdersStats = ({ stats, loading }) => {
 
-    <Col xs={24} sm={12} md={4}>
-      <Card>
-        <Statistic
-          title="Pending"
-          value={stats.pending}
-          valueStyle={{ color: '#faad14' }}
-          prefix={<ClockCircleOutlined />}
-        />
-      </Card>
-    </Col>
+  const renderStatistic = (
+    title,
+    value,
+    prefix,
+    valueStyle = {}
+  ) => {
+    return (
+      <Statistic
+        title={title}
+        value={loading ? 0 : value}
+        prefix={!loading ? prefix : null}
+        valueStyle={valueStyle}
+        precision={title === "Revenue" ? 2 : undefined}
+        formatter={(val) =>
+          loading ? (
+            <div
+              style={{
+                width: '100%',
+                display: 'flex',
+                alignItems: 'center'
+              }}
+            >
+              <Skeleton.Input
+                active
+                size="small"
+                style={{
+                  width: '60%',
+                  minWidth: 50,
+                  maxWidth: 80,
+                  height: 22,
 
-    <Col xs={24} sm={12} md={4}>
-      <Card>
-        <Statistic
-          title="Dispatched"
-          value={stats.dispatched}
-          valueStyle={{ color: '#1890ff' }}
-          prefix={<TruckOutlined />}
-        />
-      </Card>
-    </Col>
+                }}
+              />
+            </div>
+          ) : (
+            val
+          )
+        }
+      />
+    );
+  };
 
-    <Col xs={24} sm={12} md={4}>
-      <Card>
-        <Statistic
-          title="Delivered"
-          value={stats.delivered}
-          valueStyle={{ color: '#52c41a' }}
-          prefix={<CheckCircleOutlined />}
-        />
-      </Card>
-    </Col>
+  return (
+    <Row gutter={16} style={{ marginBottom: 16 }}>
 
-    <Col xs={24} sm={12} md={4}>
-      <Card>
-        <Statistic
-          title="Cancelled"
-          value={stats.cancelled}
-          valueStyle={{ color: '#ff4d4f' }}
-          prefix={<CloseCircleOutlined />}
-        />
-      </Card>
-    </Col>
+      <Col xs={24} sm={12} md={4}>
+        <Card>
+          {renderStatistic(
+            "Total Orders",
+            stats.total,
+            <ShoppingCartOutlined />
+          )}
+        </Card>
+      </Col>
 
-    <Col xs={24} sm={12} md={4}>
-      <Card>
-        <Statistic
-          title="Revenue"
-          value={stats.totalRevenue}
-          //prefix={<DollarCircleOutlined />}
-          prefix="₹"
-          precision={2}
-          valueStyle={{ color: '#722ed1' }}
-        />
-      </Card>
-    </Col>
-  </Row>
-);
+      <Col xs={24} sm={12} md={4}>
+        <Card>
+          {renderStatistic(
+            "Pending",
+            stats.pending,
+            <ClockCircleOutlined />,
+            { color: '#faad14' }
+          )}
+        </Card>
+      </Col>
+
+      <Col xs={24} sm={12} md={4}>
+        <Card>
+          {renderStatistic(
+            "Dispatched",
+            stats.dispatched,
+            <TruckOutlined />,
+            { color: '#1890ff' }
+          )}
+        </Card>
+      </Col>
+
+      <Col xs={24} sm={12} md={4}>
+        <Card>
+          {renderStatistic(
+            "Delivered",
+            stats.delivered,
+            <CheckCircleOutlined />,
+            { color: '#52c41a' }
+          )}
+        </Card>
+      </Col>
+
+      <Col xs={24} sm={12} md={4}>
+        <Card>
+          {renderStatistic(
+            "Cancelled",
+            stats.cancelled,
+            <CloseCircleOutlined />,
+            { color: '#ff4d4f' }
+          )}
+        </Card>
+      </Col>
+
+      <Col xs={24} sm={12} md={4}>
+        <Card>
+          {renderStatistic(
+            "Revenue",
+            stats.totalRevenue,
+            "₹",
+            { color: '#722ed1' }
+          )}
+        </Card>
+      </Col>
+
+    </Row>
+  );
+};
 
 export default SystemOrdersStats;

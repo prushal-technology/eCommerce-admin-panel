@@ -10,8 +10,8 @@ import {
   message,
   Popconfirm,
   Select,
+  Skeleton,
   Space,
-  Spin,
   Table,
   Tag
 } from 'antd';
@@ -211,195 +211,350 @@ const AllProducts = () => {
     return isActive ? 'green' : 'red';
   };
 
+  const skeletonRows = Array.from({ length: 6 }).map((_, index) => ({
+  id: `skeleton-${index}`,
+  isSkeleton: true,
+}));
+
   const columns = [
-    {
-      title: <span>Product</span>,
-      dataIndex: 'name',
-      key: 'name',
-      render: (text, record) => {
-        // Find the first valid image (non-empty image string)
-        const validImage = record.images && record.images.length > 0
-          ? record.images.find(img => img.image && img.image.trim() !== '')
-          : null;
+  {
+    title: <span>Product</span>,
+    dataIndex: 'name',
+    key: 'name',
+    render: (text, record) => {
 
-        // Construct full URL for image paths
-        const imageSrc = validImage
-          ? (validImage.image.startsWith('data:')
-            ? validImage.image
-            : `${import.meta.env.VITE_GRAPHQL_URI.replace('/graphql/', '').replace('/graphql', '')}/media/${validImage.image}`)
-          : undefined;
-
-        //console.log('Image source:', imageSrc); // Debug log
-
-        const handleImageClick = () => {
-          if (imageSrc) {
-            setSelectedImage(imageSrc);
-            setImageModalVisible(true);
-          }
-        };
-
+      // Skeleton UI
+      if (record.isSkeleton) {
         return (
           <Space align="start">
-            {imageSrc ? (
-              <img
-                src={imageSrc}
-                alt={text}
-                onClick={handleImageClick}
-                onError={(e) => { e.target.style.display = 'none'; }}
-                style={{
-                  width: 60,
-                  height: 60,
-                  objectFit: 'cover',
-                  borderRadius: 8,
-                  cursor: 'pointer',
-                  border: '1px solid #f0f0f0'
-                }}
-                title="Click to view full image"
-              />
-            ) : (
-              <div
-                style={{
-                  width: 60,
-                  height: 60,
-                  borderRadius: 8,
-                  backgroundColor: '#f5f5f5',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  color: '#999',
-                  fontSize: 12
-                }}
-              >
-                No Image
-              </div>
-            )}
+            <Skeleton.Image
+              active
+              style={{
+                width: 60,
+                height: 60,
+                borderRadius: 8
+              }}
+            />
+
             <div>
-              <div style={{ fontWeight: 500 }}>
-                {text}
-                {record.isFeatured && (
-                  <Tag color="gold" size="small" style={{ marginLeft: 8, fontSize: 10, lineHeight: '14px' }}>
-                    FEATURED
-                  </Tag>
-                )}
+              <Skeleton.Input
+                active
+                size="small"
+                style={{ width: 140 }}
+              />
+
+              <div style={{ marginTop: 8 }}>
+                <Skeleton.Input
+                  active
+                  size="small"
+                  style={{ width: 100 }}
+                />
               </div>
-              <div style={{ fontSize: 12, color: '#666' }}>SKU: {record.sku}</div>
-              {record.measureValue && record.unit && (
-                <div style={{ fontSize: 12, color: '#888' }}>
-                  Quantity: {record.measureValue} {record.unit}
-                </div>
-              )}
-              {record.images && record.images.length > 0 && (
-                <div style={{ fontSize: 12, color: '#1890ff' }}>
-                  {record.images.length} image(s)
-                </div>
-              )}
+
+              <div style={{ marginTop: 8 }}>
+                <Skeleton.Input
+                  active
+                  size="small"
+                  style={{ width: 80 }}
+                />
+              </div>
             </div>
           </Space>
         );
-      },
-    },
-    {
-      title: <span>Category</span>,
-      dataIndex: 'category',
-      key: 'category',
-      render: (category) => (
-        <span>
-          {category ? category.name : 'N/A'}
-        </span>
-      )
-    },
-    {
-      title: <span>Price</span>,
-      dataIndex: 'price',
-      key: 'price',
-      render: (price, record) => {
-        const p = Number(price);
-        const dp = Number(record.discountPrice);
-        const hasDiscount = record.discountPrice && dp < p;
-        const invalidDiscount = record.discountPrice && dp >= p;
+      }
 
-        return (
-          <div>
-            {hasDiscount && (
-              <div>
-                ₹{dp.toLocaleString('en-IN')}{' '}
-                <span className="text-muted">(Save ₹{(p - dp).toFixed(2)})</span>
-              </div>
-            )}
+      // Find the first valid image
+      const validImage = record.images && record.images.length > 0
+        ? record.images.find(img => img.image && img.image.trim() !== '')
+        : null;
+
+      // Construct full URL for image paths
+      const imageSrc = validImage
+        ? (
+          validImage.image.startsWith('data:')
+            ? validImage.image
+            : `${import.meta.env.VITE_GRAPHQL_URI.replace('/graphql/', '').replace('/graphql', '')}/media/${validImage.image}`
+        )
+        : undefined;
+
+      const handleImageClick = () => {
+        if (imageSrc) {
+          setSelectedImage(imageSrc);
+          setImageModalVisible(true);
+        }
+      };
+
+      return (
+        <Space align="start">
+          {imageSrc ? (
+            <img
+              src={imageSrc}
+              alt={text}
+              onClick={handleImageClick}
+              onError={(e) => { e.target.style.display = 'none'; }}
+              style={{
+                width: 60,
+                height: 60,
+                objectFit: 'cover',
+                borderRadius: 8,
+                cursor: 'pointer',
+                border: '1px solid #f0f0f0'
+              }}
+              title="Click to view full image"
+            />
+          ) : (
             <div
               style={{
-                textDecoration: hasDiscount ? 'line-through' : 'none'
+                width: 60,
+                height: 60,
+                borderRadius: 8,
+                backgroundColor: '#f5f5f5',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: '#999',
+                fontSize: 12
               }}
             >
-              ₹{p.toLocaleString('en-IN')}
+              No Image
             </div>
-            {invalidDiscount && (
-              <div style={{ color: '#fa8c16', fontSize: 11 }}>
-                ⚠️ Discount price must be lower than regular price
+          )}
+
+          <div>
+            <div style={{ fontWeight: 500 }}>
+              {text}
+
+              {record.isFeatured && (
+                <Tag
+                  color="gold"
+                  size="small"
+                  style={{
+                    marginLeft: 8,
+                    fontSize: 10,
+                    lineHeight: '14px'
+                  }}
+                >
+                  FEATURED
+                </Tag>
+              )}
+            </div>
+
+            <div style={{ fontSize: 12, color: '#666' }}>
+              SKU: {record.sku}
+            </div>
+
+            {record.measureValue && record.unit && (
+              <div style={{ fontSize: 12, color: '#888' }}>
+                Quantity: {record.measureValue} {record.unit}
+              </div>
+            )}
+
+            {record.images && record.images.length > 0 && (
+              <div style={{ fontSize: 12, color: '#1890ff' }}>
+                {record.images.length} image(s)
               </div>
             )}
           </div>
-        );
-      },
+        </Space>
+      );
     },
-    {
-      title: <span>Stock</span>,
-      dataIndex: 'stock',
-      key: 'stock',
-      render: (stockObj) => {
-        const qty = stockObj?.quantity || 0;
+  },
 
+  {
+    title: <span>Category</span>,
+    dataIndex: 'category',
+    key: 'category',
+    render: (category, record) => {
+
+      if (record.isSkeleton) {
         return (
-          <Tag
-            color={qty === 0 ? 'red' : qty < 10 ? 'orange' : 'green'}
-          >
-            {qty} units
-          </Tag>
+          <Skeleton.Input
+            active
+            size="small"
+            style={{ width: 100 }}
+          />
         );
-      },
+      }
+
+      return (
+        <span>
+          {category ? category.name : 'N/A'}
+        </span>
+      );
+    }
+  },
+
+  {
+    title: <span>Price</span>,
+    dataIndex: 'price',
+    key: 'price',
+    render: (price, record) => {
+
+      if (record.isSkeleton) {
+        return (
+          <div>
+            <Skeleton.Input
+              active
+              size="small"
+              style={{ width: 100 }}
+            />
+
+            <div style={{ marginTop: 8 }}>
+              <Skeleton.Input
+                active
+                size="small"
+                style={{ width: 70 }}
+              />
+            </div>
+          </div>
+        );
+      }
+
+      const p = Number(price);
+      const dp = Number(record.discountPrice);
+
+      const hasDiscount = record.discountPrice && dp < p;
+      const invalidDiscount = record.discountPrice && dp >= p;
+
+      return (
+        <div>
+          {hasDiscount && (
+            <div>
+              ₹{dp.toLocaleString('en-IN')}{' '}
+              <span className="text-muted">
+                (Save ₹{(p - dp).toFixed(2)})
+              </span>
+            </div>
+          )}
+
+          <div
+            style={{
+              textDecoration: hasDiscount ? 'line-through' : 'none'
+            }}
+          >
+            ₹{p.toLocaleString('en-IN')}
+          </div>
+
+          {invalidDiscount && (
+            <div style={{ color: '#fa8c16', fontSize: 11 }}>
+              ⚠️ Discount price must be lower than regular price
+            </div>
+          )}
+        </div>
+      );
     },
-    {
-      title: <span>Status</span>,
-      dataIndex: 'isActive',
-      key: 'isActive',
-      render: (isActive) => (
+  },
+
+  {
+    title: <span>Stock</span>,
+    dataIndex: 'stock',
+    key: 'stock',
+    render: (stockObj, record) => {
+
+      if (record.isSkeleton) {
+        return (
+          <Skeleton.Button
+            active
+            size="small"
+            style={{ width: 70 }}
+          />
+        );
+      }
+
+      const qty = stockObj?.quantity || 0;
+
+      return (
         <Tag
-          color={getStatusColor(isActive)}
+          color={qty === 0 ? 'red' : qty < 10 ? 'orange' : 'green'}
         >
+          {qty} units
+        </Tag>
+      );
+    },
+  },
+
+  {
+    title: <span>Status</span>,
+    dataIndex: 'isActive',
+    key: 'isActive',
+    render: (isActive, record) => {
+
+      if (record.isSkeleton) {
+        return (
+          <Skeleton.Button
+            active
+            size="small"
+            style={{ width: 80 }}
+          />
+        );
+      }
+
+      return (
+        <Tag color={getStatusColor(isActive)}>
           {isActive ? 'ACTIVE' : 'INACTIVE'}
         </Tag>
-      ),
+      );
     },
+  },
 
-    {
-      title: <span>Actions</span>,
-      key: 'actions',
-      render: (_, record) => {
+  {
+    title: <span>Actions</span>,
+    key: 'actions',
+    render: (_, record) => {
 
-        if (isEmployee) {
-          return null; // No actions available for employee after cart/wishlist removal
-        }
+      // Skeleton UI
+      if (record.isSkeleton) {
+        return (
+          <Space size="small">
+            <Skeleton.Button active size="small" shape="circle" />
+            <Skeleton.Button active size="small" shape="circle" />
+            <Skeleton.Button active size="small" shape="circle" />
+          </Space>
+        );
+      }
 
-        if (isAdmin) {
-          return (
-            <Space size="small">
-              <Button size="small" icon={<EyeOutlined />} onClick={() => navigate(`/products/${record.id}`, { state: { product: record } })} />
-              <Button size="small" icon={<EditOutlined />} onClick={() => handleEdit(record)} />
-              <Popconfirm
-                title="Delete Product"
-                description="Are you sure you want to delete this product?"
-                onConfirm={() => handleDelete(record.id)}
-              >
-                <Button size="small" danger icon={<DeleteOutlined />} />
-              </Popconfirm>
-            </Space>
-          );
-        }
-
+      if (isEmployee) {
         return null;
-      },
+      }
+
+      if (isAdmin) {
+        return (
+          <Space size="small">
+            <Button
+              size="small"
+              icon={<EyeOutlined />}
+              onClick={() =>
+                navigate(`/products/${record.id}`, {
+                  state: { product: record }
+                })
+              }
+            />
+
+            <Button
+              size="small"
+              icon={<EditOutlined />}
+              onClick={() => handleEdit(record)}
+            />
+
+            <Popconfirm
+              title="Delete Product"
+              description="Are you sure you want to delete this product?"
+              onConfirm={() => handleDelete(record.id)}
+            >
+              <Button
+                size="small"
+                danger
+                icon={<DeleteOutlined />}
+              />
+            </Popconfirm>
+          </Space>
+        );
+      }
+
+      return null;
     },
-  ];
+  },
+];
 
   return (
     <div>
@@ -464,12 +619,8 @@ const AllProducts = () => {
           <Table
             rowKey="id"
             columns={columns}
-            dataSource={visibleProducts}
-            loading={{
-              spinning: loading || fetchingMore,
-              indicator: <Spin size="large" />,
-              tip: loading ? "Loading products..." : "Loading more products..."
-            }}
+            dataSource={loading ? skeletonRows : visibleProducts}
+            
             size="small"
             pagination={false}
             scroll={{ x: 'max-content', y: 500 }}

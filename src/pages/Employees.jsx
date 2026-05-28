@@ -16,6 +16,7 @@ import {
   Popconfirm,
   Row,
   Select,
+  Skeleton,
   Space,
   Statistic,
   Switch,
@@ -162,85 +163,285 @@ const Employees = () => {
     employee: employees.filter(e => e.role === 'employee').length,
   };
 
+  const skeletonRows = Array.from({ length: 6 }).map((_, index) => ({
+    id: `skeleton-${index}`,
+    isSkeleton: true,
+  }));
+
   const columns = [
     {
       title: 'Employee',
       dataIndex: 'name',
       key: 'name',
-      render: (text, record) => (
-        <Space>
-          <Avatar icon={<UserOutlined />} />
-          <div>
-            <div style={{ fontWeight: 'bold' }}>{text}</div>
-            <div style={{ fontSize: '12px', color: '#666' }}>{record.email}</div>
-            <div style={{ fontSize: '12px', color: '#666' }}>{record.phone}</div>
-          </div>
-        </Space>
-      ),
+
+      render: (text, record) => {
+
+        if (record.isSkeleton) {
+          return (
+            <Space align="start">
+
+              <Skeleton.Avatar
+                active
+                size={40}
+                shape="circle"
+              />
+
+              <div>
+
+                <Skeleton.Input
+                  active
+                  size="small"
+                  style={{
+                    width: 120,
+                    height: 18,
+                    borderRadius: 6,
+                    marginBottom: 6
+                  }}
+                />
+
+                <Skeleton.Input
+                  active
+                  size="small"
+                  style={{
+                    width: 160,
+                    height: 14,
+                    borderRadius: 6,
+                    marginBottom: 4
+                  }}
+                />
+
+                <Skeleton.Input
+                  active
+                  size="small"
+                  style={{
+                    width: 100,
+                    height: 14,
+                    borderRadius: 6
+                  }}
+                />
+
+              </div>
+            </Space>
+          );
+        }
+
+        return (
+          <Space>
+            <Avatar icon={<UserOutlined />} />
+
+            <div>
+
+              <div style={{ fontWeight: 'bold' }}>
+                {text}
+              </div>
+
+              <div
+                style={{
+                  fontSize: '12px',
+                  color: '#666'
+                }}
+              >
+                {record.email}
+              </div>
+
+              <div
+                style={{
+                  fontSize: '12px',
+                  color: '#666'
+                }}
+              >
+                {record.phone}
+              </div>
+
+            </div>
+          </Space>
+        );
+      },
     },
+
     {
       title: 'Role',
       dataIndex: 'roleName',
       key: 'roleName',
-      render: (roleName) => (
-        <Tag color={getRoleColor(roleName?.toLowerCase())}>
-          {roleName?.toUpperCase() || 'N/A'}
-        </Tag>
-      ),
+
+      render: (roleName, record) => {
+
+        if (record.isSkeleton) {
+          return (
+            <Skeleton.Button
+              active
+              size="small"
+              style={{
+                width: 80,
+                height: 24,
+                borderRadius: 20
+              }}
+            />
+          );
+        }
+
+        return (
+          <Tag color={getRoleColor(roleName?.toLowerCase())}>
+            {roleName?.toUpperCase() || 'N/A'}
+          </Tag>
+        );
+      },
+
       filters: [
         { text: 'Admin', value: 'admin' },
         { text: 'Manager', value: 'manager' },
         { text: 'Employee', value: 'employee' },
       ],
-      onFilter: (value, record) => record.role === value,
+
+      onFilter: (value, record) =>
+        record.role === value,
     },
+
     {
       title: 'Employee ID',
       dataIndex: 'employeeId',
       key: 'employeeId',
+
+      render: (employeeId, record) => {
+
+        if (record.isSkeleton) {
+          return (
+            <Skeleton.Input
+              active
+              size="small"
+              style={{
+                width: 90,
+                height: 18,
+                borderRadius: 6
+              }}
+            />
+          );
+        }
+
+        return employeeId;
+      },
     },
+
     {
       title: 'Status',
       dataIndex: 'status',
       key: 'status',
-      render: (status) => (
-        <Tag color={getStatusColor(status)}>
-          {status.toUpperCase()}
-        </Tag>
-      ),
+
+      render: (status, record) => {
+
+        if (record.isSkeleton) {
+          return (
+            <Skeleton.Button
+              active
+              size="small"
+              style={{
+                width: 80,
+                height: 24,
+                borderRadius: 20
+              }}
+            />
+          );
+        }
+
+        return (
+          <Tag color={getStatusColor(status)}>
+            {status.toUpperCase()}
+          </Tag>
+        );
+      },
+
       filters: [
         { text: 'Active', value: 'active' },
         { text: 'Inactive', value: 'inactive' },
       ],
-      onFilter: (value, record) => record.status === value,
+
+      onFilter: (value, record) =>
+        record.status === value,
     },
+
     {
       title: 'Actions',
       key: 'actions',
-      render: (_, record) => (
-        <Space size="small">
-          <Switch
-            size="small"
-            checked={record.isActive}
-            onChange={() => handleToggleStatus(record)}
-          />
-          <Popconfirm
-            title="Are you sure to delete this employee?"
-            onConfirm={() => handleDelete(record)}
-            okText="Yes"
-            cancelText="No"
-          >
-            <Button
-              type="text"
-              danger
-              icon={<DeleteOutlined />}
+
+      render: (_, record) => {
+
+        if (record.isSkeleton) {
+          return (
+            <Space size="small">
+
+              <Skeleton.Button
+                active
+                size="small"
+                shape="round"
+                style={{ width: 40 }}
+              />
+
+              <Skeleton.Button
+                active
+                size="small"
+                shape="circle"
+              />
+
+            </Space>
+          );
+        }
+
+        return (
+          <Space size="small">
+
+            <Switch
               size="small"
+              checked={record.isActive}
+              onChange={() =>
+                handleToggleStatus(record)
+              }
             />
-          </Popconfirm>
-        </Space>
-      ),
+
+            <Popconfirm
+              title="Are you sure to delete this employee?"
+              onConfirm={() =>
+                handleDelete(record)
+              }
+              okText="Yes"
+              cancelText="No"
+            >
+              <Button
+                danger
+                icon={<DeleteOutlined />}
+                size="small"
+              />
+            </Popconfirm>
+
+          </Space>
+        );
+      },
     },
   ];
+  const statisticFormatter = (value) => (
+    loading ? (
+      <div
+        style={{
+          width: '100%',
+          display: 'flex',
+          alignItems: 'center'
+        }}
+      >
+        <Skeleton.Input
+          active
+          size="small"
+          style={{
+            width: '55%',
+            minWidth: 45,
+            maxWidth: 80,
+            height: 22,
+            borderRadius: 6
+          }}
+        />
+      </div>
+    ) : (
+      value
+    )
+  );
 
   return (
     <div>
@@ -250,8 +451,9 @@ const Employees = () => {
           <Card>
             <Statistic
               title="Total Employees"
-              value={employeeStats.total}
-              prefix={<TeamOutlined />}
+              value={loading ? 0 : employeeStats.total}
+              prefix={!loading ? <TeamOutlined /> : null}
+              formatter={statisticFormatter}
             />
           </Card>
         </Col>
@@ -259,8 +461,9 @@ const Employees = () => {
           <Card>
             <Statistic
               title="Active"
-              value={employeeStats.active}
+              value={loading ? 0 : employeeStats.active}
               valueStyle={{ color: '#52c41a' }}
+              formatter={statisticFormatter}
             />
           </Card>
         </Col>
@@ -268,8 +471,9 @@ const Employees = () => {
           <Card>
             <Statistic
               title="Inactive"
-              value={employeeStats.inactive}
+              value={loading ? 0 : employeeStats.inactive}
               valueStyle={{ color: '#ff4d4f' }}
+              formatter={statisticFormatter}
             />
           </Card>
         </Col>
@@ -277,8 +481,9 @@ const Employees = () => {
           <Card>
             <Statistic
               title="Admins"
-              value={employeeStats.admin}
+              value={loading ? 0 : employeeStats.admin}
               valueStyle={{ color: '#722ed1' }}
+              formatter={statisticFormatter}
             />
           </Card>
         </Col>
@@ -286,8 +491,9 @@ const Employees = () => {
           <Card>
             <Statistic
               title="Managers"
-              value={employeeStats.manager}
+              value={loading ? 0 : employeeStats.manager}
               valueStyle={{ color: '#1890ff' }}
+              formatter={statisticFormatter}
             />
           </Card>
         </Col>
@@ -295,8 +501,9 @@ const Employees = () => {
           <Card>
             <Statistic
               title="Employees"
-              value={employeeStats.employee}
+              value={loading ? 0 : employeeStats.employee}
               valueStyle={{ color: '#52c41a' }}
+              formatter={statisticFormatter}
             />
           </Card>
         </Col>
@@ -349,8 +556,12 @@ const Employees = () => {
 
         <Table
           columns={columns}
-          dataSource={filteredEmployees}
-          loading={loading}
+          dataSource={
+            loading
+              ? skeletonRows
+              : filteredEmployees
+          }
+
           rowKey="id"
           pagination={{
             pageSize: 10,

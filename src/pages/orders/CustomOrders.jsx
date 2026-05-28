@@ -90,7 +90,7 @@ const CustomOrders = () => {
 
   return (
     <div>
-      <SystemOrdersStats stats={orderStats} />
+      <SystemOrdersStats stats={orderStats} loading={loading}/>
 
       <Card
         title="Custom Orders"

@@ -1,15 +1,15 @@
 import { message } from 'antd';
 import { useCallback, useState } from 'react';
 import {
-    addProductImage as addProductImageApi,
-    createProduct as createProductApi,
-    deleteProduct as deleteProductApi,
-    deleteProductImage as deleteProductImageApi,
-    getAllProducts as getAllProductsApi,
-    getProductById as getProductByIdApi,
-    getProductCategories as getProductCategoriesApi,
-    updateProduct as updateProductApi,
-    updateStock as updateStockApi,
+  addProductImage as addProductImageApi,
+  createProduct as createProductApi,
+  deleteProduct as deleteProductApi,
+  deleteProductImage as deleteProductImageApi,
+  getAllProducts as getAllProductsApi,
+  getProductById as getProductByIdApi,
+  getProductCategories as getProductCategoriesApi,
+  updateProduct as updateProductApi,
+  updateStock as updateStockApi,
 } from '../api/products';
 
 export default function useProducts() {
@@ -141,7 +141,6 @@ export default function useProducts() {
     try {
       const response = await addProductImageApi(productId, imageFile, sortOrder);
       if (response.success) {
-        message.success('Image uploaded successfully');
         return response.product;
       }
       message.error(response.message || 'Failed to upload image');
