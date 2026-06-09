@@ -1,7 +1,7 @@
 import { getAllOrders, updateOrderStatus } from './orders';
 
-export const getBulkOrders = async (query = null) => {
-  return await getAllOrders(null, query, 'bulk');
+export const getBulkOrders = async (query = null, after = null, first = 10) => {
+  return await getAllOrders(null, query, 'bulk', after, first);
 };
 
 export const updateBulkOrderStatus = async (orderId, status, note = '') => {

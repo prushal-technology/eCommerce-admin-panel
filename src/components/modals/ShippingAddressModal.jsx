@@ -81,11 +81,12 @@ const ShippingAddressModal = ({
 
         <Form.Item style={{ marginBottom: 0, marginTop: 24 }}>
           <Space style={{ width: '100%', justifyContent: 'flex-end' }}>
-            <Button onClick={onCancel}>
+            <Button onClick={onCancel} size="small">
               Cancel
             </Button>
             <Button
               type="primary"
+              size="small"
               htmlType="submit"
               loading={loading}
             >

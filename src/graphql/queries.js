@@ -8,6 +8,8 @@ export const GET_PRODUCTS = gql`
         node {
           id
           name
+          shortDescription
+          deliveryRuleDays
           description
           price
           category {
@@ -39,6 +41,8 @@ export const GET_PRODUCT = gql`
     product(id: $id) {
       id
       name
+      shortDescription
+      deliveryRuleDays
       description
       price
       category {
@@ -82,15 +86,35 @@ export const SEARCH_PRODUCTS = gql`
 
 // Category Queries
 export const GET_CATEGORIES = gql`
-  query GetCategories {
-    categories {
-      id
-      name
-      description
-      productCount
-      icon
-      status
-      createdAt
+  query GetCategories(
+    $first: Int!
+    $after: String
+    $query: String
+  ) {
+    allCategories(
+      first: $first
+      after: $after
+      query: $query
+    ) {
+      categories {
+        id
+        name
+        description
+        image
+        isActive
+        createdAt
+
+        parent {
+          id
+          name
+        }
+      }
+
+      nextCursor
+      hasMore
+      totalCategories
+      activeCategories
+      inactiveCategories
     }
   }
 `;
@@ -490,12 +514,4 @@ export const GET_EMPLOYEES = gql`
   }
 `;
 
-export const GET_EMPLOYEE_ROLES = gql`
-  query GetEmployeeRoles {
-    employeeRoles {
-      id
-      name
-      permissions
-    }
-  }
-`;
+

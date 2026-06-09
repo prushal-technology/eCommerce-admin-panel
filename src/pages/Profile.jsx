@@ -52,10 +52,10 @@ export default function Profile() {
               </h2>
 
               <Tag color="blue">
-                {u?.role === "admin" ? "Administrator" : 
-                 u?.role === "manager" ? "Store Manager" : 
-                 u?.role === "employee" ? "Sales Associate" : 
-                 "E-Commerce Staff"}
+                {u?.role === "admin" ? "Administrator" :
+                  u?.role === "manager" ? "Store Manager" :
+                    u?.role === "employee" ? "Sales Associate" :
+                      "E-Commerce Staff"}
               </Tag>
             </Col>
           </Row>
@@ -81,10 +81,10 @@ export default function Profile() {
 
             <Descriptions.Item label={<><TeamOutlined /> Role</>}>
               <Tag color={u?.role === "admin" ? "red" : u?.role === "manager" ? "blue" : "green"}>
-                {u?.role === "admin" ? "Administrator" : 
-                 u?.role === "manager" ? "Store Manager" : 
-                 u?.role === "employee" ? "Sales Associate" : 
-                 "Staff"}
+                {u?.role === "admin" ? "Administrator" :
+                  u?.role === "manager" ? "Store Manager" :
+                    u?.role === "employee" ? "Sales Associate" :
+                      "Staff"}
               </Tag>
             </Descriptions.Item>
 

@@ -30,7 +30,16 @@ export default function AppLayout() {
   const userRole = user.role || "employee";
 
   return (
-    <Layout style={{ minHeight: "100vh" }}>
+    //<Layout style={{ minHeight: "100vh" }}>
+
+    <Layout
+      style={{
+        height: "100vh",
+        overflow: "hidden",
+      }}
+    >
+
+
       <ApplicationTag />
 
       <HeaderBar collapsed={collapsed} setCollapsed={setCollapsed} />
@@ -51,14 +60,34 @@ export default function AppLayout() {
           setCollapsed={setCollapsed}
         />
 
-        <Content
+        {/* <Content
           style={{
             margin: window.innerWidth < 768 ? 8 : 16,
             padding: window.innerWidth < 768 ? 12 : 16,
           }}
         >
           <Outlet />
+        </Content> */}
+
+        <Content
+          style={{
+            margin: window.innerWidth < 768 ? 8 : 16,
+
+            padding: window.innerWidth < 768 ? 12 : 16,
+
+            height: "calc(100vh - 70px)",
+
+            overflowY: "auto",
+            overflowX: "hidden",
+
+            display: "flex",
+            flexDirection: "column",
+          }}
+        >
+          <Outlet />
         </Content>
+
+
       </Layout>
     </Layout>
   );

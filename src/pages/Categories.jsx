@@ -1,6 +1,6 @@
-import { DeleteOutlined, EditOutlined } from '@ant-design/icons';
-import { Button, Card, Form, Input, message, Popconfirm, Skeleton, Space, Table, Tag } from 'antd';
-import { useEffect, useState } from 'react';
+import { DeleteOutlined, EditOutlined, PlusOutlined } from '@ant-design/icons';
+import { Button, Card, Form, Input, message, Popconfirm, Skeleton, Space, Table, Tag, Typography } from 'antd';
+import { useEffect, useRef, useState } from 'react';
 import { createCategory, deleteCategory, getAllCategories, updateCategory } from '../api/categories';
 import CategoryModal from '../components/modals/CategoryModal';
 // Helper function to convert File to base64
@@ -13,28 +13,94 @@ const fileToBase64 = (file) => {
   });
 };
 const { Search } = Input;
+const { Title, Text } = Typography;
+
 
 const Categories = () => {
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(false);
   const [searchText, setSearchText] = useState('');
+  const [nextCursor, setNextCursor] = useState(null);
+  const [hasMore, setHasMore] = useState(false);
+  const [fetchingMore, setFetchingMore] = useState(false);
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [editingCategory, setEditingCategory] = useState(null);
   const [form] = Form.useForm();
   const [imageList, setImageList] = useState([]);
+  const tableContainerRef = useRef(null);
+
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      loadCategories(searchText);
-    }, 300);
+      loadCategories(null, true);
+    }, 400);
+
     return () => clearTimeout(timer);
   }, [searchText]);
-  const loadCategories = async (query = '') => {
+
+  useEffect(() => {
+    const tableBody =
+      tableContainerRef.current?.querySelector('.ant-table-body');
+
+    if (tableBody) {
+      const handleScroll = (e) => {
+        const {
+          scrollTop,
+          scrollHeight,
+          clientHeight
+        } = e.target;
+
+        if (
+          scrollHeight - scrollTop <= clientHeight + 50
+        ) {
+          if (
+            hasMore &&
+            !loading &&
+            !fetchingMore
+          ) {
+            loadCategories(nextCursor, false);
+          }
+        }
+      };
+
+      tableBody.addEventListener('scroll', handleScroll);
+
+      return () =>
+        tableBody.removeEventListener(
+          'scroll',
+          handleScroll
+        );
+    }
+  }, [hasMore, loading, fetchingMore, nextCursor]);
+
+  const loadCategories = async (
+    cursor = null,
+    isNewSearch = false
+  ) => {
     try {
-      setLoading(true);
-      const res = await getAllCategories(query || null);
+      if (isNewSearch) {
+        setLoading(true);
+      } else {
+        setFetchingMore(true);
+      }
+
+      const res = await getAllCategories({
+        query: searchText || null,
+        first: 8,
+        after: cursor,
+      });
+
       if (res.success) {
-        setCategories(res.categories);
+        setCategories((prev) => {
+          const nextData = res.categories || [];
+
+          return isNewSearch
+            ? nextData
+            : [...prev, ...nextData];
+        });
+
+        setNextCursor(res.nextCursor);
+        setHasMore(res.hasMore);
       } else {
         message.error(res.message || "Failed to load categories");
       }
@@ -42,6 +108,7 @@ const Categories = () => {
       message.error("Something went wrong");
     } finally {
       setLoading(false);
+      setFetchingMore(false);
     }
   };
 
@@ -77,7 +144,7 @@ const Categories = () => {
         setIsModalVisible(false);
         form.resetFields();
         setImageList([]);
-        loadCategories();
+        loadCategories(null, true);
       } else {
         message.error(res.message || "Failed to save");
       }
@@ -116,7 +183,7 @@ const Categories = () => {
       const res = await deleteCategory(id);
       if (res.success) {
         message.success("Deleted");
-        loadCategories();
+        loadCategories(null, true);
       }
       else {
         message.error(res.message);
@@ -129,11 +196,7 @@ const Categories = () => {
       setLoading(false);
     }
   };
-  const filteredCategories = categories.filter(category => {
-    const matchesSearch = (category.name || '').toLowerCase().includes(searchText.toLowerCase()) ||
-      (category.description && category.description.toLowerCase().includes(searchText.toLowerCase()));
-    return matchesSearch;
-  });
+
   const getParentCategories = () => {
     return categories.filter(c => !c.parent);
   };
@@ -353,7 +416,7 @@ const Categories = () => {
 
             <Button
               size='small'
-            
+
               icon={<EditOutlined />}
               onClick={() => handleEdit(record)}
             >
@@ -368,7 +431,7 @@ const Categories = () => {
             >
               <Button
                 size='small'
-                
+
                 danger
                 icon={<DeleteOutlined />}
               >
@@ -381,48 +444,67 @@ const Categories = () => {
     },
   ];
   return (
-    <div>
-      <Card>
-        <Space
-          style={{
-            width: "100%",
-            justifyContent: "space-between",
-            marginBottom: 12,
+    <div style={{ height: "100%", display: "flex", flexDirection: "column", overflow: "hidden" }}>
+      <Title level={4} style={{ marginBottom: 20 }}>Categories Management</Title>
+      <Space
+        style={{
+          width: "100%",
+          justifyContent: "space-between",
+          marginBottom: 12,
+        }}
+      >
+        <Search
+          placeholder="Search categories..."
+          size="small"
+          className="small-search"
+          value={searchText}
+          onChange={(e) => setSearchText(e.target.value)}
+          style={{ width: 250 }} // 🔥 control width here
+        />
+        <Button
+          type="primary"
+          size="small"
+          icon={<PlusOutlined />}
+
+          onClick={() => {
+            setEditingCategory(null);
+            form.resetFields();
+            setImageList([]);
+            setIsModalVisible(true);
           }}
         >
-          <Search
-            placeholder="Search categories..."
+          Add Category
+        </Button>
+      </Space>
+
+      <Card style={{ flex: 1, overflow: "hidden", display: "flex", flexDirection: "column" }}>
+        <div ref={tableContainerRef} style={{ flex: 1, overflow: "hidden" }}>
+          <Table
+            columns={columns}
+            dataSource={loading ? skeletonRows : categories}
+            rowKey="id"
             size="small"
-            className="small-search"
-            value={searchText}
-            onChange={(e) => setSearchText(e.target.value)}
-            style={{ width: 250 }} // 🔥 control width here
+            pagination={false}
+            scroll={{ y: 'calc(100vh - 320px)' }}
           />
-          <Button
-            type="primary"
-            size="small"
-            onClick={() => {
-              setEditingCategory(null);
-              form.resetFields();
-              setImageList([]);
-              setIsModalVisible(true);
-            }}
-          >
-            Add Category
-          </Button>
-        </Space>
-        <Table
-          columns={columns}
-          dataSource={loading ? skeletonRows : filteredCategories}
-          rowKey="id"
-          size='small'
-          pagination={{
-            pageSize: 10,
-            showSizeChanger: true,
-            showQuickJumper: true,
-            showTotal: (total) => `Total ${total} categories`,
-          }}
-        />
+
+          {!hasMore &&
+            categories.length > 0 &&
+            !loading &&
+            !fetchingMore && (
+              <div
+                style={{
+                  textAlign: "center",
+                  padding: "10px",
+                  color: "#999",
+                  fontSize: "12px",
+                  borderTop: "1px solid #f0f0f0",
+                }}
+              >
+                No more categories to load
+              </div>
+            )}
+        </div>
       </Card>
       <CategoryModal
         form={form}

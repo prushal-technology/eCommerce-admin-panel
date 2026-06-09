@@ -359,33 +359,6 @@ export const CHANGE_PASSWORD = gql`
   }
 `;
 
-// Settings Mutations
-export const UPDATE_SETTINGS = gql`
-  mutation UpdateSettings($input: UpdateSettingsInput!) {
-    updateSettings(input: $input) {
-      storeName
-      storeDescription
-      contactEmail
-      phoneNumber
-      address
-      currency
-      language
-      timezone
-    }
-  }
-`;
-
-export const UPLOAD_FILE = gql`
-  mutation UploadFile($file: Upload!, $type: FileType!) {
-    uploadFile(file: $file, type: $type) {
-      id
-      url
-      filename
-      mimetype
-      size
-    }
-  }
-`;
 
 // Employee Mutations
 export const CREATE_EMPLOYEE = gql`

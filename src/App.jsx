@@ -1,7 +1,6 @@
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 
 import AppLayout from "./layout/AppLayout";
-import Analytics from "./pages/Analytics";
 import Categories from "./pages/Categories";
 import Customers from "./pages/Customers";
 import Dashboard from "./pages/Dashboard";
@@ -22,6 +21,7 @@ import BulkOrders from "./pages/orders/BulkOrders";
 import CustomOrders from "./pages/orders/CustomOrders";
 import SystemOrders from "./pages/orders/SystemOrders";
 import UserOrders from "./pages/orders/UserOrders";
+import OrdersDashboard from "./pages/OrdersDashboard";
 
 // Other pages
 import Delivery from "./pages/Delivery";
@@ -41,6 +41,7 @@ export default function App() {
 
           {/* Order Routes */}
           {/* <Route path="orders/all" element={<AllOrders />} /> */}
+          <Route path="orders/dashboard" element={<OrdersDashboard />} />
           <Route path="orders/system" element={<SystemOrders />} />
           <Route path="orders/bulk" element={<BulkOrders />} />
           <Route path="orders/custom" element={<CustomOrders />} />
@@ -54,7 +55,6 @@ export default function App() {
 
           <Route path="employees" element={<Employees />} />
           <Route path="delivery" element={<Delivery />} />
-          <Route path="analytics" element={<Analytics />} />
           <Route path="settings" element={<Settings />} />
           <Route path="profile" element={<Profile />} />
         </Route>

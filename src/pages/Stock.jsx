@@ -1,930 +1,128 @@
-// import {
-//   EditOutlined,
-//   ExclamationCircleOutlined,
-//   PlusOutlined,
-//   SyncOutlined,
-//   WarningOutlined
-// } from '@ant-design/icons';
-// import {
-//   Alert,
-//   Button,
-//   Card,
-//   Col,
-//   Form,
-//   Input,
-//   InputNumber,
-//   message,
-//   Modal,
-//   Progress,
-//   Radio,
-//   Row,
-//   Select,
-//   Skeleton,
-//   Space,
-//   Statistic,
-//   Table,
-//   Tag,
-// } from 'antd';
-// import { useEffect, useState } from 'react';
-// import { useNavigate } from 'react-router-dom';
-// import { getAllStocks } from '../api/products';
-// import ProductModal from '../components/modals/ProductModal';
-// import InfoTooltip from '../components/ui/InfoTooltip';
-// import useProducts from '../hooks/useProducts';
-
-// const { Search } = Input;
-// const { Option } = Select;
-
-// const Stock = () => {
-//   const navigate = useNavigate();
-//   const {
-//     categories,
-//     loadingProducts,
-//     actionLoading,
-//     fetchCategories,
-//     createProduct,
-//     addProductImage,
-//     updateProductStock,
-//   } = useProducts();
-//   const [stockItems, setStockItems] = useState([]);
-//   const [searchText, setSearchText] = useState('');
-//   const [stockFilter, setStockFilter] = useState('all');
-//   const [isModalVisible, setIsModalVisible] = useState(false);
-//   const [selectedStockItem, setSelectedStockItem] = useState(null);
-//   const [form] = Form.useForm();
-
-//   // Product modal state
-//   const [isProductModalVisible, setIsProductModalVisible] = useState(false);
-//   const [productForm] = Form.useForm();
-//   const [imageList, setImageList] = useState([]);
-//   const [productLoading, setProductLoading] = useState(false);
-
-//   const loadStocks = async (query = '') => {
-//     try {
-//       const res = await getAllStocks(query || null);
-//       if (res.success) {
-//         const mapped = (res.allStocks || []).map(stock => ({
-//           id: stock.id,
-//           name: stock.product?.name || 'Unknown Product',
-//           price: stock.product?.price,
-//           stock: {
-//             quantity: Number(stock.quantity || 0),
-//             reservedQuantity: Number(stock.reservedQuantity || 0),
-//             availableQuantity: Number(stock.availableQuantity || 0),
-//             isOutOfStock: stock.isOutOfStock,
-//           },
-//           images: stock.product?.images || [],
-//           isFeatured: false,
-//           unit: stock.product?.unit || '',
-//         }));
-//         setStockItems(mapped);
-//       } else {
-//         message.error(res.message || 'Failed to load stock data');
-//       }
-//     } catch (error) {
-//       message.error('An error occurred while fetching stock data.');
-//     }
-//   };
-
-//   useEffect(() => {
-//     const timer = setTimeout(() => {
-//       loadStocks(searchText);
-//     }, 300);
-
-//     return () => clearTimeout(timer);
-//   }, [searchText]);
-
-//   useEffect(() => {
-//     loadCategories();
-//   }, []);
-
-//   const loadCategories = async () => {
-//     try {
-//       await fetchCategories();
-//     } catch (error) {
-//       console.error('Failed to load categories:', error);
-//     }
-//   };
-
-//   const handleAddProduct = () => {
-//     productForm.resetFields();
-//     setImageList([]);
-//     setIsProductModalVisible(true);
-//   };
-
-//   const handleProductModalClose = () => {
-//     setIsProductModalVisible(false);
-//     productForm.resetFields();
-//     setImageList([]);
-//   };
-
-//   const handleProductSubmit = async (values) => {
-//     setProductLoading(true);
-//     try {
-//       const newProduct = await createProduct({
-//         ...values,
-//         categoryId: Number(values.categoryId),
-//         price: Number(values.price),
-//         discountPrice: values.discountPrice ? Number(values.discountPrice) : undefined,
-//         measureValue: values.measureValue ? Number(values.measureValue) : undefined,
-//         isActive: values.isActive,
-//         isFeatured: values.isFeatured,
-//       });
-
-//       if (newProduct?.id) {
-//         // Upload images if any
-//         const newImages = imageList.filter(img => !img.id);
-//         for (const img of newImages) {
-//           if (img.originFileObj) {
-//             const reader = new FileReader();
-//             reader.readAsDataURL(img.originFileObj);
-//             await new Promise((resolve) => {
-//               reader.onload = async () => {
-//                 const base64 = reader.result;
-//                 await addProductImage(newProduct.id, base64, 0);
-//                 resolve();
-//               };
-//             });
-//           }
-//         }
-//         message.success('Product added successfully!');
-//         setIsProductModalVisible(false);
-//         productForm.resetFields();
-//         setImageList([]);
-//         // Reload stocks to show new product
-//         await fetchProducts(50);
-//       } else {
-//         message.error('Failed to add product');
-//       }
-//     } catch (error) {
-//       message.error('An error occurred while adding product');
-//     } finally {
-//       setProductLoading(false);
-//     }
-//   };
-
-//   const getStockQuantity = (product) => {
-//     return product?.stock?.quantity || 0;
-//   };
-
-//   const getStockStatus = (product) => {
-//     const qty = getStockQuantity(product);
-//     if (qty === 0) return { status: 'out_of_stock', color: 'red', text: 'Out of Stock' };
-//     if (qty <= 5) return { status: 'critical', color: 'orange', text: 'Critical' };
-//     if (qty <= 15) return { status: 'low', color: 'gold', text: 'Low Stock' };
-//     return { status: 'normal', color: 'green', text: 'Normal' };
-//   };
-
-//   const getStockPercentage = (product) => {
-//     const stock = getStockQuantity(product);
-//     // Use dynamic max based on stock value, minimum 100 for scale
-//     const maxStock = Math.max(100, stock * 1.2);
-//     return Math.min(100, Math.round((stock / maxStock) * 100));
-//   };
-
-//   const handleStockUpdate = (record, type) => {
-//     const currentQty = getStockQuantity(record);
-//     setSelectedStockItem(record);
-//     form.setFieldsValue({
-//       stock: currentQty,
-//       updateType: type,
-//       quantity: type === 'set' ? currentQty : 1
-//     });
-//     setIsModalVisible(true);
-//   };
-
-//   const handleProductStockUpdate = async (values) => {
-//     try {
-//       const currentQty = getStockQuantity(selectedStockItem);
-//       let newStock = currentQty;
-
-//       if (values.updateType === 'set') {
-//         newStock = values.stock;
-//       } else if (values.updateType === 'add') {
-//         newStock = currentQty + values.quantity;
-//       } else if (values.updateType === 'subtract') {
-//         newStock = Math.max(0, currentQty - values.quantity);
-//       }
-
-//       const res = await updateProductStock(selectedStockItem.id, newStock);
-
-//       if (res) {
-//         await loadStocks(searchText);
-//         setIsModalVisible(false);
-//         form.resetFields();
-//       } else {
-//         message.error('Failed to update stock');
-//       }
-//     } catch (error) {
-//       message.error('Failed to update stock');
-//     }
-//   };
-
-//   const filteredStocks = stockItems.filter(item => {
-//     const qty = getStockQuantity(item);
-//     if (stockFilter === 'all') return true;
-//     if (stockFilter === 'low') return qty <= 15 && qty > 5;
-//     if (stockFilter === 'critical') return qty <= 5 && qty > 0;
-//     if (stockFilter === 'out') return qty === 0;
-//     return true;
-//   });
-
-//   const stockStats = {
-//     total: stockItems.length,
-//     normal: stockItems.filter(p => getStockStatus(p).status === 'normal').length,
-//     low: stockItems.filter(p => getStockStatus(p).status === 'low').length,
-//     critical: stockItems.filter(p => getStockStatus(p).status === 'critical').length,
-//     outOfStock: stockItems.filter(p => getStockStatus(p).status === 'out_of_stock').length,
-//   };
-
-//   const getImageUrl = (image) => {
-//     if (!image) return null;
-//     if (image.startsWith('data:')) return image;
-//     const baseUrl = import.meta.env.VITE_GRAPHQL_URI?.replace('/graphql/', '').replace('/graphql', '') || '';
-//     return `${baseUrl}/media/${image}`;
-//   };
-//   const skeletonRows = Array.from({ length: 6 }).map((_, index) => ({
-//     id: `skeleton-${index}`,
-//     isSkeleton: true,
-//   }));
-//   const columns = [
-//     {
-//       title: 'Product',
-//       key: 'product',
-
-//       render: (_, record) => {
-
-//         // Skeleton
-//         if (record.isSkeleton) {
-//           return (
-//             <Space align="start">
-
-//               <Skeleton.Image
-//                 active
-//                 style={{
-//                   width: 60,
-//                   height: 60,
-//                   borderRadius: 8
-//                 }}
-//               />
-
-//               <div>
-
-//                 <Skeleton.Input
-//                   active
-//                   size="small"
-//                   style={{
-//                     width: 140,
-//                     height: 18,
-//                     borderRadius: 6,
-//                     marginBottom: 8
-//                   }}
-//                 />
-
-//                 <Skeleton.Button
-//                   active
-//                   size="small"
-//                   style={{
-//                     width: 80,
-//                     height: 22,
-//                     borderRadius: 20
-//                   }}
-//                 />
-
-//               </div>
-//             </Space>
-//           );
-//         }
-
-//         const validImage =
-//           record.images && record.images.length > 0
-//             ? record.images.find(
-//               img => img.image && img.image.trim() !== ''
-//             )
-//             : null;
-
-//         const imageSrc = validImage
-//           ? getImageUrl(validImage.image)
-//           : null;
-
-//         return (
-//           <Space align="start">
-
-//             {imageSrc ? (
-
-//               <img
-//                 src={imageSrc}
-//                 alt={record.name}
-//                 style={{
-//                   width: 60,
-//                   height: 60,
-//                   objectFit: 'cover',
-//                   borderRadius: 8,
-//                   border: '1px solid #f0f0f0'
-//                 }}
-//               />
-
-//             ) : (
-
-//               <div
-//                 style={{
-//                   width: 60,
-//                   height: 60,
-//                   borderRadius: 8,
-//                   backgroundColor: '#f5f5f5',
-//                   display: 'flex',
-//                   alignItems: 'center',
-//                   justifyContent: 'center',
-//                   color: '#999',
-//                   fontSize: 12,
-//                   border: '1px solid #f0f0f0'
-//                 }}
-//               >
-//                 No Image
-//               </div>
-//             )}
-
-//             <div>
-
-//               <div
-//                 style={{
-//                   fontWeight: 500,
-//                   fontSize: 14
-//                 }}
-//               >
-//                 {record.name || 'Unknown Product'}
-//               </div>
-
-//               {record.isFeatured && (
-//                 <Tag
-//                   color="orange"
-//                   style={{
-//                     fontSize: 10,
-//                     marginTop: 4
-//                   }}
-//                 >
-//                   FEATURED
-//                 </Tag>
-//               )}
-
-//             </div>
-//           </Space>
-//         );
-//       },
-//     },
-
-//     {
-//       title: 'Current Stock',
-//       key: 'stockLevel',
-//       width: 200,
-
-//       render: (_, record) => {
-
-//         if (record.isSkeleton) {
-//           return (
-//             <div>
-
-//               <Skeleton.Input
-//                 active
-//                 size="small"
-//                 style={{
-//                   width: 80,
-//                   height: 18,
-//                   borderRadius: 6,
-//                   marginBottom: 10
-//                 }}
-//               />
-
-//               <Skeleton.Input
-//                 active
-//                 size="small"
-//                 style={{
-//                   width: '100%',
-//                   height: 8,
-//                   borderRadius: 20
-//                 }}
-//               />
-
-//             </div>
-//           );
-//         }
-
-//         const stock = getStockQuantity(record);
-//         const unit = record.unit || '';
-
-//         return (
-//           <div>
-
-//             <div
-//               style={{
-//                 fontWeight: 500,
-//                 fontSize: 12,
-//                 color: '#1890ff',
-//                 marginBottom: 4
-//               }}
-//             >
-//               {stock} {unit}
-//             </div>
-
-//             <Progress
-//               percent={getStockPercentage(record)}
-//               size="small"
-//               status={
-//                 stock === 0
-//                   ? 'exception'
-//                   : stock <= 5
-//                     ? 'active'
-//                     : 'normal'
-//               }
-//               showInfo={false}
-//             />
-
-//           </div>
-//         );
-//       },
-//     },
-
-//     {
-//       title: 'Reserved',
-//       key: 'reservedQuantity',
-//       width: 100,
-
-//       render: (_, record) => {
-
-//         if (record.isSkeleton) {
-//           return (
-//             <Skeleton.Input
-//               active
-//               size="small"
-//               style={{
-//                 width: 50,
-//                 height: 18,
-//                 borderRadius: 6
-//               }}
-//             />
-//           );
-//         }
-
-//         return (
-//           <div className="text-muted">
-//             {record.stock?.reservedQuantity || 0}
-//           </div>
-//         );
-//       },
-//     },
-
-//     {
-//       title: 'Status',
-//       key: 'status',
-//       width: 120,
-
-//       render: (_, record) => {
-
-//         if (record.isSkeleton) {
-//           return (
-//             <Skeleton.Button
-//               active
-//               size="small"
-//               style={{
-//                 width: 90,
-//                 height: 24,
-//                 borderRadius: 20
-//               }}
-//             />
-//           );
-//         }
-
-//         const { color, text } =
-//           getStockStatus(record);
-
-//         return (
-//           <Tag
-//             color={color}
-//             className="tag-compact"
-//           >
-//             {text}
-//           </Tag>
-//         );
-//       },
-//     },
-
-//     {
-//       title: 'Actions',
-//       key: 'actions',
-//       width: 100,
-
-//       render: (_, record) => {
-
-//         if (record.isSkeleton) {
-//           return (
-//             <Skeleton.Button
-//               active
-//               size="small"
-//               style={{
-//                 width: 70,
-//                 height: 28,
-//                 borderRadius: 6
-//               }}
-//             />
-//           );
-//         }
-
-//         return (
-//           <Space size="small">
-
-//             <Button
-//               type="primary"
-//               size="small"
-//               icon={<EditOutlined />}
-//               onClick={() =>
-//                 handleStockUpdate(record, 'add')
-//               }
-//             >
-//               Edit
-//             </Button>
-
-//           </Space>
-//         );
-//       },
-//     },
-//   ];
-
-//   const statisticFormatter = (value) => (
-//     loadingProducts ? (
-//       <div
-//         style={{
-//           width: '100%',
-//           display: 'flex',
-//           alignItems: 'center'
-//         }}
-//       >
-//         <Skeleton.Input
-//           active
-//           size="small"
-//           style={{
-//             width: '55%',
-//             minWidth: 45,
-//             maxWidth: 75,
-//             height: 22,
-//             borderRadius: 6
-//           }}
-//         />
-//       </div>
-//     ) : (
-//       value
-//     )
-//   );
-//   return (
-//     <Space direction="vertical" size="middle" style={{ display: 'flex' }}>
-//       {/* API Status Alert */}
-
-
-//       {/* Stock Statistics */}
-//       <Row gutter={[16, 16]}>
-//         <Col xs={24} sm={12} md={6}>
-//           <Card>
-//             <Statistic
-//               title="Total Products"
-//               value={loadingProducts ? 0 : stockStats.total}
-//               prefix={!loadingProducts ? <SyncOutlined /> : null}
-//               formatter={statisticFormatter}
-//             />
-//           </Card>
-//         </Col>
-//         <Col xs={24} sm={12} md={6}>
-//           <Card>
-//             <Statistic
-//               title={<InfoTooltip title="Low Stock" text="Products with quantity between 6 and 15" />}
-//               value={loadingProducts ? 0 : stockStats.low}
-//               valueStyle={{ color: '#faad14' }}
-//               prefix={!loadingProducts ? <WarningOutlined /> : null}
-//               formatter={statisticFormatter}
-//             />
-//           </Card>
-//         </Col>
-//         <Col xs={24} sm={12} md={6}>
-//           <Card>
-//             <Statistic
-//               title={<InfoTooltip title="Critical" text="Products with quantity 5 or below" />}
-//               value={loadingProducts ? 0 : stockStats.critical}
-//               valueStyle={{ color: '#fa8c16' }}
-//               prefix={!loadingProducts ? <ExclamationCircleOutlined /> : null}
-//               formatter={statisticFormatter}
-//             />
-//           </Card>
-//         </Col>
-//         <Col xs={24} sm={12} md={6}>
-//           <Card>
-//             <Statistic
-//               title={<InfoTooltip title="Out of Stock" text="Products with 0 quantity" />}
-//               value={loadingProducts ? 0 : stockStats.outOfStock}
-//               valueStyle={{ color: '#ff4d4f' }}
-//               prefix={!loadingProducts ? <ExclamationCircleOutlined /> : null}
-//               formatter={statisticFormatter}
-//             />
-//           </Card>
-//         </Col>
-//       </Row>
-
-//       {/* Alerts */}
-//       {stockStats.critical > 0 && (
-//         <Alert
-//           message={`${stockStats.critical} products need immediate restocking`}
-//           type="warning"
-//           showIcon
-//           closable
-//         />
-//       )}
-
-//       {stockStats.outOfStock > 0 && (
-//         <Alert
-//           message={`${stockStats.outOfStock} products are out of stock`}
-//           type="error"
-//           showIcon
-//           closable
-//         />
-//       )}
-
-//       <Card
-//         extra={
-//           <Button
-//             type="primary"
-//             size="small"
-//             icon={<PlusOutlined />}
-//             onClick={handleAddProduct}
-//           >
-//             Add Product
-//           </Button>
-//         }
-//       >
-//         <Space direction="vertical" size="middle" style={{ display: 'flex' }}>
-//           <Space>
-//             <Search
-//               size="small"
-//               className="small-search"
-//               placeholder="Search products..."
-//               allowClear
-//               onChange={(e) => setSearchText(e.target.value)}
-//               style={{ width: 250 }}
-
-//             />
-//             <Select
-//               size="small"
-//               value={stockFilter}
-//               onChange={setStockFilter}
-//               defaultValue="all"
-//             >
-//               <Option value="all">All Products</Option>
-//               <Option value="low">Low Stock (≤15)</Option>
-//               <Option value="critical">Critical (≤5)</Option>
-//               <Option value="out">Out of Stock</Option>
-//             </Select>
-//           </Space>
-//           <Table
-//             columns={columns}
-//             dataSource={
-//               loadingProducts
-//                 ? skeletonRows
-//                 : filteredStocks
-//             }
-//             size="small"
-//             rowKey="id"
-//             pagination={{
-//               pageSize: 10,
-//               showSizeChanger: true,
-//               showQuickJumper: true,
-//               showTotal: (total) => `Total ${total} products`,
-//             }}
-//           />
-//         </Space>
-//       </Card>
-
-//       {/* Stock Update Modal */}
-//       <Modal
-//         title={`Update Stock - ${selectedStockItem?.name || 'Product'}`}
-//         open={isModalVisible}
-//         onCancel={() => setIsModalVisible(false)}
-//         footer={null}
-//         width={400}
-//       >
-//         <Form
-//           form={form}
-//           layout="vertical"
-//           onFinish={handleProductStockUpdate}
-//         >
-//           <Form.Item
-//             name="updateType"
-//             label="Update Type"
-//             initialValue="add"
-//             rules={[{ required: true, message: 'Please select update type' }]}
-//           >
-//             <Radio.Group>
-//               <Radio value="add">Add Stock</Radio>
-//               <Radio value="subtract">Remove Stock</Radio>
-//               <Radio value="set">Set Stock Level</Radio>
-//             </Radio.Group>
-//           </Form.Item>
-
-//           <Form.Item
-//             noStyle
-//             shouldUpdate={(prevValues, currentValues) => prevValues.updateType !== currentValues.updateType}
-//           >
-//             {({ getFieldValue }) => {
-//               const updateType = getFieldValue('updateType');
-//               if (updateType === 'set') {
-//                 return (
-//                   <Form.Item
-//                     name="stock"
-//                     label="New Stock Level"
-//                     rules={[{ required: true, message: 'Please enter stock level' }]}
-//                   >
-//                     <InputNumber min={0} />
-//                   </Form.Item>
-//                 );
-//               }
-//               return (
-//                 <Form.Item
-//                   name="quantity"
-//                   label="Quantity"
-//                   rules={[{ required: true, message: 'Please enter quantity' }]}
-//                 >
-//                   <InputNumber min={1} />
-//                 </Form.Item>
-//               );
-//             }}
-//           </Form.Item>
-
-//           <Form.Item>
-//             <Space>
-//               <Button type="primary" htmlType="submit" loading={actionLoading}>
-//                 Update Stock
-//               </Button>
-//               <Button onClick={() => setIsModalVisible(false)} disabled={actionLoading}>
-//                 Cancel
-//               </Button>
-//             </Space>
-//           </Form.Item>
-//         </Form>
-//       </Modal>
-
-//       {/* Add Product Modal */}
-//       <ProductModal
-//         visible={isProductModalVisible}
-//         onCancel={handleProductModalClose}
-//         onSubmit={handleProductSubmit}
-//         form={productForm}
-//         categories={categories}
-//         loading={productLoading}
-//         imageList={imageList}
-//         setImageList={setImageList}
-//         title="Add Product"
-//       />
-//     </Space>
-//   );
-// };
-
-// export default Stock;
-
-
-
-import {
-  EditOutlined,
-  ExclamationCircleOutlined,
-  PlusOutlined,
-  SyncOutlined,
-  WarningOutlined
-} from '@ant-design/icons';
-import {
-  Alert,
-  Button,
-  Card,
-  Col,
-  Form,
-  Input,
-  InputNumber,
-  message,
-  Modal,
-  Progress,
-  Radio,
-  Row,
-  Select,
-  Skeleton,
-  Space,
-  Statistic,
-  Table,
-  Tag,
-} from 'antd';
-import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { getAllStocks } from '../api/products';
+import { Form, Space, message } from 'antd';
+import { useState } from 'react';
 import ProductModal from '../components/modals/ProductModal';
-import InfoTooltip from '../components/ui/InfoTooltip';
 import useProducts from '../hooks/useProducts';
+import useStockManager from '../hooks/useStockManager';
+import StockAlerts from './stocks/StockAlerts';
+import StockHeader from './stocks/StockHeader';
+import StockStats from './stocks/StockStats';
+import StockTable from './stocks/StockTable';
+import StockUpdateModal from './stocks/StockUpdateModal';
 
-const { Search } = Input;
-const { Option } = Select;
-
+/**
+ * Stock management page.
+ *
+ * Responsibilities kept here (orchestration only):
+ *  - Wiring the stock manager hook to child components
+ *  - Coordinating modal open/close state
+ *  - Delegating stock-update and product-creation side-effects
+ */
 const Stock = () => {
-  const navigate = useNavigate();
   const {
     categories,
-    loadingProducts,
     actionLoading,
     fetchCategories,
     createProduct,
     addProductImage,
     updateProductStock,
   } = useProducts();
-  const [stockItems, setStockItems] = useState([]);
-const [stocksLoading, setStocksLoading] = useState(true);
-  const [searchText, setSearchText] = useState('');
-  const [stockFilter, setStockFilter] = useState('all');
-  const [isModalVisible, setIsModalVisible] = useState(false);
-  const [selectedStockItem, setSelectedStockItem] = useState(null);
-  const [form] = Form.useForm();
 
-  // Product modal state
-  const [isProductModalVisible, setIsProductModalVisible] = useState(false);
+  const {
+    // Table data
+    filteredStocks,
+    stocksLoading,
+    fetchingMore,
+    hasMore,
+    nextCursor,
+    stockStats,
+    searchText,
+    setSearchText,
+    stockFilter,
+    setStockFilter,
+    loadStocks,
+
+    // Product dropdown (inside modal)
+    productList,
+    productListLoading,
+    handleProductSearch,
+    handleProductPopupScroll,
+
+    // Helpers
+    getStockQuantity,
+    getStockStatus,
+    getStockPercentage,
+  } = useStockManager();
+
+  // ── Stock update modal ─────────────────────────────────────────────────────
+  const [isStockModalOpen, setIsStockModalOpen] = useState(false);
+  const [selectedStockItem, setSelectedStockItem] = useState(null);
+  const [stockForm] = Form.useForm();
+
+  const handleOpenManageStock = () => {
+    stockForm.resetFields();
+    setSelectedStockItem(null);
+    setIsStockModalOpen(true);
+  };
+
+  const handleEditStock = (record, type) => {
+    const currentQty = getStockQuantity(record);
+    setSelectedStockItem(record);
+    stockForm.setFieldsValue({
+      stock: type === 'set' ? currentQty : undefined,
+      updateType: type,
+      quantity: type === 'set' ? currentQty : 1,
+    });
+    setIsStockModalOpen(true);
+  };
+
+  const handleProductSelect = (value) => {
+    const product = productList.find((p) => p.id === value);
+    if (!product) return;
+    setSelectedStockItem({
+      id: product.id,
+      name: product.name,
+      stock: { quantity: Number(product.quantity || 0) },
+    });
+    stockForm.setFieldsValue({ updateType: 'add', quantity: 1 });
+  };
+
+  const handleStockFormFinish = async (values) => {
+    try {
+      const currentQty = getStockQuantity(selectedStockItem);
+      let newStock = currentQty;
+
+      if (values.updateType === 'set') newStock = values.stock;
+      if (values.updateType === 'add') newStock = currentQty + values.quantity;
+      if (values.updateType === 'subtract') newStock = Math.max(0, currentQty - values.quantity);
+
+      const res = await updateProductStock(selectedStockItem.id, newStock);
+
+      if (res) {
+        await loadStocks(searchText, null, true);
+        setIsStockModalOpen(false);
+        stockForm.resetFields();
+      } else {
+        message.error('Failed to update stock');
+      }
+    } catch {
+      message.error('Failed to update stock');
+    }
+  };
+
+  // ── Add product modal ──────────────────────────────────────────────────────
+  const [isProductModalOpen, setIsProductModalOpen] = useState(false);
   const [productForm] = Form.useForm();
   const [imageList, setImageList] = useState([]);
   const [productLoading, setProductLoading] = useState(false);
 
-  const loadStocks = async (query = '') => {
-
-  try {
-
-    setStocksLoading(true);
-
-    const res = await getAllStocks(query || null);
-
-    if (res.success) {
-
-      const mapped = (res.allStocks || []).map(stock => ({
-        id: stock.id,
-        name: stock.product?.name || 'Unknown Product',
-        price: stock.product?.price,
-
-        stock: {
-          quantity: Number(stock.quantity || 0),
-          reservedQuantity: Number(stock.reservedQuantity || 0),
-          availableQuantity: Number(stock.availableQuantity || 0),
-          isOutOfStock: stock.isOutOfStock,
-        },
-
-        images: stock.product?.images || [],
-        isFeatured: false,
-        unit: stock.product?.unit || '',
-      }));
-
-      setStockItems(mapped);
-
-    } else {
-
-      message.error(
-        res.message || 'Failed to load stock data'
-      );
-    }
-
-  } catch (error) {
-
-    message.error(
-      'An error occurred while fetching stock data.'
-    );
-
-  } finally {
-
-    setStocksLoading(false);
-
-  }
-};
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      loadStocks(searchText);
-    }, 300);
-
-    return () => clearTimeout(timer);
-  }, [searchText]);
-
-  useEffect(() => {
-    loadCategories();
-  }, []);
-
-  const loadCategories = async () => {
-    try {
-      await fetchCategories();
-    } catch (error) {
-      console.error('Failed to load categories:', error);
-    }
-  };
-
   const handleAddProduct = () => {
     productForm.resetFields();
     setImageList([]);
-    setIsProductModalVisible(true);
+    setIsProductModalOpen(true);
   };
 
   const handleProductModalClose = () => {
-    setIsProductModalVisible(false);
+    setIsProductModalOpen(false);
     productForm.resetFields();
     setImageList([]);
   };
@@ -938,654 +136,92 @@ const [stocksLoading, setStocksLoading] = useState(true);
         price: Number(values.price),
         discountPrice: values.discountPrice ? Number(values.discountPrice) : undefined,
         measureValue: values.measureValue ? Number(values.measureValue) : undefined,
-        isActive: values.isActive,
-        isFeatured: values.isFeatured,
       });
 
       if (newProduct?.id) {
-        // Upload images if any
-        const newImages = imageList.filter(img => !img.id);
-        for (const img of newImages) {
-          if (img.originFileObj) {
+        for (const img of imageList.filter((i) => !i.id && i.originFileObj)) {
+          await new Promise((resolve) => {
             const reader = new FileReader();
             reader.readAsDataURL(img.originFileObj);
-            await new Promise((resolve) => {
-              reader.onload = async () => {
-                const base64 = reader.result;
-                await addProductImage(newProduct.id, base64, 0);
-                resolve();
-              };
-            });
-          }
+            reader.onload = async () => {
+              await addProductImage(newProduct.id, reader.result, 0);
+              resolve();
+            };
+          });
         }
         message.success('Product added successfully!');
-        setIsProductModalVisible(false);
-        productForm.resetFields();
-        setImageList([]);
-        // Reload stocks to show new product
-        await fetchProducts(50);
+        handleProductModalClose();
       } else {
         message.error('Failed to add product');
       }
-    } catch (error) {
+    } catch {
       message.error('An error occurred while adding product');
     } finally {
       setProductLoading(false);
     }
   };
 
-  const getStockQuantity = (product) => {
-    return product?.stock?.quantity || 0;
-  };
-
-  const getStockStatus = (product) => {
-    const qty = getStockQuantity(product);
-    if (qty === 0) return { status: 'out_of_stock', color: 'red', text: 'Out of Stock' };
-    if (qty <= 5) return { status: 'critical', color: 'orange', text: 'Critical' };
-    if (qty <= 15) return { status: 'low', color: 'gold', text: 'Low Stock' };
-    return { status: 'normal', color: 'green', text: 'Normal' };
-  };
-
-  const getStockPercentage = (product) => {
-    const stock = getStockQuantity(product);
-    // Use dynamic max based on stock value, minimum 100 for scale
-    const maxStock = Math.max(100, stock * 1.2);
-    return Math.min(100, Math.round((stock / maxStock) * 100));
-  };
-
-  const handleStockUpdate = (record, type) => {
-    const currentQty = getStockQuantity(record);
-    setSelectedStockItem(record);
-    form.setFieldsValue({
-      stock: currentQty,
-      updateType: type,
-      quantity: type === 'set' ? currentQty : 1
-    });
-    setIsModalVisible(true);
-  };
-
-  const handleProductStockUpdate = async (values) => {
-    try {
-      const currentQty = getStockQuantity(selectedStockItem);
-      let newStock = currentQty;
-
-      if (values.updateType === 'set') {
-        newStock = values.stock;
-      } else if (values.updateType === 'add') {
-        newStock = currentQty + values.quantity;
-      } else if (values.updateType === 'subtract') {
-        newStock = Math.max(0, currentQty - values.quantity);
-      }
-
-      const res = await updateProductStock(selectedStockItem.id, newStock);
-
-      if (res) {
-        await loadStocks(searchText);
-        setIsModalVisible(false);
-        form.resetFields();
-      } else {
-        message.error('Failed to update stock');
-      }
-    } catch (error) {
-      message.error('Failed to update stock');
-    }
-  };
-
-  const filteredStocks = stockItems.filter(item => {
-    const qty = getStockQuantity(item);
-    if (stockFilter === 'all') return true;
-    if (stockFilter === 'low') return qty <= 15 && qty > 5;
-    if (stockFilter === 'critical') return qty <= 5 && qty > 0;
-    if (stockFilter === 'out') return qty === 0;
-    return true;
-  });
-
-  const stockStats = {
-    total: stockItems.length,
-    normal: stockItems.filter(p => getStockStatus(p).status === 'normal').length,
-    low: stockItems.filter(p => getStockStatus(p).status === 'low').length,
-    critical: stockItems.filter(p => getStockStatus(p).status === 'critical').length,
-    outOfStock: stockItems.filter(p => getStockStatus(p).status === 'out_of_stock').length,
-  };
-
-  const getImageUrl = (image) => {
-    if (!image) return null;
-    if (image.startsWith('data:')) return image;
-    const baseUrl = import.meta.env.VITE_GRAPHQL_URI?.replace('/graphql/', '').replace('/graphql', '') || '';
-    return `${baseUrl}/media/${image}`;
-  };
-  const skeletonRows = Array.from({ length: 6 }).map((_, index) => ({
-    id: `skeleton-${index}`,
-    isSkeleton: true,
-  }));
-  const columns = [
-    {
-      title: 'Product',
-      key: 'product',
-
-      render: (_, record) => {
-
-        // Skeleton
-        if (record.isSkeleton) {
-          return (
-            <Space align="start">
-
-              <Skeleton.Image
-                active
-                style={{
-                  width: 60,
-                  height: 60,
-                  borderRadius: 8
-                }}
-              />
-
-              <div>
-
-                <Skeleton.Input
-                  active
-                  size="small"
-                  style={{
-                    width: 140,
-                    height: 18,
-                    borderRadius: 6,
-                    marginBottom: 8
-                  }}
-                />
-
-                <Skeleton.Button
-                  active
-                  size="small"
-                  style={{
-                    width: 80,
-                    height: 22,
-                    borderRadius: 20
-                  }}
-                />
-
-              </div>
-            </Space>
-          );
-        }
-
-        const validImage =
-          record.images && record.images.length > 0
-            ? record.images.find(
-              img => img.image && img.image.trim() !== ''
-            )
-            : null;
-
-        const imageSrc = validImage
-          ? getImageUrl(validImage.image)
-          : null;
-
-        return (
-          <Space align="start">
-
-            {imageSrc ? (
-
-              <img
-                src={imageSrc}
-                alt={record.name}
-                style={{
-                  width: 60,
-                  height: 60,
-                  objectFit: 'cover',
-                  borderRadius: 8,
-                  border: '1px solid #f0f0f0'
-                }}
-              />
-
-            ) : (
-
-              <div
-                style={{
-                  width: 60,
-                  height: 60,
-                  borderRadius: 8,
-                  backgroundColor: '#f5f5f5',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  color: '#999',
-                  fontSize: 12,
-                  border: '1px solid #f0f0f0'
-                }}
-              >
-                No Image
-              </div>
-            )}
-
-            <div>
-
-              <div
-                style={{
-                  fontWeight: 500,
-                  fontSize: 14
-                }}
-              >
-                {record.name || 'Unknown Product'}
-              </div>
-
-              {record.isFeatured && (
-                <Tag
-                  color="orange"
-                  style={{
-                    fontSize: 10,
-                    marginTop: 4
-                  }}
-                >
-                  FEATURED
-                </Tag>
-              )}
-
-            </div>
-          </Space>
-        );
-      },
-    },
-
-    {
-      title: 'Current Stock',
-      key: 'stockLevel',
-      width: 200,
-
-      render: (_, record) => {
-
-        if (record.isSkeleton) {
-          return (
-            <div>
-
-              <Skeleton.Input
-                active
-                size="small"
-                style={{
-                  width: 80,
-                  height: 18,
-                  borderRadius: 6,
-                  marginBottom: 10
-                }}
-              />
-
-              <Skeleton.Input
-                active
-                size="small"
-                style={{
-                  width: '100%',
-                  height: 8,
-                  borderRadius: 20
-                }}
-              />
-
-            </div>
-          );
-        }
-
-        const stock = getStockQuantity(record);
-        const unit = record.unit || '';
-
-        return (
-          <div>
-
-            <div
-              style={{
-                fontWeight: 500,
-                fontSize: 12,
-                color: '#1890ff',
-                marginBottom: 4
-              }}
-            >
-              {stock} {unit}
-            </div>
-
-            <Progress
-              percent={getStockPercentage(record)}
-              size="small"
-              status={
-                stock === 0
-                  ? 'exception'
-                  : stock <= 5
-                    ? 'active'
-                    : 'normal'
-              }
-              showInfo={false}
-            />
-
-          </div>
-        );
-      },
-    },
-
-    {
-      title: 'Reserved',
-      key: 'reservedQuantity',
-      width: 100,
-
-      render: (_, record) => {
-
-        if (record.isSkeleton) {
-          return (
-            <Skeleton.Input
-              active
-              size="small"
-              style={{
-                width: 50,
-                height: 18,
-                borderRadius: 6
-              }}
-            />
-          );
-        }
-
-        return (
-          <div className="text-muted">
-            {record.stock?.reservedQuantity || 0}
-          </div>
-        );
-      },
-    },
-
-    {
-      title: 'Status',
-      key: 'status',
-      width: 120,
-
-      render: (_, record) => {
-
-        if (record.isSkeleton) {
-          return (
-            <Skeleton.Button
-              active
-              size="small"
-              style={{
-                width: 90,
-                height: 24,
-                borderRadius: 20
-              }}
-            />
-          );
-        }
-
-        const { color, text } =
-          getStockStatus(record);
-
-        return (
-          <Tag
-            color={color}
-            className="tag-compact"
-          >
-            {text}
-          </Tag>
-        );
-      },
-    },
-
-    {
-      title: 'Actions',
-      key: 'actions',
-      width: 100,
-
-      render: (_, record) => {
-
-        if (record.isSkeleton) {
-          return (
-            <Skeleton.Button
-              active
-              size="small"
-              shape="circle"
-            />
-          );
-        }
-
-        return (
-          <Space size="small">
-
-            <Button
-              
-              size="small"
-              icon={<EditOutlined />}
-              onClick={() =>
-                handleStockUpdate(record, 'add')
-              }
-            >
-            </Button>
-
-          </Space>
-        );
-      },
-    },
-  ];
-
-  const statisticFormatter = (value) => (
-    stocksLoading ? (
-      <div
-        style={{
-          width: '100%',
-          display: 'flex',
-          alignItems: 'center'
-        }}
-      >
-        <Skeleton.Input
-          active
-          size="small"
-          style={{
-            width: '55%',
-            minWidth: 45,
-            maxWidth: 75,
-            height: 22,
-            borderRadius: 6
-          }}
-        />
-      </div>
-    ) : (
-      value
-    )
-  );
+  // ── Render ─────────────────────────────────────────────────────────────────
   return (
-    <Space direction="vertical" size="middle" style={{ display: 'flex' }}>
-      {/* API Status Alert */}
+    <div style={{ height: "100%", display: "flex", flexDirection: "column", overflow: "hidden", }}>
+      <Space direction="vertical" size="middle" style={{ display: 'flex' }}>
 
-
-      {/* Stock Statistics */}
-      <Row gutter={[16, 16]}>
-        <Col xs={24} sm={12} md={6}>
-          <Card>
-            <Statistic
-              title="Total Products"
-              value={stocksLoading ? 0 : stockStats.total}
-              prefix={!stocksLoading ? <SyncOutlined /> : null}
-              formatter={statisticFormatter}
-            />
-          </Card>
-        </Col>
-        <Col xs={24} sm={12} md={6}>
-          <Card>
-            <Statistic
-              title={<InfoTooltip title="Low Stock" text="Products with quantity between 6 and 15" />}
-              value={stocksLoading ? 0 : stockStats.low}
-              valueStyle={{ color: '#faad14' }}
-              prefix={!stocksLoading ? <WarningOutlined /> : null}
-              formatter={statisticFormatter}
-            />
-          </Card>
-        </Col>
-        <Col xs={24} sm={12} md={6}>
-          <Card>
-            <Statistic
-              title={<InfoTooltip title="Critical" text="Products with quantity 5 or below" />}
-              value={stocksLoading ? 0 : stockStats.critical}
-              valueStyle={{ color: '#fa8c16' }}
-              prefix={!stocksLoading ? <ExclamationCircleOutlined /> : null}
-              formatter={statisticFormatter}
-            />
-          </Card>
-        </Col>
-        <Col xs={24} sm={12} md={6}>
-          <Card>
-            <Statistic
-              title={<InfoTooltip title="Out of Stock" text="Products with 0 quantity" />}
-              value={stocksLoading ? 0 : stockStats.outOfStock}
-              valueStyle={{ color: '#ff4d4f' }}
-              prefix={!stocksLoading ? <ExclamationCircleOutlined /> : null}
-              formatter={statisticFormatter}
-            />
-          </Card>
-        </Col>
-      </Row>
-
-      {/* Alerts */}
-      {stockStats.critical > 0 && (
-        <Alert
-          message={`${stockStats.critical} products need immediate restocking`}
-          type="warning"
-          showIcon
-          closable
+        <StockHeader
+          onManageStock={handleOpenManageStock}
+          onAddProduct={handleAddProduct}
         />
-      )}
 
-      {stockStats.outOfStock > 0 && (
-        <Alert
-          message={`${stockStats.outOfStock} products are out of stock`}
-          type="error"
-          showIcon
-          closable
+        <StockAlerts
+          critical={stockStats.critical}
+          outOfStock={stockStats.outOfStock}
         />
-      )}
 
-      <Card
-        extra={
-          <Button
-            type="primary"
-            size="small"
-            icon={<PlusOutlined />}
-            onClick={handleAddProduct}
-          >
-            Add Product
-          </Button>
-        }
-      >
-        <Space direction="vertical" size="middle" style={{ display: 'flex' }}>
-          <Space>
-            <Search
-              size="small"
-              className="small-search"
-              placeholder="Search products..."
-              allowClear
-              onChange={(e) => setSearchText(e.target.value)}
-              style={{ width: 250 }}
+        <StockStats stats={stockStats} loading={stocksLoading} />
 
-            />
-            <Select
-              size="small"
-              value={stockFilter}
-              onChange={setStockFilter}
-              defaultValue="all"
-            >
-              <Option value="all">All Products</Option>
-              <Option value="low">Low Stock (≤15)</Option>
-              <Option value="critical">Critical (≤5)</Option>
-              <Option value="out">Out of Stock</Option>
-            </Select>
-          </Space>
-          <Table
-            columns={columns}
-            dataSource={
-              stocksLoading
-                ? skeletonRows
-                : filteredStocks
-            }
-            size="small"
-            rowKey="id"
-            pagination={{
-              pageSize: 10,
-              showSizeChanger: true,
-              showQuickJumper: true,
-              showTotal: (total) => `Total ${total} products`,
-            }}
-          />
-        </Space>
-      </Card>
+        <StockTable
+          items={filteredStocks}
+          loading={stocksLoading}
+          fetchingMore={fetchingMore}
+          hasMore={hasMore}
+          searchText={searchText}
+          stockFilter={stockFilter}
+          onSearchChange={setSearchText}
+          onFilterChange={setStockFilter}
+          onEditStock={handleEditStock}
+          onLoadMore={() => loadStocks(searchText, nextCursor, false)}
+          getStockQuantity={getStockQuantity}
+          getStockStatus={getStockStatus}
+          getStockPercentage={getStockPercentage}
+        />
 
-      {/* Stock Update Modal */}
-      <Modal
-        title={`Update Stock - ${selectedStockItem?.name || 'Product'}`}
-        open={isModalVisible}
-        onCancel={() => setIsModalVisible(false)}
-        footer={null}
-        width={400}
-      >
-        <Form
-          form={form}
-          layout="vertical"
-          onFinish={handleProductStockUpdate}
-        >
-          <Form.Item
-            name="updateType"
-            label="Update Type"
-            initialValue="add"
-            rules={[{ required: true, message: 'Please select update type' }]}
-          >
-            <Radio.Group>
-              <Radio value="add">Add Stock</Radio>
-              <Radio value="subtract">Remove Stock</Radio>
-              <Radio value="set">Set Stock Level</Radio>
-            </Radio.Group>
-          </Form.Item>
+        <StockUpdateModal
+          open={isStockModalOpen}
+          onCancel={() => setIsStockModalOpen(false)}
+          onFinish={handleStockFormFinish}
+          form={stockForm}
+          actionLoading={actionLoading}
+          selectedItem={selectedStockItem}
+          onProductSelect={handleProductSelect}
+          productList={productList}
+          productListLoading={productListLoading}
+          onProductSearch={handleProductSearch}
+          onProductPopupScroll={handleProductPopupScroll}
+        />
 
-          <Form.Item
-            noStyle
-            shouldUpdate={(prevValues, currentValues) => prevValues.updateType !== currentValues.updateType}
-          >
-            {({ getFieldValue }) => {
-              const updateType = getFieldValue('updateType');
-              if (updateType === 'set') {
-                return (
-                  <Form.Item
-                    name="stock"
-                    label="New Stock Level"
-                    rules={[{ required: true, message: 'Please enter stock level' }]}
-                  >
-                    <InputNumber min={0} />
-                  </Form.Item>
-                );
-              }
-              return (
-                <Form.Item
-                  name="quantity"
-                  label="Quantity"
-                  rules={[{ required: true, message: 'Please enter quantity' }]}
-                >
-                  <InputNumber min={1} />
-                </Form.Item>
-              );
-            }}
-          </Form.Item>
+        <ProductModal
+          visible={isProductModalOpen}
+          onCancel={handleProductModalClose}
+          onSubmit={handleProductSubmit}
+          form={productForm}
+          categories={categories}
+          loading={productLoading}
+          imageList={imageList}
+          setImageList={setImageList}
+          title="Add Product"
+        />
 
-          <Form.Item>
-            <Space>
-              <Button type="primary" htmlType="submit" loading={actionLoading}>
-                Update Stock
-              </Button>
-              <Button onClick={() => setIsModalVisible(false)} disabled={actionLoading}>
-                Cancel
-              </Button>
-            </Space>
-          </Form.Item>
-        </Form>
-      </Modal>
-
-      {/* Add Product Modal */}
-      <ProductModal
-        visible={isProductModalVisible}
-        onCancel={handleProductModalClose}
-        onSubmit={handleProductSubmit}
-        form={productForm}
-        categories={categories}
-        loading={productLoading}
-        imageList={imageList}
-        setImageList={setImageList}
-        title="Add Product"
-      />
-    </Space>
+      </Space>
+    </div >
   );
 };
 

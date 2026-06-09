@@ -6,9 +6,25 @@ import { getAllProducts } from '../api/products';
 export default function useOrders() {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [fetchingMore, setFetchingMore] = useState(false);
+  const [ordersNextCursor, setOrdersNextCursor] = useState(null);
+  const [ordersHasMore, setOrdersHasMore] = useState(false);
+  const [ordersQuery, setOrdersQuery] = useState(null);
+  const [ordersFrom, setOrdersFrom] = useState(null);
+  const [ordersStats, setOrdersStats] = useState({
+    total: 0,
+    pending: 0,
+    dispatched: 0,
+    delivered: 0,
+    cancelled: 0,
+    totalRevenue: 0,
+  });
 
   const [customers, setCustomers] = useState([]);
   const [customersLoading, setCustomersLoading] = useState(false);
+  const [customersNextCursor, setCustomersNextCursor] = useState(null);
+  const [customersHasMore, setCustomersHasMore] = useState(false);
+  const [customerSearch, setCustomerSearch] = useState('');
 
   const [products, setProducts] = useState([]);
   const [productsLoading, setProductsLoading] = useState(false);
@@ -17,19 +33,73 @@ export default function useOrders() {
     setLoading(true);
     try {
       const res = await getAllOrders(orderFrom, query);
-      if (res.success) setOrders(res.orders || []);
-      else throw new Error(res.message || 'Failed to fetch orders');
+      if (res.success) {
+        setOrders(res.orders || []);
+        setOrdersNextCursor(res.nextCursor);
+        setOrdersHasMore(res.hasMore);
+        setOrdersQuery(query);
+        setOrdersFrom(orderFrom);
+        setOrdersStats({
+          total: res.totalOrders ?? 0,
+          pending: res.pendingOrders ?? 0,
+          dispatched: res.dispatchedOrders ?? 0,
+          delivered: res.deliveredOrders ?? 0,
+          cancelled: res.cancelledOrders ?? 0,
+          totalRevenue: res.revenue ?? 0,
+        });
+      } else throw new Error(res.message || 'Failed to fetch orders');
     } catch (err) {
       message.error(err.message || 'Failed to load orders');
+      setOrders([]);
+      setOrdersNextCursor(null);
+      setOrdersHasMore(false);
     } finally {
       setLoading(false);
     }
   }, []);
 
-  const fetchCustomers = useCallback(async (search = '') => {
-    setCustomersLoading(true);
+  const fetchMoreOrders = useCallback(async () => {
+    if (!ordersHasMore || !ordersNextCursor) return;
+    setFetchingMore(true);
     try {
-      const res = await getCustomers(search || null);
+      const res = await getAllOrders(ordersFrom, ordersQuery, null, ordersNextCursor);
+      if (res.success) {
+        setOrders((prev) => {
+
+          const existingIds = new Set(
+            prev.map((order) => order.id)
+          );
+
+          const newOrders = (res.orders || []).filter(
+            (order) => !existingIds.has(order.id)
+          );
+
+          return [...prev, ...newOrders];
+        });
+        setOrdersNextCursor(res.nextCursor);
+        setOrdersHasMore(res.hasMore);
+      } else {
+        throw new Error(res.message || 'Failed to fetch more orders');
+      }
+    } catch (err) {
+      message.error(err.message || 'Failed to load more orders');
+    } finally {
+      setFetchingMore(false);
+    }
+  }, [ordersFrom, ordersHasMore, ordersNextCursor, ordersQuery]);
+
+  const fetchCustomers = useCallback(async (search = '', append = false) => {
+    const normalizedSearch = (search || '').trim();
+    const after = append ? customersNextCursor : null;
+    if (!append) {
+      setCustomersLoading(true);
+      setCustomerSearch(normalizedSearch);
+    } else {
+      setCustomersLoading(true);
+    }
+
+    try {
+      const res = await getCustomers(normalizedSearch || null, after);
       if (!res.success) throw new Error(res.message || 'Failed to fetch customers');
       const transformed = (res.customers || []).map(c => ({
         id: c.id,
@@ -38,15 +108,38 @@ export default function useOrders() {
         phone: c.user?.phone || 'N/A',
         addresses: c.addresses || []
       }));
-      setCustomers(transformed);
+      setCustomers(prev => (append ? [...prev, ...transformed] : transformed));
+      setCustomersNextCursor(res.nextCursor);
+      setCustomersHasMore(res.hasMore);
+      setCustomerSearch(normalizedSearch);
       return transformed;
     } catch (err) {
       message.error('Failed to fetch customers: ' + err.message);
-      setCustomers([]);
+      if (!append) setCustomers([]);
       return [];
     } finally {
       setCustomersLoading(false);
     }
+  }, [customersNextCursor]);
+
+  const upsertCustomer = useCallback((customer) => {
+    if (!customer || !customer.id) return;
+    setCustomers(prev => {
+      const idx = prev.findIndex(c => c.id === customer.id);
+      const transformed = {
+        id: customer.id,
+        name: customer.name || `${customer.user?.firstName || ''} ${customer.user?.lastName || ''}`.trim() || `Customer ${customer.id}`,
+        email: customer.email || customer.user?.email || 'N/A',
+        phone: customer.phone || customer.user?.phone || 'N/A',
+        addresses: customer.addresses || []
+      };
+      if (idx !== -1) {
+        const next = [...prev];
+        next[idx] = { ...next[idx], ...transformed };
+        return next;
+      }
+      return [transformed, ...prev];
+    });
   }, []);
 
   const fetchProducts = useCallback(async () => {
@@ -60,6 +153,7 @@ export default function useOrders() {
         name: p.name,
         price: p.price || 0,
         discountPrice: p.discountPrice || 0,
+        bulkOrderPrice: p.bulkOrderPrice || 0,
         stock: p.stock || {},
         status: p.isActive ? 'active' : 'inactive',
         isActive: p.isActive,
@@ -80,19 +174,38 @@ export default function useOrders() {
     }
   }, []);
 
-  const createOrder = useCallback(async (userId, shippingAddress, items, orderType = null, paymentMethod = null) => {
+  const createOrder = useCallback(async (userId, shippingAddress, items, orderType = null, paymentMethod = null, isAdvanceBooking = false, advanceDeliveryDatetime = null) => {
     try {
-      const res = await createAdminOrder(userId, shippingAddress, items, orderType, paymentMethod);
+
+      const res = await createAdminOrder(
+        userId,
+        shippingAddress,
+        items,
+        orderType,
+        paymentMethod,
+        isAdvanceBooking,
+        advanceDeliveryDatetime
+      );
+
       if (res.success) {
-        //message.success(`Order ${res.order?.orderNumber || ''} created`);
+
         fetchOrders();
+
       } else {
-        message.error(res.message || 'Failed to create order');
+
+        message.error(
+          res.message || 'Failed to create order'
+        );
       }
       return res;
     } catch (err) {
-      message.error('Failed to create order: ' + err.message);
-      return { success: false, message: err.message };
+      message.error(
+        'Failed to create order: ' + err.message
+      );
+      return {
+        success: false,
+        message: err.message
+      };
     }
   }, [fetchOrders]);
 
@@ -120,14 +233,21 @@ export default function useOrders() {
   return {
     orders,
     loading,
+    fetchingMore,
     fetchOrders,
+    fetchMoreOrders,
+    ordersNextCursor,
+    ordersHasMore,
+    ordersStats,
     customers,
     customersLoading,
+    customersHasMore,
     fetchCustomers,
     products,
     productsLoading,
     fetchProducts,
     createOrder,
     changeOrderStatus,
+    upsertCustomer,
   };
 }

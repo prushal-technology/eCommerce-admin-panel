@@ -90,9 +90,13 @@ const ProductModal = ({
   };
 
   const handleSubmit = async (values) => {
+    console.log(values);
     try {
       const productData = {
         ...values,
+        shortDescription: values.shortDescription,
+        keywords: values.keywords || [],
+        deliveryRuleDays: values.deliveryRuleDays ? Number(values.deliveryRuleDays) : null,
         categoryId: values.categoryId,
         price: parseFloat(values.price),
         discountPrice: values.discountPrice ? parseFloat(values.discountPrice) : null,
@@ -164,9 +168,54 @@ const ProductModal = ({
           </Col>
         </Row>
 
-        <Form.Item name="description" label="Description">
-          <TextArea rows={2} placeholder="Enter product description..." />
+
+        <Form.Item
+          name="description"
+          label="Description"
+        >
+          <TextArea
+            rows={2}
+            placeholder="Enter product description..."
+          />
         </Form.Item>
+        <Form.Item
+          name="shortDescription"
+          label="Short Description"
+        >
+          <Input
+            placeholder="Enter short description"
+          />
+        </Form.Item>
+        <Form.Item
+          name="keywords"
+          label="Keywords"
+        >
+          <Input
+            placeholder="Enter keywords"
+          />
+        </Form.Item>
+        <Row gutter={[8, 4]}>
+          <Col xs={24} md={12}>
+
+
+            <Form.Item
+              name="deliveryRuleDays"
+              label="Delivery Rule Days"
+              rules={[
+                {
+                  required: true,
+                  message: 'Enter delivery days'
+                }
+              ]}
+            >
+              <InputNumber
+                min={1}
+                style={{ width: '100%' }}
+                placeholder="e.g. 2"
+              />
+            </Form.Item>
+          </Col>
+        </Row>
 
         {/* 🔹 PRICING */}
         <Text strong style={{ fontSize: 14 }}>Pricing</Text>

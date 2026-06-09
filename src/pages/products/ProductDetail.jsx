@@ -145,6 +145,17 @@ const ProductDetail = () => {
           <Descriptions.Item label="Description" span={2}>
             {product.description || "-"}
           </Descriptions.Item>
+          <Descriptions.Item label="Short Description" span={2}>
+            {product.shortDescription || "-"}
+          </Descriptions.Item>
+          <Descriptions.Item label="Keywords" span={2}>
+            {product.keywords?.map((keyword, index) => (
+              <Tag key={index}>{keyword}</Tag>
+            )) || "-"}
+          </Descriptions.Item>
+          <Descriptions.Item label="Delivery Rule (Days)">
+            {product.deliveryRuleDays != null ? product.deliveryRuleDays : "-"}
+          </Descriptions.Item>
         </Descriptions>
       </Card>
 

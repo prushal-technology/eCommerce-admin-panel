@@ -2,18 +2,25 @@ import { graphqlRequest } from './graphql';
 
 // GraphQL Queries and Mutations for Categories
 const GET_ALL_CATEGORIES = `
-  query GetAllCategories($query: String) {
-    allCategories(query: $query) {
-      id
-      name
-      description
-      image
-      isActive
-      parent {
+  query GetAllCategories($query: String, $first: Int!, $after: String) {
+    allCategories(query: $query, first: $first, after: $after) {
+      categories {
         id
         name
+        description
         image
+        isActive
+        parent {
+          id
+          name
+          image
+        }
       }
+      nextCursor
+      hasMore
+      totalCategories
+      activeCategories
+      inactiveCategories
     }
   }
 `;
@@ -71,24 +78,37 @@ const DELETE_CATEGORY = `
 
 
 
-export const getAllCategories = async (query = null) => {
+export const getAllCategories = async ({
+  query = null,
+  first = 10,
+  after = null,
+}) => {
   try {
-    const variables = query ? { query } : {};
-    const data = await graphqlRequest(GET_ALL_CATEGORIES, variables);
+    const response = await graphqlRequest(
+      GET_ALL_CATEGORIES,
+      {
+        query,
+        first,
+        after,
+      }
+    );
 
     return {
       success: true,
-      categories: data.allCategories || []
+      categories: response.allCategories.categories,
+      nextCursor: response.allCategories.nextCursor,
+      hasMore: response.allCategories.hasMore,
+      totalCategories: response.allCategories.totalCategories,
+      activeCategories: response.allCategories.activeCategories,
+      inactiveCategories: response.allCategories.inactiveCategories,
     };
-
   } catch (error) {
     return {
       success: false,
-      message: error.message
+      message: error.message,
     };
   }
 };
-
 
 
 export const createCategory = async (categoryData) => {

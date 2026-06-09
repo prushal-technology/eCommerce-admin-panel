@@ -1,7 +1,7 @@
 import { PlusOutlined } from '@ant-design/icons';
-import { Button, Card, Space } from 'antd';
+import { Button, Card, Typography } from 'antd';
 import dayjs from 'dayjs';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import OrderDetailsModal from '../../components/modals/OrderDetailsModal';
 import OrderTrackingModal from '../../components/modals/OrderTrackingModal';
 import useBulkOrders from '../../hooks/useBulkOrders';
@@ -23,7 +23,13 @@ const BulkOrders = () => {
   const [trackingData, setTrackingData] = useState([]);
   const [manualOrderVisible, setManualOrderVisible] = useState(false);
 
-  const { orders, loading, fetchOrders, updateOrder } = useBulkOrders();
+  const { orders, loading, fetchOrders, fetchMoreOrders, hasMore, updateOrder, ordersStats } = useBulkOrders();
+  const [tableScrollLoading, setTableScrollLoading] = useState(false);
+  const tableWrapperRef = useRef(null);
+  const fetchingRef = useRef(false);
+  const { Title } = Typography;
+
+
 
   useEffect(() => {
     const timeout = setTimeout(() => {
@@ -32,6 +38,74 @@ const BulkOrders = () => {
 
     return () => clearTimeout(timeout);
   }, [fetchOrders, searchText]);
+
+  useEffect(() => {
+
+    const timeout = setTimeout(() => {
+
+      const tableBody =
+        tableWrapperRef.current?.querySelector(
+          '.ant-table-body'
+        );
+
+      if (!tableBody) return;
+
+      const handleScroll = (event) => {
+
+        const target = event.target;
+
+        if (
+          loading ||
+          tableScrollLoading ||
+          fetchingRef.current ||
+          !ordersHasMore
+        ) {
+          return;
+        }
+
+        if (
+          target.scrollTop +
+          target.clientHeight >=
+          target.scrollHeight - 80
+        ) {
+
+          fetchingRef.current = true;
+
+          setTableScrollLoading(true);
+
+          fetchMoreOrders()
+            .finally(() => {
+
+              fetchingRef.current = false;
+
+              setTableScrollLoading(false);
+            });
+        }
+      };
+
+      tableBody.addEventListener(
+        'scroll',
+        handleScroll
+      );
+
+      return () => {
+        tableBody.removeEventListener(
+          'scroll',
+          handleScroll
+        );
+      };
+
+    }, 200);
+
+    return () => clearTimeout(timeout);
+
+  }, [
+    loading,
+    tableScrollLoading,
+    hasMore,
+    fetchMoreOrders,
+    orders
+  ]);
 
   const handleViewDetails = (order) => {
     setSelectedOrder(order);
@@ -42,6 +116,11 @@ const BulkOrders = () => {
 
   const handleTrackOrder = async (order) => {
     setSelectedOrder(order);
+    // SET CURRENT STATUS
+    setNewStatus(order.status || 'pending');
+
+    // RESET NOTE
+    setStatusNote('');
     setTrackingModalVisible(true);
     setTrackingLoading(true);
     try {
@@ -62,6 +141,7 @@ const BulkOrders = () => {
       if (res.success) {
         fetchOrders(searchText || null);
         setDetailModalVisible(false);
+        setTrackingModalVisible(false);
       }
     } catch (error) {
       console.error(error);
@@ -79,76 +159,170 @@ const BulkOrders = () => {
     return matchesStatus && matchesDate;
   });
 
-  const orderStats = {
-    total: orders.length,
-    pending: orders.filter((o) => o.status === 'pending').length,
-    dispatched: orders.filter((o) => o.status === 'dispatched').length,
-    delivered: orders.filter((o) => o.status === 'delivered').length,
-    cancelled: orders.filter((o) => o.status === 'cancelled').length,
-    totalRevenue: orders.reduce((sum, o) => sum + parseFloat(o.finalAmount || 0), 0),
-  };
 
   return (
-    <div>
-      <SystemOrdersStats stats={orderStats} loading={loading} />
+
+    <div style={{ height: "100%", display: "flex", flexDirection: "column", overflow: "hidden" }}>
+
+      {/* PAGE HEADER */}
+
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          marginBottom: 20,
+          gap: 12,
+          flexWrap: 'wrap',
+        }}
+      >
+
+        <Title
+          level={4}
+          style={{ margin: 0 }}
+        >
+          Bulk Orders Management
+        </Title>
+
+        <Button
+          type="primary"
+          icon={<PlusOutlined />}
+          onClick={() =>
+            setManualOrderVisible(true)
+          }
+          size="small"
+        >
+          Take Bulk Order
+        </Button>
+
+      </div>
+
+      {/* STATS */}
+
+      <SystemOrdersStats
+        stats={ordersStats}
+        loading={loading}
+      />
+
+      {/* FILTERS */}
+
+      <SystemOrdersFilters
+        searchText={searchText}
+        statusFilter={statusFilter}
+        dateRange={dateRange}
+        onSearch={setSearchText}
+        onStatusChange={setStatusFilter}
+        onDateChange={setDateRange}
+      />
+
+      {/* TABLE */}
 
       <Card
-        title="Bulk Orders"
-        extra={
-          <Space>
-            <Button type="primary" icon={<PlusOutlined />} onClick={() => setManualOrderVisible(true)} size="small">
-              Take Bulk Order
-            </Button>
-          </Space>
-        }
+        style={{
+          flex: 1,
+          overflow: "hidden",
+          display: "flex",
+          flexDirection: "column",
+          minHeight: 0,
+        }}
+        bodyStyle={{
+          flex: 1,
+          overflow: "hidden",
+          display: "flex",
+          flexDirection: "column",
+          minHeight: 0,
+          padding: 0,
+        }}
       >
-        <SystemOrdersFilters
-          searchText={searchText}
-          statusFilter={statusFilter}
-          dateRange={dateRange}
-          onSearch={setSearchText}
-          onStatusChange={setStatusFilter}
-          onDateChange={setDateRange}
-        />
+        <div
+          ref={tableWrapperRef}
+          style={{
+            flex: 1,
+            minHeight: 0
+          }}
+        >
+          <SystemOrdersTable
+            loading={loading}
+            orders={filteredOrders}
+            hasMore={hasMore}
+            onViewDetails={handleViewDetails}
+            onTrackOrder={handleTrackOrder}
+          />
 
-        <SystemOrdersTable
-          loading={loading}
-          orders={filteredOrders}
-          onViewDetails={handleViewDetails}
-          onTrackOrder={handleTrackOrder}
-        />
+          {hasMore && tableScrollLoading && (
+            <div
+              style={{
+                textAlign: 'center',
+                padding: 12,
+              }}
+            >
+              Loading more orders...
+            </div>
+          )}
+
+        </div>
       </Card>
+
+      {/* DETAILS MODAL */}
 
       <OrderDetailsModal
         open={detailModalVisible}
         order={selectedOrder}
-        onCancel={() => setDetailModalVisible(false)}
+        onCancel={() =>
+          setDetailModalVisible(false)
+        }
         newStatus={newStatus}
         setNewStatus={setNewStatus}
         statusNote={statusNote}
         setStatusNote={setStatusNote}
-        onStatusUpdate={handleStatusUpdate}
+        onStatusUpdate={
+          handleStatusUpdate
+        }
       />
+
+      {/* TRACKING MODAL */}
 
       <OrderTrackingModal
         open={trackingModalVisible}
         order={selectedOrder}
         trackingLoading={trackingLoading}
         trackingData={trackingData}
-        onCancel={() => setTrackingModalVisible(false)}
+        onCancel={() =>
+          setTrackingModalVisible(false)
+        }
+        newStatus={newStatus}
+        setNewStatus={setNewStatus}
+        statusNote={statusNote}
+        setStatusNote={setStatusNote}
+        onStatusUpdate={
+          handleStatusUpdate
+        }
+        statusUpdateLoading={loading}
       />
+
+      {/* MANUAL ORDER MODAL */}
 
       <ManualOrderModal
         visible={manualOrderVisible}
-        onClose={() => setManualOrderVisible(false)}
+        onClose={() =>
+          setManualOrderVisible(false)
+        }
         defaultOrderType="bulk"
         onOrderCreated={() => {
+
           setManualOrderVisible(false);
-          fetchOrders(searchText || null);
+
+          fetchOrders(
+            searchText || null
+          );
         }}
       />
+
     </div>
+
   );
+
+
 };
 
 export default BulkOrders;
