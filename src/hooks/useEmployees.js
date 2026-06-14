@@ -3,8 +3,8 @@ import { useEffect, useMemo, useState } from 'react';
 import {
     CREATE_EMPLOYEE,
     DELETE_EMPLOYEE,
-    UPDATE_EMPLOYEE_STATUS,
-} from '../graphql/mutations';
+    UPDATE_EMPLOYEE,
+} from '../graphql/employeeMutations';
 import { GET_EMPLOYEES } from '../graphql/queries';
 
 const formatEmployee = (emp) => ({
@@ -27,6 +27,9 @@ export const useEmployees = () => {
     const [searchText, setSearchText] = useState('');
     const [roleFilter, setRoleFilter] = useState('all');
     const [statusFilter, setStatusFilter] = useState('all');
+    const [hasMore, setHasMore] = useState(false);
+    const [nextCursor, setNextCursor] = useState(null);
+    const [fetchingMore, setFetchingMore] = useState(false);
 
     useEffect(() => {
         loadEmployees();
@@ -38,6 +41,8 @@ export const useEmployees = () => {
             const { graphqlRequest } = await import('../api/graphql');
             const data = await graphqlRequest(GET_EMPLOYEES);
             setEmployees((data.employees?.employees || []).map(formatEmployee));
+            setHasMore(data.employees?.hasMore ?? false);
+            setNextCursor(data.employees?.nextCursor ?? null);
         } catch (error) {
             message.error('Failed to load employees: ' + error.message);
         } finally {
@@ -59,22 +64,54 @@ export const useEmployees = () => {
         await loadEmployees();
     };
 
+    const updateEmployee = async (values) => {
+        try {
+            const { graphqlRequest } = await import('../api/graphql');
+
+            await graphqlRequest(UPDATE_EMPLOYEE, {
+                id: Number(values.id),
+                firstName: values.firstName,
+                lastName: values.lastName,
+                phone: values.phone,
+                roleName: values.roleName,
+                isActive: values.isActive,
+            });
+
+            message.success('Employee updated successfully');
+
+            await loadEmployees();
+        } catch (error) {
+            message.error('Failed to update employee');
+            throw error;
+        }
+    };
+
     const deleteEmployee = async (record) => {
         const { graphqlRequest } = await import('../api/graphql');
-        await graphqlRequest(DELETE_EMPLOYEE, { employeeId: record.employeeId });
+        await graphqlRequest(DELETE_EMPLOYEE, {
+            id: Number(record.id),
+        });
         message.success('Employee deleted successfully');
         await loadEmployees();
     };
 
     const toggleEmployeeStatus = async (record) => {
-        const newIsActive = !record.isActive;
-        const { graphqlRequest } = await import('../api/graphql');
-        await graphqlRequest(UPDATE_EMPLOYEE_STATUS, {
-            employeeId: record.employeeId,
-            isActive: newIsActive,
-        });
-        message.success(`Employee ${newIsActive ? 'activated' : 'deactivated'} successfully`);
-        await loadEmployees();
+        try {
+            await updateEmployee({
+                id: record.id,
+                firstName: record.firstName,
+                lastName: record.lastName,
+                phone: record.phone,
+                roleName: record.roleName,
+                isActive: !record.isActive,
+            });
+
+            message.success(
+                `Employee ${!record.isActive ? 'activated' : 'deactivated'} successfully`
+            );
+        } catch (error) {
+            console.log(error);
+        }
     };
 
     const filteredEmployees = useMemo(
@@ -108,6 +145,8 @@ export const useEmployees = () => {
         []
     );
 
+
+
     return {
         employees,
         filteredEmployees,
@@ -118,11 +157,15 @@ export const useEmployees = () => {
         setSearchText,
         roleFilter,
         setRoleFilter,
+        hasMore,
+        nextCursor,
+        fetchingMore,
         statusFilter,
         setStatusFilter,
         loadEmployees,
         createEmployee,
         deleteEmployee,
+        updateEmployee,
         toggleEmployeeStatus,
     };
 };

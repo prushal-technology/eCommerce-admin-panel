@@ -6,7 +6,7 @@ const { Title } = Typography;
 /**
  * Page header: title + "Manage Stock" and "Add New Product" action buttons.
  */
-const StockHeader = ({ onManageStock, onAddProduct }) => (
+const StockHeader = ({ onManageStock, onAddProduct, canManageStock, canCreateProduct }) => (
     <div
         style={{
             display: 'flex',
@@ -21,22 +21,26 @@ const StockHeader = ({ onManageStock, onAddProduct }) => (
         </Title>
 
         <Space>
-            <Button
-                size="small"
-                icon={<EditOutlined />}
-                onClick={onManageStock}
-            >
-                Manage Stock
-            </Button>
+            {canManageStock && (
+                <Button
+                    size="small"
+                    icon={<EditOutlined />}
+                    onClick={onManageStock}
+                >
+                    Manage Stock
+                </Button>
+            )}
 
-            <Button
-                type="primary"
-                size="small"
-                icon={<PlusOutlined />}
-                onClick={onAddProduct}
-            >
-                Add New Product
-            </Button>
+            {canCreateProduct && (
+                <Button
+                    type="primary"
+                    size="small"
+                    icon={<PlusOutlined />}
+                    onClick={onAddProduct}
+                >
+                    Add New Product
+                </Button>
+            )}
         </Space>
     </div>
 );

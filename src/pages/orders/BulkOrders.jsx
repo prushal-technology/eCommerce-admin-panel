@@ -25,7 +25,7 @@ const BulkOrders = () => {
 
   const { orders, loading, fetchOrders, fetchMoreOrders, hasMore, updateOrder, ordersStats } = useBulkOrders();
   const [tableScrollLoading, setTableScrollLoading] = useState(false);
-  const tableWrapperRef = useRef(null);
+  // const tableWrapperRef = useRef(null);
   const fetchingRef = useRef(false);
   const { Title } = Typography;
 
@@ -39,73 +39,73 @@ const BulkOrders = () => {
     return () => clearTimeout(timeout);
   }, [fetchOrders, searchText]);
 
-  useEffect(() => {
+  // useEffect(() => {
 
-    const timeout = setTimeout(() => {
+  //   const timeout = setTimeout(() => {
 
-      const tableBody =
-        tableWrapperRef.current?.querySelector(
-          '.ant-table-body'
-        );
+  //     const tableBody =
+  //       tableWrapperRef.current?.querySelector(
+  //         '.ant-table-body'
+  //       );
 
-      if (!tableBody) return;
+  //     if (!tableBody) return;
 
-      const handleScroll = (event) => {
+  //     const handleScroll = (event) => {
 
-        const target = event.target;
+  //       const target = event.target;
 
-        if (
-          loading ||
-          tableScrollLoading ||
-          fetchingRef.current ||
-          !ordersHasMore
-        ) {
-          return;
-        }
+  //       if (
+  //         loading ||
+  //         tableScrollLoading ||
+  //         fetchingRef.current ||
+  //         !hasMore
+  //       ) {
+  //         return;
+  //       }
 
-        if (
-          target.scrollTop +
-          target.clientHeight >=
-          target.scrollHeight - 80
-        ) {
+  //       if (
+  //         target.scrollTop +
+  //         target.clientHeight >=
+  //         target.scrollHeight - 80
+  //       ) {
 
-          fetchingRef.current = true;
+  //         fetchingRef.current = true;
 
-          setTableScrollLoading(true);
+  //         setTableScrollLoading(true);
 
-          fetchMoreOrders()
-            .finally(() => {
+  //         fetchMoreOrders()
+  //           .finally(() => {
 
-              fetchingRef.current = false;
+  //             fetchingRef.current = false;
 
-              setTableScrollLoading(false);
-            });
-        }
-      };
+  //             setTableScrollLoading(false);
+  //           });
+  //       }
+  //     };
 
-      tableBody.addEventListener(
-        'scroll',
-        handleScroll
-      );
+  //     tableBody.addEventListener(
+  //       'scroll',
+  //       handleScroll
+  //     );
 
-      return () => {
-        tableBody.removeEventListener(
-          'scroll',
-          handleScroll
-        );
-      };
+  //     return () => {
+  //       tableBody.removeEventListener(
+  //         'scroll',
+  //         handleScroll
+  //       );
+  //     };
 
-    }, 200);
+  //   }, 200);
 
-    return () => clearTimeout(timeout);
+  //   return () => clearTimeout(timeout);
 
-  }, [
-    loading,
-    tableScrollLoading,
-    hasMore,
-    fetchMoreOrders,
-    orders
-  ]);
+  // }, [
+  //   loading,
+  //   tableScrollLoading,
+  //   hasMore,
+  //   fetchMoreOrders,
+  //   orders
+  // ]);
 
   const handleViewDetails = (order) => {
     setSelectedOrder(order);
@@ -235,7 +235,7 @@ const BulkOrders = () => {
         }}
       >
         <div
-          ref={tableWrapperRef}
+          // ref={tableWrapperRef}
           style={{
             flex: 1,
             minHeight: 0
@@ -245,8 +245,29 @@ const BulkOrders = () => {
             loading={loading}
             orders={filteredOrders}
             hasMore={hasMore}
+            tableScrollLoading={tableScrollLoading}
             onViewDetails={handleViewDetails}
             onTrackOrder={handleTrackOrder}
+            onLoadMore={async () => {
+              if (
+                loading ||
+                tableScrollLoading ||
+                fetchingRef.current ||
+                !hasMore
+              ) {
+                return;
+              }
+
+              fetchingRef.current = true;
+              setTableScrollLoading(true);
+
+              try {
+                await fetchMoreOrders();
+              } finally {
+                fetchingRef.current = false;
+                setTableScrollLoading(false);
+              }
+            }}
           />
 
           {hasMore && tableScrollLoading && (

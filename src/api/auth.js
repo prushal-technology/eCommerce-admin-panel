@@ -1,4 +1,5 @@
 import CryptoJS from 'crypto-js';
+import { normalizePermissions } from '../utils/permissions';
 import { GRAPHQL_QUERIES, graphqlRequest, setAuthToken } from './graphql';
 
 const ENCRYPTION_KEY = import.meta.env.VITE_USER_ENCRYPTION_KEY?.trim();
@@ -23,12 +24,23 @@ export const loginAPI = async (email, password) => {
       // ✅ Normalize role (important)
       const userRole = authData.role?.toLowerCase() || 'employee';
 
+      const userDetails = authData.user || {};
+      const permissions = normalizePermissions(authData.permissions || []);
+
       const userInfo = {
-        id: authData.user?.id,
-        email: authData.user?.email,
-        first_name: authData.user?.firstName || (userRole === 'admin' ? 'Admin' : 'User'),
+        id: userDetails.id,
+        email: userDetails.email,
+        first_name:
+          userDetails.firstName ||
+          userDetails.first_name ||
+          (userRole === 'admin' ? 'Admin' : 'User'),
+        last_name: userDetails.lastName || userDetails.last_name || '',
+        phone: userDetails.phone || '',
         role: userRole,
-        isAuthenticated: true
+        employeeId: authData.employeeId || authData.employee?.id || null,
+        roleName: authData.roleName || authData.role_name || authData.role || '',
+        permissions,
+        isAuthenticated: true,
       };
 
       //console.log('Saving userInfo:', userInfo);
@@ -45,7 +57,8 @@ export const loginAPI = async (email, password) => {
 
       return {
         success: true,
-        user: userInfo
+        user: userInfo,
+        token,
       };
     }
 
@@ -68,6 +81,7 @@ export const loginAPI = async (email, password) => {
 // ================= LOGOUT =================
 export const logout = () => {
   localStorage.removeItem('authToken');
+  localStorage.removeItem('refreshToken');
   localStorage.removeItem('user');
   setAuthToken(null);
 };
@@ -81,7 +95,10 @@ export const getCurrentUser = () => {
     const bytes = CryptoJS.AES.decrypt(encryptedUser, ENCRYPTION_KEY);
     const user = JSON.parse(bytes.toString(CryptoJS.enc.Utf8));
 
-    return user;
+    return {
+      ...user,
+      permissions: normalizePermissions(user.permissions),
+    };
   } catch (error) {
     console.error('Error getting current user:', error);
     localStorage.removeItem('user');

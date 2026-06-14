@@ -1,84 +1,67 @@
-import { TeamOutlined } from '@ant-design/icons';
+import {
+    CheckCircleOutlined,
+    StopOutlined,
+    TeamOutlined,
+} from '@ant-design/icons';
 import { Card, Col, Row, Skeleton, Statistic } from 'antd';
 
-const StatCard = ({ title, value, valueStyle, prefix, loading }) => {
-    const formatter = (val) =>
-        loading ? (
-            <div style={{ width: '100%', display: 'flex', alignItems: 'center' }}>
-                <Skeleton.Input
-                    active
-                    size="small"
-                    style={{ width: '55%', minWidth: 45, maxWidth: 80, height: 22, borderRadius: 6 }}
-                />
-            </div>
-        ) : (
-            val
-        );
+const EmployeeStats = ({ stats, loading }) => {
+    const cards = [
+        {
+            title: 'Total Employees',
+            value: stats.total,
+            icon: <TeamOutlined style={{ color: '#1677ff' }} />,
+        },
+        {
+            title: 'Active',
+            value: stats.active,
+            icon: <CheckCircleOutlined style={{ color: '#52c41a' }} />,
+        },
+        {
+            title: 'Inactive',
+            value: stats.inactive,
+            icon: <StopOutlined style={{ color: '#ff4d4f' }} />,
+        },
+    ];
 
     return (
-        <Card>
-            <Statistic
-                title={title}
-                value={loading ? 0 : value}
-                valueStyle={valueStyle}
-                prefix={!loading ? prefix : null}
-                formatter={formatter}
-            />
-        </Card>
+        <Row gutter={[16, 16]} style={{ marginBottom: 16 }}>
+            {cards.map((card) => (
+                <Col xs={24} sm={8} key={card.title}>
+                    <Card
+                        style={{
+                            height: 110,
+                            borderRadius: 10,
+                        }}
+                    >
+                        {loading ? (
+                            <Skeleton active paragraph={false} />
+                        ) : (
+                            <Statistic
+                                title={
+                                    <span
+                                        style={{
+                                            fontSize: 12,
+                                            color: '#8c8c8c',
+                                            fontWeight: 400,
+                                        }}
+                                    >
+                                        {card.title}
+                                    </span>
+                                }
+                                value={card.value}
+                                prefix={card.icon}
+                                valueStyle={{
+                                    fontSize: 12,
+                                    fontWeight: 500,
+                                }}
+                            />
+                        )}
+                    </Card>
+                </Col>
+            ))}
+        </Row>
     );
 };
-
-const EmployeeStats = ({ stats, loading }) => (
-    <Row gutter={[16, 16]} style={{ marginBottom: 16 }}>
-        <Col xs={24} sm={12} md={4}>
-            <StatCard
-                title="Total Employees"
-                value={stats.total}
-                prefix={<TeamOutlined />}
-                loading={loading}
-            />
-        </Col>
-        <Col xs={24} sm={12} md={4}>
-            <StatCard
-                title="Active"
-                value={stats.active}
-                valueStyle={{ color: '#52c41a' }}
-                loading={loading}
-            />
-        </Col>
-        <Col xs={24} sm={12} md={4}>
-            <StatCard
-                title="Inactive"
-                value={stats.inactive}
-                valueStyle={{ color: '#ff4d4f' }}
-                loading={loading}
-            />
-        </Col>
-        <Col xs={24} sm={12} md={4}>
-            <StatCard
-                title="Admins"
-                value={stats.admin}
-                valueStyle={{ color: '#722ed1' }}
-                loading={loading}
-            />
-        </Col>
-        <Col xs={24} sm={12} md={4}>
-            <StatCard
-                title="Managers"
-                value={stats.manager}
-                valueStyle={{ color: '#1890ff' }}
-                loading={loading}
-            />
-        </Col>
-        <Col xs={24} sm={12} md={4}>
-            <StatCard
-                title="Employees"
-                value={stats.employee}
-                valueStyle={{ color: '#52c41a' }}
-                loading={loading}
-            />
-        </Col>
-    </Row>
-);
 
 export default EmployeeStats;

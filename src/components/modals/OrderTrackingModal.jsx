@@ -133,6 +133,7 @@ const OrderTrackingModal = ({
   setStatusNote,
   onStatusUpdate,
   statusUpdateLoading = false,
+  canUpdateStatus = false,
 
   width = 500,
 }) => {
@@ -406,15 +407,16 @@ const OrderTrackingModal = ({
 
           {/* STATUS UPDATE SECTION */}
 
-          <div
-            style={{
-              marginTop: 24,
-              padding: 16,
-              border: '1px solid #f0f0f0',
-              borderRadius: 8,
-              background: '#fafafa'
-            }}
-          >
+          {canUpdateStatus && (
+            <div
+              style={{
+                marginTop: 24,
+                padding: 16,
+                border: '1px solid #f0f0f0',
+                borderRadius: 8,
+                background: '#fafafa'
+              }}
+            >
 
             <div
               style={{
@@ -494,7 +496,8 @@ const OrderTrackingModal = ({
               Update Status
             </Button>
 
-          </div>
+            </div>
+          )}
 
 
 

@@ -9,11 +9,13 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import ProductModal from '../../components/modals/ProductModal';
+import usePermissions from '../../hooks/usePermissions';
 import useProducts from '../../hooks/useProducts';
 
 const AddProduct = () => {
 
   const navigate = useNavigate();
+  const { canUpdate } = usePermissions();
 
   const [imageList, setImageList] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -36,7 +38,7 @@ const AddProduct = () => {
 
       await fetchCategories();
 
-    } catch (error) {
+    } catch {
 
       message.error('Failed to load categories');
 
@@ -44,6 +46,7 @@ const AddProduct = () => {
   };
 
   const handleSubmit = async (productData, imageData) => {
+    if (!canUpdate('product')) return;
 
     // Prevent duplicate submits
     if (loading) return;
@@ -133,6 +136,7 @@ const AddProduct = () => {
           initialValues={null}
           categories={categories}
           loading={loading}
+          onAddImage={addProductImage}
           imageList={imageList}
           setImageList={setImageList}
           title="Add New Product"

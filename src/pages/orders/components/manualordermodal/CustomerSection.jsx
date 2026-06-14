@@ -204,9 +204,18 @@ const CustomerSection = ({
                         <DatePicker
                             style={{ width: '100%' }}
                             format="DD-MM-YYYY"
-                            disabledDate={(current) =>
-                                current && current < dayjs().startOf('day')
-                            }
+                            disabledDate={(current) => {
+                                const today = dayjs().startOf('day');
+                                const maxDate = today.add(7, 'day');
+
+                                return (
+                                    current &&
+                                    (
+                                        current < today ||
+                                        current > maxDate
+                                    )
+                                );
+                            }}
                         />
                     </Form.Item>
                 </Col>

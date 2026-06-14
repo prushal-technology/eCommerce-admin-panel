@@ -3,6 +3,7 @@ import { Button, Card, Form, Input, message, Popconfirm, Skeleton, Space, Table,
 import { useEffect, useRef, useState } from 'react';
 import { createCategory, deleteCategory, getAllCategories, updateCategory } from '../api/categories';
 import CategoryModal from '../components/modals/CategoryModal';
+import usePermissions from '../hooks/usePermissions';
 // Helper function to convert File to base64
 const fileToBase64 = (file) => {
   return new Promise((resolve, reject) => {
@@ -17,6 +18,8 @@ const { Title, Text } = Typography;
 
 
 const Categories = () => {
+  const { canUpdate } = usePermissions();
+  const canManageCategories = canUpdate('category');
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(false);
   const [searchText, setSearchText] = useState('');
@@ -104,7 +107,7 @@ const Categories = () => {
       } else {
         message.error(res.message || "Failed to load categories");
       }
-    } catch (error) {
+    } catch {
       message.error("Something went wrong");
     } finally {
       setLoading(false);
@@ -113,6 +116,8 @@ const Categories = () => {
   };
 
   const handleSubmit = async (values) => {
+    if (!canManageCategories) return;
+
     try {
       setLoading(true);
       // Convert image file to base64 if exists
@@ -148,7 +153,7 @@ const Categories = () => {
       } else {
         message.error(res.message || "Failed to save");
       }
-    } catch (error) {
+    } catch {
       message.error("Something went wrong");
     } finally {
       setLoading(false);
@@ -156,6 +161,8 @@ const Categories = () => {
   };
 
   const handleEdit = (category) => {
+    if (!canManageCategories) return;
+
     setEditingCategory(category);
     form.setFieldsValue({
       name: category.name,
@@ -179,6 +186,8 @@ const Categories = () => {
     setIsModalVisible(true);
   };
   const handleDelete = async (id) => {
+    if (!canManageCategories) return;
+
     try {
       const res = await deleteCategory(id);
       if (res.success) {
@@ -189,7 +198,7 @@ const Categories = () => {
         message.error(res.message);
       }
     }
-    catch (error) {
+    catch {
       message.error("Something went wrong");
     }
     finally {
@@ -316,6 +325,8 @@ const Categories = () => {
             />
           );
         }
+
+        if (!canManageCategories) return null;
 
         return (
           <span>
@@ -461,20 +472,21 @@ const Categories = () => {
           onChange={(e) => setSearchText(e.target.value)}
           style={{ width: 250 }} // 🔥 control width here
         />
-        <Button
-          type="primary"
-          size="small"
-          icon={<PlusOutlined />}
-
-          onClick={() => {
-            setEditingCategory(null);
-            form.resetFields();
-            setImageList([]);
-            setIsModalVisible(true);
-          }}
-        >
-          Add Category
-        </Button>
+        {canManageCategories && (
+          <Button
+            type="primary"
+            size="small"
+            icon={<PlusOutlined />}
+            onClick={() => {
+              setEditingCategory(null);
+              form.resetFields();
+              setImageList([]);
+              setIsModalVisible(true);
+            }}
+          >
+            Add Category
+          </Button>
+        )}
       </Space>
 
       <Card style={{ flex: 1, overflow: "hidden", display: "flex", flexDirection: "column" }}>
@@ -506,21 +518,23 @@ const Categories = () => {
             )}
         </div>
       </Card>
-      <CategoryModal
-        form={form}
-        open={isModalVisible}
-        onClose={() => setIsModalVisible(false)}
-        onSubmit={handleSubmit}
-        editingCategory={editingCategory}
-        parentCategories={getParentCategories()}
-        imageList={imageList}
-        setImageList={setImageList}
-        loading={loading}
-        onCancel={() => {
-          setIsModalVisible(false);
-          form.resetFields();
-        }}
-      />
+      {canManageCategories && (
+        <CategoryModal
+          form={form}
+          open={isModalVisible}
+          onClose={() => setIsModalVisible(false)}
+          onSubmit={handleSubmit}
+          editingCategory={editingCategory}
+          parentCategories={getParentCategories()}
+          imageList={imageList}
+          setImageList={setImageList}
+          loading={loading}
+          onCancel={() => {
+            setIsModalVisible(false);
+            form.resetFields();
+          }}
+        />
+      )}
     </div>
   );
 };

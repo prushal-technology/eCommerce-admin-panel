@@ -125,6 +125,7 @@ const StockTable = ({
     onSearchChange,
     onFilterChange,
     onEditStock,
+    canManageStock,
     onLoadMore,
     getStockQuantity,
     getStockStatus,
@@ -200,13 +201,13 @@ const StockTable = ({
             render: (_, record) =>
                 record.isSkeleton ? (
                     <Skeleton.Button active size="small" shape="circle" />
-                ) : (
+                ) : canManageStock ? (
                     <Button
                         size="small"
                         icon={<EditOutlined />}
                         onClick={() => onEditStock(record, 'add')}
                     />
-                ),
+                ) : null,
         },
     ];
 

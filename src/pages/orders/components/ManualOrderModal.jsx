@@ -930,7 +930,7 @@ const ManualOrderModal = ({
     handleOrderTypeChange,
     handleSubmit: submitOrder,
     reset: resetOrder,
-  } = useManualOrder({ onOrderCreated, onClose });
+  } = useManualOrder({ onOrderCreated, onClose, defaultOrderType, });
 
   // ── Product search hook ────────────────────────────────────────────────────
   const {

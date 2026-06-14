@@ -1,8 +1,8 @@
-import { CloseOutlined, LogoutOutlined, MenuOutlined, UserOutlined, } from "@ant-design/icons";
+import { CloseOutlined, LogoutOutlined, MenuOutlined, UserOutlined } from "@ant-design/icons";
 import { Avatar, Dropdown, Layout } from "antd";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { getDecryptedUser } from "../utils/crypto";
+import { useAuth } from "../hooks/useAuth";
 
 const { Header } = Layout;
 
@@ -13,12 +13,13 @@ const getGreeting = () => {
   return "Good Evening";
 };
 
-export default function HeaderBar({ collapsed, setCollapsed }) {
-  const user = getDecryptedUser();
-  const navigate = useNavigate();
+const getDisplayName = (user) =>
+  user?.displayName || user?.first_name || user?.firstName || user?.name || "Admin";
 
+export default function HeaderBar({ collapsed, setCollapsed }) {
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
-  const [notifications, setNotifications] = useState(3); // Mock notification count
 
   useEffect(() => {
     const handleResize = () => {
@@ -30,32 +31,30 @@ export default function HeaderBar({ collapsed, setCollapsed }) {
   }, []);
 
   const handleLogout = () => {
-    localStorage.removeItem('authToken');
-    localStorage.removeItem('refreshToken');
-    localStorage.removeItem('user');
-    navigate('/login');
+    logout();
+    navigate("/login");
   };
 
   const userMenuItems = [
     {
-      key: 'profile',
+      key: "profile",
       icon: <UserOutlined />,
-      label: 'Profile',
-      onClick: () => navigate('/profile'),
+      label: "Profile",
+      onClick: () => navigate("/profile"),
     },
     {
-      key: 'settings',
+      key: "settings",
       icon: <UserOutlined />,
-      label: 'Settings',
-      onClick: () => navigate('/settings'),
+      label: "Settings",
+      onClick: () => navigate("/settings"),
     },
     {
-      type: 'divider',
+      type: "divider",
     },
     {
-      key: 'logout',
+      key: "logout",
       icon: <LogoutOutlined />,
-      label: 'Logout',
+      label: "Logout",
       onClick: handleLogout,
     },
   ];
@@ -74,7 +73,6 @@ export default function HeaderBar({ collapsed, setCollapsed }) {
         padding: "0 16px",
       }}
     >
-      {/* LEFT SECTION */}
       <div
         style={{
           display: "flex",
@@ -107,33 +105,23 @@ export default function HeaderBar({ collapsed, setCollapsed }) {
         >
           {user &&
             (isMobile
-              ? `Flower's Admin - ${user.displayName || user.name || 'Admin'}`
-              : `Flower's Admin - ${getGreeting()}, ${user.displayName || user.name || 'Admin'}`)}
+              ? `Flower's Admin - ${getDisplayName(user)}`
+              : `Flower's Admin - ${getGreeting()}, ${getDisplayName(user)}`)}
         </div>
       </div>
 
-      {/* RIGHT SECTION */}
-      <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
-        
-
-        {/* User Profile Dropdown */}
-        <Dropdown
-          menu={{ items: userMenuItems }}
-          placement="bottomRight"
-          trigger={['click']}
-        >
-          <Avatar
-            size="large"
-            icon={<UserOutlined />}
-            style={{
-              backgroundColor: "#ffffff",
-              color: "#727bd8",
-              cursor: "pointer",
-              flexShrink: 0,
-            }}
-          />
-        </Dropdown>
-      </div>
+      <Dropdown menu={{ items: userMenuItems }} placement="bottomRight" trigger={["click"]}>
+        <Avatar
+          size="large"
+          icon={<UserOutlined />}
+          style={{
+            backgroundColor: "#ffffff",
+            color: "#727bd8",
+            cursor: "pointer",
+            flexShrink: 0,
+          }}
+        />
+      </Dropdown>
     </Header>
   );
 }

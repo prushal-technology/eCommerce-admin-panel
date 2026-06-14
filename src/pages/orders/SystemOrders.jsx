@@ -267,6 +267,7 @@ import dayjs from 'dayjs';
 import { useEffect, useRef, useState } from 'react';
 import OrderDetailsModal from '../../components/modals/OrderDetailsModal';
 import OrderTrackingModal from '../../components/modals/OrderTrackingModal';
+import usePermissions from '../../hooks/usePermissions';
 import useOrders from '../../hooks/useOrders';
 import ManualOrderModal from './components/ManualOrderModal';
 import SystemOrdersFilters from './components/SystemOrdersFilters';
@@ -274,6 +275,8 @@ import SystemOrdersStats from './components/SystemOrdersStats';
 import SystemOrdersTable from './components/SystemOrdersTable';
 
 const SystemOrders = () => {
+  const { canUpdate } = usePermissions();
+  const canManageOrders = canUpdate('order');
   const [searchText, setSearchText] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [dateRange, setDateRange] = useState(null);
@@ -379,7 +382,7 @@ const SystemOrders = () => {
       const { getOrderTracking } = await import('../../api/orders');
       const res = await getOrderTracking(order.id);
       setTrackingData(res.success ? res.tracking || [] : []);
-    } catch (error) {
+    } catch {
       setTrackingData([]);
     } finally {
       setTrackingLoading(false);
@@ -387,6 +390,8 @@ const SystemOrders = () => {
   };
 
   const handleStatusUpdate = async () => {
+    if (!canManageOrders) return false;
+
     if (!selectedOrder) return false;
     try {
       const res = await changeOrderStatus(
@@ -441,16 +446,18 @@ const SystemOrders = () => {
           System Orders Management
         </Title>
 
-        <Button
-          type="primary"
-          icon={<PlusOutlined />}
-          onClick={() =>
-            setManualOrderVisible(true)
-          }
-          size="small"
-        >
-          Take Order
-        </Button>
+        {canManageOrders && (
+          <Button
+            type="primary"
+            icon={<PlusOutlined />}
+            onClick={() =>
+              setManualOrderVisible(true)
+            }
+            size="small"
+          >
+            Take Order
+          </Button>
+        )}
 
       </div>
 
@@ -540,6 +547,7 @@ const SystemOrders = () => {
         statusNote={statusNote}
         setStatusNote={setStatusNote}
         onStatusUpdate={handleStatusUpdate}
+        canUpdateStatus={canManageOrders}
       />
 
       <OrderTrackingModal
@@ -557,16 +565,19 @@ const SystemOrders = () => {
 
         onStatusUpdate={handleStatusUpdate}
         statusUpdateLoading={loading}
+        canUpdateStatus={canManageOrders}
       />
 
-      <ManualOrderModal
-        visible={manualOrderVisible}
-        onClose={() => setManualOrderVisible(false)}
-        onOrderCreated={() => {
-          setManualOrderVisible(false);
-          fetchOrders('admin_panel');
-        }}
-      />
+      {canManageOrders && (
+        <ManualOrderModal
+          visible={manualOrderVisible}
+          onClose={() => setManualOrderVisible(false)}
+          onOrderCreated={() => {
+            setManualOrderVisible(false);
+            fetchOrders('admin_panel');
+          }}
+        />
+      )}
     </div>
   );
 };

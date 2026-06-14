@@ -16,11 +16,11 @@ const buildEmptyItem = () => ({
  * Manages order-items state, pricing calculations, and order submission
  * for ManualOrderModal.
  */
-const useManualOrder = ({ onOrderCreated, onClose }) => {
+const useManualOrder = ({ onOrderCreated, onClose, defaultOrderType = 'normal' }) => {
     const { createOrder } = useOrders();
 
     const [orderItems, setOrderItems] = useState([buildEmptyItem()]);
-    const [orderType, setOrderType] = useState('normal');
+    const [orderType, setOrderType] = useState(defaultOrderType);
     const [loading, setLoading] = useState(false);
 
     // ── Pricing helpers ──────────────────────────────────────────────────────
@@ -209,7 +209,7 @@ const useManualOrder = ({ onOrderCreated, onClose }) => {
 
     const reset = () => {
         setOrderItems([buildEmptyItem()]);
-        setOrderType('normal');
+        setOrderType(defaultOrderType || 'normal');
     };
 
     return {

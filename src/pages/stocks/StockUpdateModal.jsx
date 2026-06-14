@@ -83,6 +83,7 @@ const StockUpdateModal = ({
             </Form.Item>
 
             {/* Quantity / level input — changes based on update type */}
+            {/* Quantity / level input — changes based on update type */}
             <Form.Item
                 noStyle
                 shouldUpdate={(prev, cur) => prev.updateType !== cur.updateType}
@@ -92,17 +93,71 @@ const StockUpdateModal = ({
                         <Form.Item
                             name="stock"
                             label="New Stock Level"
-                            rules={[{ required: true, message: 'Please enter stock level' }]}
+                            rules={[
+                                { required: true, message: 'Please enter stock level' },
+                                {
+                                    validator: (_, value) => {
+                                        if (value === undefined || value === null) {
+                                            return Promise.resolve();
+                                        }
+                                        if (value < 0) {
+                                            return Promise.reject(
+                                                new Error('Stock level cannot be negative')
+                                            );
+                                        }
+                                        return Promise.resolve();
+                                    },
+                                },
+                            ]}
                         >
-                            <InputNumber min={0} />
+                            <InputNumber
+                                min={0}
+                                controls
+                                onKeyDown={(e) => {
+                                    if (e.key === '-' || e.key === 'e') {
+                                        e.preventDefault();
+                                    }
+                                }}
+                                style={{ width: '100%' }}
+                                parser={(value) =>
+                                    value ? value.replace(/[^0-9]/g, '') : ''
+                                }
+                            />
                         </Form.Item>
                     ) : (
                         <Form.Item
                             name="quantity"
                             label="Quantity"
-                            rules={[{ required: true, message: 'Please enter quantity' }]}
+                            rules={[
+                                { required: true, message: 'Please enter quantity' },
+                                {
+                                    validator: (_, value) => {
+                                        if (value === undefined || value === null) {
+                                            return Promise.resolve();
+                                        }
+                                        if (value <= 0) {
+                                            return Promise.reject(
+                                                new Error('Quantity must be greater than 0')
+                                            );
+                                        }
+                                        return Promise.resolve();
+                                    },
+                                },
+                            ]}
                         >
-                            <InputNumber min={1} />
+                            <InputNumber
+                                min={1}
+                                controls
+                                onKeyDown={(e) => {
+                                    if (e.key === '-' || e.key === 'e') {
+                                        e.preventDefault();
+                                    }
+                                }}
+                                style={{ width: '100%' }}
+                                parser={(value) =>
+                                    value ? value.replace(/[^0-9]/g, '') : ''
+                                }
+                            />
                         </Form.Item>
                     )
                 }

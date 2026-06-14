@@ -155,11 +155,21 @@ export const GRAPHQL_QUERIES = {
       tokenAuth(email: $email, password: $password) {
         token
         role
+        employeeId
+        roleName
+        permissions {
+          module
+          access
+        }
         user {
           id
           email
           role
+          firstName
+          lastName
+          phone
         }
+        
       }
     }
   `,
@@ -689,6 +699,7 @@ mutation UpdateStock($productId: Int!, $quantity: Int!) {
         customers {
           id
           user {
+          id
             firstName
             lastName
             email
@@ -696,6 +707,7 @@ mutation UpdateStock($productId: Int!, $quantity: Int!) {
           }
           addresses {
             id
+            name
             city
             state
             pincode
