@@ -1,10 +1,10 @@
 import { message } from 'antd';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
     CREATE_EMPLOYEE,
     DELETE_EMPLOYEE,
-    UPDATE_EMPLOYEE_STATUS,
-} from '../graphql/mutations';
+    UPDATE_EMPLOYEE,
+} from '../graphql/employeeMutations';
 import { GET_EMPLOYEES } from '../graphql/queries';
 
 const formatEmployee = (emp) => ({
@@ -27,21 +27,52 @@ export const useEmployees = () => {
     const [searchText, setSearchText] = useState('');
     const [roleFilter, setRoleFilter] = useState('all');
     const [statusFilter, setStatusFilter] = useState('all');
+    const [hasMore, setHasMore] = useState(false);
+    const [nextCursor, setNextCursor] = useState(null);
+    const [fetchingMore, setFetchingMore] = useState(false);
+
+    const skipSearchEffect = useRef(true);
+    const isFetching = useRef(false);
 
     useEffect(() => {
         loadEmployees();
     }, []);
 
-    const loadEmployees = async () => {
-        setLoading(true);
+    // Debounced search
+    useEffect(() => {
+        if (skipSearchEffect.current) {
+            skipSearchEffect.current = false;
+            return;
+        }
+        const timer = setTimeout(() => loadEmployees(null, false, searchText), 500);
+        return () => clearTimeout(timer);
+    }, [searchText]);
+
+    const loadEmployees = async (cursor = null, append = false, search = searchText) => {
+        if (isFetching.current) return;
+        isFetching.current = true;
+
+        if (append) setFetchingMore(true);
+        else setLoading(true);
+
         try {
             const { graphqlRequest } = await import('../api/graphql');
-            const data = await graphqlRequest(GET_EMPLOYEES);
-            setEmployees((data.employees?.employees || []).map(formatEmployee));
+            const data = await graphqlRequest(GET_EMPLOYEES, {
+                first: 15,
+                after: cursor,
+                search: search || null
+            });
+            const newEmployees = (data.employees?.employees || []).map(formatEmployee);
+
+            setEmployees(prev => append ? [...prev, ...newEmployees] : newEmployees);
+            setHasMore(data.employees?.hasMore ?? false);
+            setNextCursor(data.employees?.nextCursor ?? null);
         } catch (error) {
             message.error('Failed to load employees: ' + error.message);
         } finally {
             setLoading(false);
+            setFetchingMore(false);
+            isFetching.current = false;
         }
     };
 
@@ -59,36 +90,64 @@ export const useEmployees = () => {
         await loadEmployees();
     };
 
+    const updateEmployee = async (values) => {
+        try {
+            const { graphqlRequest } = await import('../api/graphql');
+
+            await graphqlRequest(UPDATE_EMPLOYEE, {
+                id: Number(values.id),
+                firstName: values.firstName,
+                lastName: values.lastName,
+                phone: values.phone,
+                roleName: values.roleName,
+                isActive: values.isActive,
+            });
+
+            message.success('Employee updated successfully');
+
+            await loadEmployees();
+        } catch (error) {
+            message.error('Failed to update employee');
+            throw error;
+        }
+    };
+
     const deleteEmployee = async (record) => {
         const { graphqlRequest } = await import('../api/graphql');
-        await graphqlRequest(DELETE_EMPLOYEE, { employeeId: record.employeeId });
+        await graphqlRequest(DELETE_EMPLOYEE, {
+            id: Number(record.id),
+        });
         message.success('Employee deleted successfully');
         await loadEmployees();
     };
 
     const toggleEmployeeStatus = async (record) => {
-        const newIsActive = !record.isActive;
-        const { graphqlRequest } = await import('../api/graphql');
-        await graphqlRequest(UPDATE_EMPLOYEE_STATUS, {
-            employeeId: record.employeeId,
-            isActive: newIsActive,
-        });
-        message.success(`Employee ${newIsActive ? 'activated' : 'deactivated'} successfully`);
-        await loadEmployees();
+        try {
+            await updateEmployee({
+                id: record.id,
+                firstName: record.firstName,
+                lastName: record.lastName,
+                phone: record.phone,
+                roleName: record.roleName,
+                isActive: !record.isActive,
+            });
+
+            message.success(
+                `Employee ${!record.isActive ? 'activated' : 'deactivated'} successfully`
+            );
+        } catch (error) {
+            console.log(error);
+        }
     };
 
     const filteredEmployees = useMemo(
         () =>
             employees.filter((emp) => {
-                const matchesSearch =
-                    emp.name.toLowerCase().includes(searchText.toLowerCase()) ||
-                    emp.email.toLowerCase().includes(searchText.toLowerCase()) ||
-                    emp.phone.includes(searchText);
                 const matchesRole = roleFilter === 'all' || emp.role === roleFilter;
                 const matchesStatus = statusFilter === 'all' || emp.status === statusFilter;
-                return matchesSearch && matchesRole && matchesStatus;
+                return matchesRole && matchesStatus;
             }),
-        [employees, searchText, roleFilter, statusFilter]
+        [employees, roleFilter, statusFilter]
     );
 
     const stats = useMemo(
@@ -104,9 +163,11 @@ export const useEmployees = () => {
     );
 
     const skeletonRows = useMemo(
-        () => Array.from({ length: 6 }).map((_, i) => ({ id: `skeleton-${i}`, isSkeleton: true })),
+        () => Array.from({ length: 11 }).map((_, i) => ({ id: `skeleton-${i}`, isSkeleton: true })),
         []
     );
+
+
 
     return {
         employees,
@@ -118,11 +179,15 @@ export const useEmployees = () => {
         setSearchText,
         roleFilter,
         setRoleFilter,
+        hasMore,
+        nextCursor,
+        fetchingMore,
         statusFilter,
         setStatusFilter,
         loadEmployees,
         createEmployee,
         deleteEmployee,
+        updateEmployee,
         toggleEmployeeStatus,
     };
 };

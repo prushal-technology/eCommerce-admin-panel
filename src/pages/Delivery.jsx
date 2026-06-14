@@ -180,7 +180,7 @@ const Delivery = () => {
   const handleToggleStatus = async (record) => {
     try {
       const newStatus = record.status === 'active' ? 'inactive' : 'active';
-      setPartners(partners.map(p => 
+      setPartners(partners.map(p =>
         p.id === record.id ? { ...p, status: newStatus } : p
       ));
       message.success(`Delivery partner ${newStatus === 'active' ? 'activated' : 'deactivated'} successfully`);
@@ -196,7 +196,7 @@ const Delivery = () => {
   const handleSubmit = async (values) => {
     try {
       if (editingPartner) {
-        setPartners(partners.map(p => 
+        setPartners(partners.map(p =>
           p.id === editingPartner.id ? { ...p, ...values } : p
         ));
         message.success('Delivery partner updated successfully');
@@ -224,8 +224,8 @@ const Delivery = () => {
 
   const filteredPartners = partners.filter(partner => {
     const matchesSearch = partner.name.toLowerCase().includes(searchText.toLowerCase()) ||
-                         partner.email.toLowerCase().includes(searchText.toLowerCase()) ||
-                         partner.phone.includes(searchText);
+      partner.email.toLowerCase().includes(searchText.toLowerCase()) ||
+      partner.phone.includes(searchText);
     const matchesStatus = statusFilter === 'all' || partner.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
@@ -276,9 +276,9 @@ const Delivery = () => {
       render: (orders, record) => (
         <div>
           <div style={{ fontWeight: 'bold' }}>{orders}</div>
-          <Progress 
-            percent={getLoadPercentage(record)} 
-            size="small" 
+          <Progress
+            percent={getLoadPercentage(record)}
+            size="small"
             strokeColor={getLoadColor(getLoadPercentage(record))}
             showInfo={false}
           />
@@ -404,7 +404,7 @@ const Delivery = () => {
         showIcon
         style={{ marginBottom: 16 }}
       />
-      
+
       {/* Delivery Partners Statistics */}
       <Row gutter={16} style={{ marginBottom: 16 }}>
         <Col xs={24} sm={12} md={4}>

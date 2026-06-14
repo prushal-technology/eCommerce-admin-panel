@@ -204,38 +204,26 @@ const OrdersDashboard = () => {
 
         total:
             systemStats.total +
-            customStats.total +
-            bulkStats.total +
             userStats.total,
 
         pending:
             systemStats.pending +
-            customStats.pending +
-            bulkStats.pending +
             userStats.pending,
 
         dispatched:
             systemStats.dispatched +
-            customStats.dispatched +
-            bulkStats.dispatched +
             userStats.dispatched,
 
         delivered:
             systemStats.delivered +
-            customStats.delivered +
-            bulkStats.delivered +
             userStats.delivered,
 
         cancelled:
             systemStats.cancelled +
-            customStats.cancelled +
-            bulkStats.cancelled +
             userStats.cancelled,
 
         totalRevenue:
             systemStats.totalRevenue +
-            customStats.totalRevenue +
-            bulkStats.totalRevenue +
             userStats.totalRevenue,
     };
 
@@ -246,7 +234,7 @@ const OrdersDashboard = () => {
 
                 height: 'calc(100vh - 120px)',
                 overflowY: 'auto',
-                overflowX: 'hidden',    
+                overflowX: 'hidden',
                 paddingRight: 4,
             }}
         >

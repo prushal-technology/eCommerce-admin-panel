@@ -28,13 +28,17 @@ export const getAllProducts = async (first = 10, after = null, search = null, ca
 // Create new product
 export const createProduct = async (productData) => {
   try {
-    const { categoryId, name, description, sku, price, discountPrice, isActive = true, unit, measureValue, isFeatured = false, quantity, reservedQuantity, shortDescription, deliveryRuleDays, keywords } = productData;
+    const { categoryId, name, description, sku, price, discountPrice, bulkOrderPrice, isActive = true, unit, measureValue, isFeatured = false, storefrontQuantity, systemQuantity, storefrontReservedQuantity, systemReservedQuantity, shortDescription, deliveryRuleDays, keywords } = productData;
 
     // Convert categoryId to number if it's a string
     const numericCategoryId = typeof categoryId === 'string' ? parseInt(categoryId, 10) : categoryId;
 
     // Convert price to number
     const numericPrice = parseFloat(price);
+
+    // Compute total quantity and reserved quantity from storefront and system values
+    const totalQuantity = Number(storefrontQuantity) + Number(systemQuantity);
+    const totalReserved = Number(storefrontReservedQuantity) + Number(systemReservedQuantity);
 
     const variables = {
       categoryId: numericCategoryId,
@@ -44,13 +48,16 @@ export const createProduct = async (productData) => {
       sku,
       price: numericPrice,
       discountPrice: discountPrice ? parseFloat(discountPrice) : null,
+      bulkOrderPrice: bulkOrderPrice ? parseFloat(bulkOrderPrice) : null,
       deliveryRuleDays: deliveryRuleDays ? Number(deliveryRuleDays) : null,
       isActive,
       unit,
       measureValue: measureValue ? String(measureValue) : null,
       isFeatured,
-      quantity: quantity ? parseInt(quantity, 10) : null,
-      reservedQuantity: reservedQuantity ? parseInt(reservedQuantity, 10) : null,
+      storefrontQuantity: Number(storefrontQuantity),
+      systemQuantity: Number(systemQuantity),
+      storefrontReservedQuantity: Number(storefrontReservedQuantity),
+      systemReservedQuantity: Number(systemReservedQuantity),
       keywords: keywords || [],
     };
 
@@ -93,14 +100,22 @@ export const updateProduct = async (id, productData) => {
           productData.discountPrice !== ""
           ? Number(productData.discountPrice)
           : null,
+      bulkOrderPrice:                                                         // ← added
+        productData.bulkOrderPrice !== undefined &&
+          productData.bulkOrderPrice !== null &&
+          productData.bulkOrderPrice !== ''
+          ? Number(productData.bulkOrderPrice)
+          : null,
       deliveryRuleDays: productData.deliveryRuleDays ? Number(productData.deliveryRuleDays) : null,
       isActive: productData.isActive,
       isFeatured: productData.isFeatured,
       unit: productData.unit,
       measureValue: productData.measureValue ? parseFloat(productData.measureValue) : null,
       categoryId: productData.categoryId ? Number(productData.categoryId) : null,
-      quantity: productData.quantity ? parseInt(productData.quantity, 10) : null,
-      reservedQuantity: productData.reservedQuantity ? parseInt(productData.reservedQuantity, 10) : 0
+      storefrontQuantity: Number(productData.storefrontQuantity),
+      systemQuantity: Number(productData.systemQuantity),
+      storefrontReservedQuantity: Number(productData.storefrontReservedQuantity),
+      systemReservedQuantity: Number(productData.systemReservedQuantity),
     };
 
     const data = await graphqlRequest(
@@ -340,29 +355,39 @@ export const getProductById = async (id) => {
 };
 
 
-export const updateStock = async (productId, quantity) => {
+export const updateStock = async (
+  productId,
+  inventoryType,
+  quantity
+) => {
   try {
     const variables = {
       productId: Number(productId),
-      quantity: Number(quantity)
+      inventoryType,
+      quantity: Number(quantity),
     };
 
     const data = await graphqlRequest(
-      GRAPHQL_QUERIES.UPDATE_STOCK,   // ✅ VERY IMPORTANT
+      GRAPHQL_QUERIES.UPDATE_STOCK,
       variables
     );
 
-    if (data && data.updateStock) {
+    if (data?.updateStock) {
       return {
         success: true,
-        stock: data.updateStock.stock
+        stock: data.updateStock.stock,
       };
     }
 
-    return { success: false, message: "Stock update failed" };
-
+    return {
+      success: false,
+      message: 'Stock update failed',
+    };
   } catch (error) {
-    return { success: false, message: error.message };
+    return {
+      success: false,
+      message: error.message,
+    };
   }
 };
 

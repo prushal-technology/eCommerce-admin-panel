@@ -35,6 +35,21 @@ const ShippingAddressModal = ({
         >
           <Input placeholder="Enter phone number" />
         </Form.Item>
+        <Form.Item
+          name="addressLine"
+          label="Address"
+          rules={[
+            {
+              required: true,
+              message: 'Please enter address'
+            }
+          ]}
+        >
+          <Input.TextArea
+            rows={3}
+            placeholder="Flat No, Building Name, Area"
+          />
+        </Form.Item>
 
         <Row gutter={16}>
           <Col span={12}>

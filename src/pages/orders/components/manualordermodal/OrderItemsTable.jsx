@@ -15,6 +15,7 @@ const resolveProductImage = (product) => {
 };
 
 const ProductOption = ({ product }) => {
+
     const src = resolveProductImage(product);
     return (
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%' }}>
@@ -32,7 +33,7 @@ const ProductOption = ({ product }) => {
             </div>
             <div style={{ minWidth: 0 }}>
                 <div style={{ fontWeight: 'bold' }}>{product.name}</div>
-                <div style={{ fontSize: 12, color: '#666' }}>Stock: {product.stock?.quantity ?? 0}</div>
+                <div style={{ fontSize: 12, color: '#666' }}>Stock: {product.systemStock?.availableQuantity ?? 0}</div>
             </div>
         </div>
     );
@@ -71,7 +72,7 @@ const OrderItemsTable = ({
                         onSearch={onProductSearch}
                         onPopupScroll={onProductPopupScroll}
                         notFoundContent={productListLoading ? <span>Loading...</span> : null}
-                        dropdownRender={(menu) => (
+                        popupRender={(menu) => (
                             <>
                                 {menu}
                                 {productListLoading && (

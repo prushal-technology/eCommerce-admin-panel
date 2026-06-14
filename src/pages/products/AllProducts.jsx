@@ -21,8 +21,8 @@ import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import ImagePreviewModal from '../../components/modals/ImagePreviewModal';
 import ProductModal from '../../components/modals/ProductModal';
+import usePermissions from '../../hooks/usePermissions';
 import useProducts from '../../hooks/useProducts';
-import { getDecryptedUser } from "../../utils/crypto"; // adjust path
 
 const { Search } = Input;
 const { Option } = Select;
@@ -30,18 +30,12 @@ const { Title, Text } = Typography;
 
 const AllProducts = () => {
   const navigate = useNavigate();
-  const user = getDecryptedUser();
-  const role = user?.role;
-
-  const normalizedRole = role?.toLowerCase();
-
-  const isAdmin = ["admin", "manager"].includes(normalizedRole);
-  const isEmployee = ["employee", "sales associate"].includes(normalizedRole);
+  const { canUpdate } = usePermissions();
+  const canManageProducts = canUpdate('product');
 
   const {
     products,
     categories,
-    loadingProducts,
     actionLoading,
     fetchProducts,
     fetchCategories,
@@ -104,7 +98,7 @@ const AllProducts = () => {
   const loadCategories = async () => {
     try {
       await fetchCategories();
-    } catch (error) {
+    } catch {
       message.error('Failed to load categories');
     }
   };
@@ -137,7 +131,7 @@ const AllProducts = () => {
           setHasMore(result.hasMore);
         }
       }
-    } catch (error) {
+    } catch {
       message.error('Failed to load products');
     } finally {
       setLoading(false);
@@ -163,13 +157,16 @@ const AllProducts = () => {
       deliveryRuleDays: record.deliveryRuleDays,
       price: record.price,
       discountPrice: record.discountPrice,
+      bulkOrderPrice: record.bulkOrderPrice,
       categoryId: record.category?.id,
       isActive: record.isActive,
       unit: record.unit,
       measureValue: record.measureValue,
       isFeatured: record.isFeatured,
-      quantity: record.stock?.quantity,
-      reservedQuantity: record.stock?.reservedQuantity ?? 0
+      storefrontQuantity: record.storefrontStock?.quantity ?? 0,
+      systemQuantity: record.systemStock?.quantity ?? 0,
+      storefrontReservedQuantity: record.storefrontReservedQuantity ?? 0,
+      systemReservedQuantity: record.systemReservedQuantity ?? 0
     };
     setEditingProduct(mappedData);
 
@@ -201,7 +198,7 @@ const AllProducts = () => {
       if (deleted) {
         await loadProducts(null, true);
       }
-    } catch (error) {
+    } catch {
       message.error('Failed to delete product');
     }
   };
@@ -452,9 +449,9 @@ const AllProducts = () => {
     },
 
     {
-      title: <span>Stock</span>,
-      dataIndex: 'stock',
-      key: 'stock',
+      title: <span>Store front Stock</span>,
+      dataIndex: 'storefrontStock',
+      key: 'storefrontStock',
       render: (stockObj, record) => {
 
         if (record.isSkeleton) {
@@ -475,6 +472,51 @@ const AllProducts = () => {
           >
             {qty} units
           </Tag>
+        );
+      },
+    },
+    // System Stock column
+    {
+      title: <span>System Stock</span>,
+      dataIndex: 'systemStock',
+      key: 'systemStock',
+      render: (stockObj, record) => {
+        if (record.isSkeleton) {
+          return (
+            <Skeleton.Button
+              active
+              size="small"
+              style={{ width: 70 }}
+            />
+          );
+        }
+        const qty = stockObj?.quantity || 0;
+        return (
+          <Tag color={qty === 0 ? 'red' : qty < 10 ? 'orange' : 'green'}>
+            {qty} units
+          </Tag>
+        );
+      },
+    },
+    // Reserved Quantities column
+    {
+      title: <span>Reserved</span>,
+      dataIndex: 'reserved',
+      key: 'reserved',
+      render: (_, record) => {
+        if (record.isSkeleton) {
+          return (
+            <Skeleton.Button
+              active
+              size="small"
+              style={{ width: 70 }}
+            />
+          );
+        }
+        const storefrontRes = record.storefrontReservedQuantity ?? 0;
+        const systemRes = record.systemReservedQuantity ?? 0;
+        return (
+          <span>Storefront: {storefrontRes}, System: {systemRes}</span>
         );
       },
     },
@@ -519,11 +561,7 @@ const AllProducts = () => {
           );
         }
 
-        if (isEmployee) {
-          return null;
-        }
-
-        if (isAdmin) {
+        if (canManageProducts) {
           return (
             <Space size="small">
               <Button
@@ -602,7 +640,7 @@ const AllProducts = () => {
           </Select>
         </div>
         {/* RIGHT SIDE BUTTON */}
-        {(isAdmin || isEmployee) && (
+        {canManageProducts && (
           <Button
             type="primary"
             size="small"
@@ -639,35 +677,80 @@ const AllProducts = () => {
       </Card>
 
       {/* Add/Edit Product Modal */}
-      {(role === "admin" || role === "manager") && (
+      {canManageProducts && (
         <ProductModal
           visible={isModalVisible}
           onCancel={() => setIsModalVisible(false)}
-          onSubmit={async (productData, imageData) => {
+          onSubmit={async (
+            productData,
+            imageData
+          ) => {
+
             const payload = {
+
               ...productData,
-              price: Number(productData.price),
-              discountPrice: productData.discountPrice
-                ? Number(productData.discountPrice)
-                : null,
+
+              price: Number(
+                productData.price
+              ),
+
+              discountPrice:
+                productData.discountPrice
+                  ? Number(
+                    productData.discountPrice
+                  )
+                  : null,
             };
 
             if (editingProduct) {
-              const updated = await updateProduct(editingProduct.id, payload);
+
+              // EDIT PRODUCT
+
+              const updated =
+                await updateProduct(
+                  editingProduct.id,
+                  payload
+                );
+
               if (updated) {
-                await loadProducts(null, true);
+
+                await loadProducts(
+                  null,
+                  true
+                );
               }
+
             } else {
-              const created = await createProduct(payload);
+
+              // CREATE PRODUCT
+
+              const created =
+                await createProduct(payload);
+
               if (created?.id) {
-                if (imageData.length > 0) {
+
+                // UPLOAD IMAGES
+
+                if (
+                  imageData?.length > 0
+                ) {
+
                   for (const image of imageData) {
-                    await addProductImage(created.id, image);
+
+                    await addProductImage(
+                      created.id,
+                      image
+                    );
                   }
                 }
-                await loadProducts(null, true);
+
+                await loadProducts(
+                  null,
+                  true
+                );
               }
             }
+
             setIsModalVisible(false);
           }}
           initialValues={editingProduct}
@@ -677,6 +760,7 @@ const AllProducts = () => {
           setImageList={setImageList}
           title={editingProduct ? 'Edit Product' : 'Add Product'}
           onDeleteImage={deleteProductImage}
+          onAddImage={addProductImage}
         />
       )}
 

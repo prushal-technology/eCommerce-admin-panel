@@ -171,10 +171,10 @@ export default function useProducts() {
     }
   }, []);
 
-  const updateProductStock = useCallback(async (productId, quantity) => {
+  const updateProductStock = useCallback(async (productId, inventoryType, quantity) => {
     setActionLoading(true);
     try {
-      const response = await updateStockApi(productId, quantity);
+      const response = await updateStockApi(productId, inventoryType, quantity);
       if (response.success) {
         message.success('Stock updated successfully');
         return response.stock;

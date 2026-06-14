@@ -25,6 +25,7 @@ const useStockManager = () => {
         outOfStock: 0,
     });
 
+
     // ── Product list (for the "Manage Stock" select dropdown) ───────────────────
     const [productList, setProductList] = useState([]);
     const [productListLoading, setProductListLoading] = useState(false);
@@ -35,7 +36,11 @@ const useStockManager = () => {
     const searchTimeoutRef = useRef(null);
 
     // ── Stock helpers ───────────────────────────────────────────────────────────
-    const getStockQuantity = (product) => product?.stock?.quantity || 0;
+    const getStockQuantity = (product) =>
+        (product?.storefrontStock || 0) +
+        (product?.systemStock || 0);
+
+
 
     const getStockStatus = (product) => {
         const qty = getStockQuantity(product);
@@ -51,6 +56,22 @@ const useStockManager = () => {
         return Math.min(100, Math.round((stock / maxStock) * 100));
     };
 
+    const getStorefrontStock = (product) =>
+        product?.storefrontStock || 0;
+
+    const getSystemStock = (product) =>
+        product?.systemStock || 0;
+
+    const getReservedQuantity = (product) =>
+        (product?.storefrontReserved || 0) +
+        (product?.systemReserved || 0);
+
+    const getAvailableQuantity = (product) =>
+        getStockQuantity(product) -
+        getReservedQuantity(product);
+
+
+
     // ── Fetch stocks ────────────────────────────────────────────────────────────
     const loadStocks = async (query = '', cursor = null, isNewSearch = false) => {
         try {
@@ -59,20 +80,45 @@ const useStockManager = () => {
             const res = await getAllStocks(query || null, 10, cursor);
 
             if (res.success) {
-                const mapped = (res.allStocks || []).map((stock) => ({
-                    id: stock.id,
-                    name: stock.product?.name || 'Unknown Product',
-                    price: stock.product?.price,
-                    stock: {
-                        quantity: Number(stock.quantity || 0),
-                        reservedQuantity: Number(stock.reservedQuantity || 0),
-                        availableQuantity: Number(stock.availableQuantity || 0),
-                        isOutOfStock: stock.isOutOfStock,
-                    },
-                    images: stock.product?.images || [],
-                    isFeatured: false,
-                    unit: stock.product?.unit || '',
-                }));
+                const groupedProducts = {};
+
+                (res.allStocks || []).forEach((stock) => {
+                    const productId = stock.product?.id;
+
+                    if (!groupedProducts[productId]) {
+                        groupedProducts[productId] = {
+                            id: productId,
+                            name: stock.product?.name || 'Unknown Product',
+                            price: stock.product?.price,
+                            images: stock.product?.images || [],
+                            unit: stock.product?.unit || '',
+
+                            storefrontStock: 0,
+                            storefrontReserved: 0,
+
+                            systemStock: 0,
+                            systemReserved: 0,
+                        };
+                    }
+
+                    if (stock.inventoryType === 'storefront') {
+                        groupedProducts[productId].storefrontStock =
+                            Number(stock.quantity || 0);
+
+                        groupedProducts[productId].storefrontReserved =
+                            Number(stock.reservedQuantity || 0);
+                    }
+
+                    if (stock.inventoryType === 'system') {
+                        groupedProducts[productId].systemStock =
+                            Number(stock.quantity || 0);
+
+                        groupedProducts[productId].systemReserved =
+                            Number(stock.reservedQuantity || 0);
+                    }
+                });
+
+                const mapped = Object.values(groupedProducts);
 
                 if (isNewSearch) {
                     setStockItems(mapped);
@@ -113,7 +159,12 @@ const useStockManager = () => {
                 const transformed = (res.products || []).map((p) => ({
                     id: p.id,
                     name: p.name,
-                    quantity: p.stock?.quantity || 0,
+                    // quantity: p.stock?.quantity || 0,
+                    storefrontStock:
+                        p.storefrontStock || 0,
+
+                    systemStock:
+                        p.systemStock || 0,
                 }));
 
                 setProductList((prev) => (append ? [...prev, ...transformed] : transformed));
@@ -182,8 +233,14 @@ const useStockManager = () => {
 
         // Helpers
         getStockQuantity,
+        getStorefrontStock,
+        getSystemStock,
+
         getStockStatus,
         getStockPercentage,
+
+        getReservedQuantity,
+        getAvailableQuantity,
     };
 };
 

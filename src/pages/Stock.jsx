@@ -1,9 +1,10 @@
 import { Form, Space, message } from 'antd';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import ProductModal from '../components/modals/ProductModal';
+import usePermissions from '../hooks/usePermissions';
 import useProducts from '../hooks/useProducts';
 import useStockManager from '../hooks/useStockManager';
-import StockAlerts from './stocks/StockAlerts';
+//import StockAlerts from './stocks/StockAlerts';
 import StockHeader from './stocks/StockHeader';
 import StockStats from './stocks/StockStats';
 import StockTable from './stocks/StockTable';
@@ -18,6 +19,10 @@ import StockUpdateModal from './stocks/StockUpdateModal';
  *  - Delegating stock-update and product-creation side-effects
  */
 const Stock = () => {
+  const { canUpdate } = usePermissions();
+  const canManageStock = canUpdate('stock');
+  const canCreateProduct = canUpdate('product');
+
   const {
     categories,
     actionLoading,
@@ -59,18 +64,32 @@ const Stock = () => {
   const [stockForm] = Form.useForm();
 
   const handleOpenManageStock = () => {
+    if (!canManageStock) return;
+
     stockForm.resetFields();
     setSelectedStockItem(null);
     setIsStockModalOpen(true);
   };
 
-  const handleEditStock = (record, type) => {
+  const handleEditStock = (record, type, inventoryType = 'storefront') => {
+    if (!canManageStock) return;
+
     const currentQty = getStockQuantity(record);
     setSelectedStockItem(record);
     stockForm.setFieldsValue({
-      stock: type === 'set' ? currentQty : undefined,
+      inventoryType,
+      stock:
+        type === 'set'
+          ? (
+            inventoryType === 'storefront'
+              ? record.storefrontStock
+              : record.systemStock
+          )
+          : undefined,
+
       updateType: type,
-      quantity: type === 'set' ? currentQty : 1,
+
+      quantity: 1,
     });
     setIsStockModalOpen(true);
   };
@@ -81,21 +100,31 @@ const Stock = () => {
     setSelectedStockItem({
       id: product.id,
       name: product.name,
-      stock: { quantity: Number(product.quantity || 0) },
+      storefrontStock:
+        Number(product.storefrontStock || 0),
+
+      systemStock:
+        Number(product.systemStock || 0),
     });
     stockForm.setFieldsValue({ updateType: 'add', quantity: 1 });
   };
 
   const handleStockFormFinish = async (values) => {
+    if (!canManageStock) return;
+
     try {
-      const currentQty = getStockQuantity(selectedStockItem);
+      //const currentQty = getStockQuantity(selectedStockItem);
+      const currentQty =
+        values.inventoryType === 'storefront'
+          ? selectedStockItem.storefrontStock || 0
+          : selectedStockItem.systemStock || 0;
       let newStock = currentQty;
 
       if (values.updateType === 'set') newStock = values.stock;
       if (values.updateType === 'add') newStock = currentQty + values.quantity;
       if (values.updateType === 'subtract') newStock = Math.max(0, currentQty - values.quantity);
 
-      const res = await updateProductStock(selectedStockItem.id, newStock);
+      const res = await updateProductStock(selectedStockItem.id, values.inventoryType, newStock);
 
       if (res) {
         await loadStocks(searchText, null, true);
@@ -115,7 +144,15 @@ const Stock = () => {
   const [imageList, setImageList] = useState([]);
   const [productLoading, setProductLoading] = useState(false);
 
+  useEffect(() => {
+    if (canCreateProduct) {
+      fetchCategories();
+    }
+  }, [canCreateProduct, fetchCategories]);
+
   const handleAddProduct = () => {
+    if (!canCreateProduct) return;
+
     productForm.resetFields();
     setImageList([]);
     setIsProductModalOpen(true);
@@ -128,6 +165,8 @@ const Stock = () => {
   };
 
   const handleProductSubmit = async (values) => {
+    if (!canCreateProduct) return;
+
     setProductLoading(true);
     try {
       const newProduct = await createProduct({
@@ -169,12 +208,14 @@ const Stock = () => {
         <StockHeader
           onManageStock={handleOpenManageStock}
           onAddProduct={handleAddProduct}
+          canManageStock={canManageStock}
+          canCreateProduct={canCreateProduct}
         />
 
-        <StockAlerts
+        {/* <StockAlerts
           critical={stockStats.critical}
           outOfStock={stockStats.outOfStock}
-        />
+        /> */}
 
         <StockStats stats={stockStats} loading={stocksLoading} />
 
@@ -188,37 +229,42 @@ const Stock = () => {
           onSearchChange={setSearchText}
           onFilterChange={setStockFilter}
           onEditStock={handleEditStock}
+          canManageStock={canManageStock}
           onLoadMore={() => loadStocks(searchText, nextCursor, false)}
           getStockQuantity={getStockQuantity}
           getStockStatus={getStockStatus}
           getStockPercentage={getStockPercentage}
         />
 
-        <StockUpdateModal
-          open={isStockModalOpen}
-          onCancel={() => setIsStockModalOpen(false)}
-          onFinish={handleStockFormFinish}
-          form={stockForm}
-          actionLoading={actionLoading}
-          selectedItem={selectedStockItem}
-          onProductSelect={handleProductSelect}
-          productList={productList}
-          productListLoading={productListLoading}
-          onProductSearch={handleProductSearch}
-          onProductPopupScroll={handleProductPopupScroll}
-        />
+        {canManageStock && (
+          <StockUpdateModal
+            open={isStockModalOpen}
+            onCancel={() => setIsStockModalOpen(false)}
+            onFinish={handleStockFormFinish}
+            form={stockForm}
+            actionLoading={actionLoading}
+            selectedItem={selectedStockItem}
+            onProductSelect={handleProductSelect}
+            productList={productList}
+            productListLoading={productListLoading}
+            onProductSearch={handleProductSearch}
+            onProductPopupScroll={handleProductPopupScroll}
+          />
+        )}
 
-        <ProductModal
-          visible={isProductModalOpen}
-          onCancel={handleProductModalClose}
-          onSubmit={handleProductSubmit}
-          form={productForm}
-          categories={categories}
-          loading={productLoading}
-          imageList={imageList}
-          setImageList={setImageList}
-          title="Add Product"
-        />
+        {canCreateProduct && (
+          <ProductModal
+            visible={isProductModalOpen}
+            onCancel={handleProductModalClose}
+            onSubmit={handleProductSubmit}
+            form={productForm}
+            categories={categories}
+            loading={productLoading}
+            imageList={imageList}
+            setImageList={setImageList}
+            title="Add Product"
+          />
+        )}
 
       </Space>
     </div >

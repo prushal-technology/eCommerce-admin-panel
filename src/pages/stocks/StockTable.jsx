@@ -125,6 +125,7 @@ const StockTable = ({
     onSearchChange,
     onFilterChange,
     onEditStock,
+    canManageStock,
     onLoadMore,
     getStockQuantity,
     getStockStatus,
@@ -148,37 +149,121 @@ const StockTable = ({
         return () => tableBody.removeEventListener('scroll', handleScroll);
     }, [hasMore, loading, fetchingMore, onLoadMore]);
 
+
+
     const columns = [
         {
             title: 'Product',
             key: 'product',
+            width: 280,
             render: (_, record) => (
                 <ProductCell record={record} />
             ),
         },
+
         {
-            title: 'Current Stock (/100)',
-            key: 'stockLevel',
-            width: 200,
-            render: (_, record) => (
-                <StockLevelCell
-                    record={record}
-                    getStockQuantity={getStockQuantity}
-                    getStockPercentage={getStockPercentage}
-                />
-            ),
+            title: 'Storefront Inventory',
+            key: 'storefront',
+            align: 'center',
+            width: 120,
+            render: (_, record) =>
+                record.isSkeleton ? (
+                    <Skeleton.Input active size="small" style={{ width: 60 }} />
+                ) : (
+                    <div>
+                        <div style={{ fontWeight: 600 }}>
+                            {record.storefrontStock}
+                        </div>
+
+                        <div
+                            style={{
+                                fontSize: 11,
+                                color: '#999'
+                            }}
+                        >
+                            Reserved: {record.storefrontReserved}
+                        </div>
+                    </div>
+                ),
         },
+
+        {
+            title: 'System Inventory',
+            key: 'system',
+            align: 'center',
+            width: 120,
+            render: (_, record) =>
+                record.isSkeleton ? (
+                    <Skeleton.Input active size="small" style={{ width: 60 }} />
+                ) : (
+                    <div>
+                        <div style={{ fontWeight: 600 }}>
+                            {record.systemStock}
+                        </div>
+
+                        <div
+                            style={{
+                                fontSize: 11,
+                                color: '#999'
+                            }}
+                        >
+                            Reserved: {record.systemReserved}
+                        </div>
+                    </div>
+                ),
+        },
+
         {
             title: 'Reserved',
-            key: 'reservedQuantity',
+            key: 'reserved',
+            width: 110,
+            align: 'center',
+
+            render: (_, record) =>
+                record.isSkeleton ? (
+                    <Skeleton.Input active size="small" />
+                ) : (
+                    <Tag color="orange">
+                        {(record.storefrontReserved || 0) +
+                            (record.systemReserved || 0)}
+                    </Tag>
+                ),
+        },
+        {
+            title: 'Available',
+            key: 'available',
+            width: 110,
+            align: 'center',
+
+            render: (_, record) =>
+                record.isSkeleton ? (
+                    <Skeleton.Input active size="small" />
+                ) : (
+                    <Tag color="green">
+                        {(record.storefrontStock || 0) +
+                            (record.systemStock || 0) -
+                            (record.storefrontReserved || 0) -
+                            (record.systemReserved || 0)}
+                    </Tag>
+                ),
+        },
+
+        {
+            title: 'Total',
+            key: 'total',
+            align: 'center',
             width: 100,
             render: (_, record) =>
                 record.isSkeleton ? (
-                    <Skeleton.Input active size="small" style={{ width: 50, height: 18, borderRadius: 6 }} />
+                    <Skeleton.Input active size="small" style={{ width: 50 }} />
                 ) : (
-                    <div className="text-muted">{record.stock?.reservedQuantity || 0}</div>
+                    <Tag color="blue">
+                        {(record.storefrontStock || 0) +
+                            (record.systemStock || 0)}
+                    </Tag>
                 ),
         },
+
         {
             title: 'Status',
             key: 'status',
@@ -186,27 +271,50 @@ const StockTable = ({
             render: (_, record) => {
                 if (record.isSkeleton) {
                     return (
-                        <Skeleton.Button active size="small" style={{ width: 90, height: 24, borderRadius: 20 }} />
+                        <Skeleton.Button
+                            active
+                            size="small"
+                            style={{
+                                width: 90,
+                                height: 24,
+                                borderRadius: 20,
+                            }}
+                        />
                     );
                 }
-                const { color, text } = getStockStatus(record);
-                return <Tag color={color} className="tag-compact">{text}</Tag>;
+
+                const { color, text } =
+                    getStockStatus(record);
+
+                return (
+                    <Tag color={color}>
+                        {text}
+                    </Tag>
+                );
             },
         },
+
         {
             title: 'Actions',
             key: 'actions',
-            width: 100,
+            width: 90,
+            align: 'center',
             render: (_, record) =>
                 record.isSkeleton ? (
-                    <Skeleton.Button active size="small" shape="circle" />
-                ) : (
+                    <Skeleton.Button
+                        active
+                        size="small"
+                        shape="circle"
+                    />
+                ) : canManageStock ? (
                     <Button
                         size="small"
                         icon={<EditOutlined />}
-                        onClick={() => onEditStock(record, 'add')}
+                        onClick={() =>
+                            onEditStock(record, 'add')
+                        }
                     />
-                ),
+                ) : null,
         },
     ];
 

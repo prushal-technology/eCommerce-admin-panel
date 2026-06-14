@@ -117,10 +117,11 @@ const AboutStorySection = () => {
                 <Form.Item
                     label="Story Image"
                     name="image"
+                    value='fileList'
                 >
 
                     <Upload beforeUpload={() => false}>
-                        <Button>
+                        <Button type="secondary" size="small">
                             Upload Image
                         </Button>
                     </Upload>

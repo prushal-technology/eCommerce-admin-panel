@@ -1,5 +1,5 @@
-import { DeleteOutlined, EditOutlined } from '@ant-design/icons';
-import { Button, Popconfirm, Skeleton, Space, Table } from 'antd';
+import { DeleteOutlined, EditOutlined, EyeOutlined, } from '@ant-design/icons';
+import { Button, Popconfirm, Skeleton, Space, Switch, Table } from 'antd';
 import { useEffect, useRef } from 'react';
 
 const CustomerTable = ({
@@ -11,7 +11,9 @@ const CustomerTable = ({
     skeletonRows,
     onEdit,
     onDelete,
+    onToggleStatus,
     onLoadMore,
+    onView,
 }) => {
     const tableContainerRef = useRef(null);
 
@@ -39,8 +41,8 @@ const CustomerTable = ({
     const columns = [
         {
             title: 'ID',
-            dataIndex: 'id',
-            key: 'id',
+            dataIndex: 'customerId',
+            key: 'customerId',
             width: 80,
             render: (id, record) =>
                 record.isSkeleton ? (
@@ -82,19 +84,46 @@ const CustomerTable = ({
                     <span style={{ color: email === 'N/A' ? '#999' : '#1890ff' }}>{email}</span>
                 ),
         },
+
+        {
+            title: 'Status',
+            key: 'status',
+            width: 100,
+            render: (_, record) =>
+                record.isSkeleton ? null : (
+                    <Switch
+                        size="small"
+                        checked={record.isActive}
+                        onChange={() => onToggleStatus(record)}
+                    />
+                ),
+        },
         {
             title: 'Actions',
             key: 'actions',
-            width: 100,
+            width: 140,
             render: (_, record) =>
                 record.isSkeleton ? (
                     <Space size="small">
                         <Skeleton.Button active size="small" shape="circle" />
                         <Skeleton.Button active size="small" shape="circle" />
+                        <Skeleton.Button active size="small" shape="circle" />
                     </Space>
                 ) : (
                     <Space size="small">
-                        <Button size="small" icon={<EditOutlined />} onClick={() => onEdit(record)} />
+
+                        <Button
+                            size="small"
+                            icon={<EyeOutlined />}
+                            onClick={() => onView(record)}
+                        />
+
+                        <Button
+                            size="small"
+                            icon={<EditOutlined />}
+                            onClick={() => onEdit(record)}
+                        />
+
                         <Popconfirm
                             title="Delete Customer"
                             description="Are you sure you want to delete this customer?"
@@ -102,12 +131,19 @@ const CustomerTable = ({
                             okText="Yes"
                             cancelText="No"
                         >
-                            <Button size="small" danger icon={<DeleteOutlined />} />
+                            <Button
+                                size="small"
+                                danger
+                                icon={<DeleteOutlined />}
+                            />
                         </Popconfirm>
+
                     </Space>
                 ),
-        },
+        }
     ];
+
+    const datasource = loading ? skeletonRows : customers;
 
     return (
         <div
@@ -120,12 +156,12 @@ const CustomerTable = ({
             <Table
                 size="small"
                 columns={columns}
-                dataSource={loading ? skeletonRows : customers}
+                dataSource={datasource}
                 rowKey="id"
                 pagination={false}
                 scroll={{
                     x: 'max-content',
-                    y: customers.length > 6 ? 400 : undefined,
+                    y: 'calc(100vh - 300px)',
                 }}
                 locale={{
                     emptyText: 'No customers found',

@@ -13,6 +13,7 @@ const OrderDetailsModal = ({
   setStatusNote,
   onStatusUpdate,
   statusUpdateLoading = false,
+  canUpdateStatus = false,
 }) => {
   const renderOrderImage = (item) => {
     const validImage = item.product?.images && item.product.images.length > 0
@@ -75,39 +76,44 @@ const OrderDetailsModal = ({
               </Col>
               <Col span={12}>
                 <p><strong>Total Amount:</strong> ₹{parseFloat(order.totalAmount || 0).toFixed(2)}</p>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-                  <strong>Status:</strong>
-                  <Select
-                    value={newStatus}
-                    onChange={setNewStatus}
-                    style={{ width: 130 }}
-                    size="small"
-                  >
-                    <Option value="pending">Pending</Option>
-                    <Option value="confirmed">Confirmed</Option>
-                    <Option value="dispatched">Dispatched</Option>
-                    <Option value="delivered">Delivered</Option>
-                    <Option value="cancelled">Cancelled</Option>
-                  </Select>
-                </div>
-                <div style={{ marginTop: 8 }}>
-                  <Input.TextArea
-                    size="small"
-                    placeholder="Add a note (optional)"
-                    value={statusNote}
-                    onChange={(e) => setStatusNote(e.target.value)}
-                    rows={2}
-                  />
-                  <Button
-                    type="primary"
-                    size="small"
-                    style={{ marginTop: 8 }}
-                    onClick={onStatusUpdate}
-                    loading={statusUpdateLoading}
-                  >
-                    Update Status
-                  </Button>
-                </div>
+                {canUpdateStatus && (
+                  <>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                      <strong>Status:</strong>
+                      <Select
+                        value={newStatus}
+                        onChange={setNewStatus}
+                        style={{ width: 130 }}
+                        size="small"
+                      >
+                        <Option value="pending">Pending</Option>
+                        <Option value="confirmed">Confirmed</Option>
+                        <Option value="dispatched">Dispatched</Option>
+                        <Option value="delivered">Delivered</Option>
+                        <Option value="cancelled">Cancelled</Option>
+                      </Select>
+                    </div>
+                    <div style={{ marginTop: 8 }}>
+                      <Input.TextArea
+                        size="small"
+                        placeholder="Add a note (optional)"
+                        value={statusNote}
+                        onChange={(e) => setStatusNote(e.target.value)}
+                        rows={2}
+                      />
+                      <Button
+                        type="primary"
+                        size="small"
+                        style={{ marginTop: 8 }}
+                        onClick={onStatusUpdate}
+                        loading={statusUpdateLoading}
+                      >
+                        Update Status
+                      </Button>
+
+                    </div>
+                  </>
+                )}
               </Col>
             </Row>
           </Card>

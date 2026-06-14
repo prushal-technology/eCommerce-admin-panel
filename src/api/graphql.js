@@ -155,11 +155,21 @@ export const GRAPHQL_QUERIES = {
       tokenAuth(email: $email, password: $password) {
         token
         role
+        employeeId
+        roleName
+        permissions {
+          module
+          access
+        }
         user {
           id
           email
           role
+          firstName
+          lastName
+          phone
         }
+        
       }
     }
   `,
@@ -211,11 +221,16 @@ export const GRAPHQL_QUERIES = {
           isFeatured
           isWishlisted
           isAddedcart
-          stock {
+          storefrontReservedQuantity
+          systemReservedQuantity
+          storefrontStock {
             quantity
-            reservedQuantity
             availableQuantity
-            isOutOfStock
+          }
+
+          systemStock {
+            quantity
+            availableQuantity
           }
           images {
             id
@@ -244,13 +259,16 @@ export const GRAPHQL_QUERIES = {
     $sku: String!,
     $price: Float!,
     $discountPrice: Float,
+    $bulkOrderPrice: Float,
     $deliveryRuleDays: Int,
     $isActive: Boolean,
     $unit: String!,
     $measureValue: Decimal!,
     $isFeatured: Boolean,
-    $quantity: Int!,
-    $reservedQuantity: Int
+    $storefrontQuantity: Int!,
+    $systemQuantity: Int!,
+    $storefrontReservedQuantity: Int!,
+    $systemReservedQuantity: Int!
   ) {
 
     createProduct(
@@ -262,13 +280,16 @@ export const GRAPHQL_QUERIES = {
       sku: $sku
       price: $price
       discountPrice: $discountPrice
+      bulkOrderPrice: $bulkOrderPrice
       deliveryRuleDays: $deliveryRuleDays
       isActive: $isActive
       unit: $unit
       measureValue: $measureValue
       isFeatured: $isFeatured
-      quantity: $quantity
-      reservedQuantity: $reservedQuantity
+      storefrontQuantity: $storefrontQuantity
+      systemQuantity: $systemQuantity
+      storefrontReservedQuantity: $storefrontReservedQuantity
+      systemReservedQuantity: $systemReservedQuantity
     ) {
 
       product {
@@ -293,8 +314,8 @@ export const GRAPHQL_QUERIES = {
 
 
   UPDATE_PRODUCT: `
-    mutation UpdateProduct($id: Int!, $name: String, $keywords: [String!], $shortDescription: String, $description: String, $sku: String, $price: Float, $discountPrice: Float, $deliveryRuleDays: Int, $isActive: Boolean, $isFeatured: Boolean, $unit: String, $measureValue: Decimal, $categoryId: Int, $quantity: Int!, $reservedQuantity: Int) {
-      updateProduct(id: $id, name: $name, keywords: $keywords, shortDescription: $shortDescription, description: $description, sku: $sku, price: $price, discountPrice: $discountPrice, deliveryRuleDays: $deliveryRuleDays, isActive: $isActive, isFeatured: $isFeatured, unit: $unit, measureValue: $measureValue, categoryId: $categoryId, quantity: $quantity, reservedQuantity: $reservedQuantity) {
+    mutation UpdateProduct($id: Int!, $name: String, $keywords: [String!], $shortDescription: String, $description: String, $sku: String, $price: Float, $discountPrice: Float,$bulkOrderPrice:Float, $deliveryRuleDays: Int, $isActive: Boolean, $isFeatured: Boolean, $unit: String, $measureValue: Decimal, $categoryId: Int, $storefrontQuantity: Int, $systemQuantity: Int, $storefrontReservedQuantity: Int, $systemReservedQuantity: Int) {
+      updateProduct(id: $id, name: $name, keywords: $keywords, shortDescription: $shortDescription, description: $description, sku: $sku, price: $price, discountPrice: $discountPrice, bulkOrderPrice:$bulkOrderPrice, deliveryRuleDays: $deliveryRuleDays, isActive: $isActive, isFeatured: $isFeatured, unit: $unit, measureValue: $measureValue, categoryId: $categoryId, storefrontQuantity: $storefrontQuantity, systemQuantity: $systemQuantity, storefrontReservedQuantity: $storefrontReservedQuantity, systemReservedQuantity: $systemReservedQuantity) {
         product {
           id
           name
@@ -305,6 +326,7 @@ export const GRAPHQL_QUERIES = {
           sku
           price
           discountPrice
+          bulkOrderPrice
           isActive
           isFeatured
           unit
@@ -374,11 +396,16 @@ export const GRAPHQL_QUERIES = {
       unit
       measureValue
       isFeatured
-      stock {
-      id
-      quantity
-      reservedQuantity
-    }
+      storefrontReservedQuantity
+      systemReservedQuantity
+      storefrontStock {
+        quantity
+        availableQuantity
+      }
+      systemStock {
+        quantity
+        availableQuantity
+      }
       category {
         id
         name
@@ -391,11 +418,31 @@ export const GRAPHQL_QUERIES = {
     }
   }
 `,
+  //   UPDATE_STOCK: `
+  // mutation UpdateStock($productId: Int!, $quantity: Int!) {
+  //   updateStock(productId: $productId, quantity: $quantity) {
+  //     stock {
+  //       id
+  //       quantity
+  //       reservedQuantity
+  //     }
+  //   }
+  // }
+  // `,
   UPDATE_STOCK: `
-mutation UpdateStock($productId: Int!, $quantity: Int!) {
-  updateStock(productId: $productId, quantity: $quantity) {
+mutation UpdateStock(
+  $productId: Int!,
+  $inventoryType: String!,
+  $quantity: Int!
+) {
+  updateStock(
+    productId: $productId
+    inventoryType: $inventoryType
+    quantity: $quantity
+  ) {
     stock {
       id
+      inventoryType
       quantity
       reservedQuantity
     }
@@ -404,45 +451,85 @@ mutation UpdateStock($productId: Int!, $quantity: Int!) {
 `,
 
 
+  //   GET_ALL_STOCKS: `
+  //   query GetAllStocks(
+  //     $query: String,
+  //     $first: Int!,
+  //     $after: String
+  //   ) {
+  //     allStocks(
+  //       query: $query,
+  //       first: $first,
+  //       after: $after
+  //     ) {
+
+  //       stocks {
+  //         id
+  //         quantity
+  //         reservedQuantity
+  //         availableQuantity
+  //         isOutOfStock
+
+  //         product {
+  //           id
+  //           name
+  //           price
+  //           unit
+
+  //           images {
+  //             id
+  //             image
+  //           }
+  //         }
+  //       }
+  //          totalProducts
+  //     lowStock
+  //     criticalStock
+  //     outOfStock
+  //       nextCursor
+  //       hasMore
+  //     }
+  //   }
+  // `,
   GET_ALL_STOCKS: `
-  query GetAllStocks(
-    $query: String,
-    $first: Int!,
-    $after: String
+query GetAllStocks(
+  $query: String,
+  $first: Int!,
+  $after: String
+) {
+  allStocks(
+    query: $query,
+    first: $first,
+    after: $after
   ) {
-    allStocks(
-      query: $query,
-      first: $first,
-      after: $after
-    ) {
 
-      stocks {
+    stocks {
+      id
+      inventoryType
+      quantity
+      reservedQuantity
+
+      product {
         id
-        quantity
-        reservedQuantity
-        availableQuantity
-        isOutOfStock
+        name
+        price
+        unit
 
-        product {
+        images {
           id
-          name
-          price
-          unit
-
-          images {
-            id
-            image
-          }
+          image
         }
       }
-         totalProducts
+    }
+
+    totalProducts
     lowStock
     criticalStock
     outOfStock
-      nextCursor
-      hasMore
-    }
+    nextCursor
+    hasMore
   }
+}
 `,
 
   GET_BULK_ORDERS: `
@@ -549,9 +636,59 @@ mutation UpdateStock($productId: Int!, $quantity: Int!) {
   `,
 
 
+  //   CREATE_ADMIN_ORDER: `
+  //   mutation CreateAdminOrder($userId: Int,$shippingAddress: String,$orderType: String!,$paymentMethod: String,$purchaseType: String!, $isAdvanceBooking: Boolean!,$advanceDeliveryDatetime: DateTime,$items: [OrderItemInput!]!) {
+  //     createAdminOrder(userId: $userId,shippingAddress: $shippingAddress,orderType: $orderType,paymentMethod: $paymentMethod,purchaseType: $purchaseType,isAdvanceBooking: $isAdvanceBooking,advanceDeliveryDatetime: $advanceDeliveryDatetime,items: $items) {
+  //       order {
+  //         id
+  //         orderNumber
+  //         orderType
+  //         finalAmount
+  //         customerName
+  //         isAdvanceBooking
+  //         advanceDeliveryDatetime
+  //         items {
+  //           product {
+  //             name
+  //           }
+  //           quantity
+  //           subtotal
+  //         }
+  //         status
+  //         createdAt
+  //       }
+  //     }
+  //   }
+  // `,
+
+  // ─── 1. Fix in graphql.js — replace CREATE_ADMIN_ORDER with this ─────────────
+  //
+  // Changes:
+  //  - $userId: Int   (removed ! — optional for Walk-in)
+  //  - Fixed stray $ on purchaseType arg in mutation body
+  //  - $shippingAddress stays optional (no !)
+
   CREATE_ADMIN_ORDER: `
-  mutation CreateAdminOrder($userId: Int!,$shippingAddress: String!,$orderType: String!,$paymentMethod: String,$isAdvanceBooking: Boolean!,$advanceDeliveryDatetime: DateTime,$items: [OrderItemInput!]!) {
-    createAdminOrder(userId: $userId,shippingAddress: $shippingAddress,orderType: $orderType,paymentMethod: $paymentMethod,isAdvanceBooking: $isAdvanceBooking,advanceDeliveryDatetime: $advanceDeliveryDatetime,items: $items) {
+  mutation CreateAdminOrder(
+    $userId: Int,
+    $shippingAddress: String,
+    $orderType: String!,
+    $paymentMethod: String,
+    $purchaseType: String!,
+    $isAdvanceBooking: Boolean!,
+    $advanceDeliveryDatetime: DateTime,
+    $items: [OrderItemInput!]!
+  ) {
+    createAdminOrder(
+      userId: $userId,
+      shippingAddress: $shippingAddress,
+      orderType: $orderType,
+      paymentMethod: $paymentMethod,
+      purchaseType: $purchaseType,
+      isAdvanceBooking: $isAdvanceBooking,
+      advanceDeliveryDatetime: $advanceDeliveryDatetime,
+      items: $items
+    ) {
       order {
         id
         orderNumber
@@ -561,9 +698,7 @@ mutation UpdateStock($productId: Int!, $quantity: Int!) {
         isAdvanceBooking
         advanceDeliveryDatetime
         items {
-          product {
-            name
-          }
+          product { name }
           quantity
           subtotal
         }
@@ -687,8 +822,10 @@ mutation UpdateStock($productId: Int!, $quantity: Int!) {
     query GetCustomers($search: String, $after: String, $first: Int = 10) {
       customers(first: $first, after: $after, search: $search) {
         customers {
+          customerId
           id
           user {
+          id
             firstName
             lastName
             email
@@ -696,6 +833,8 @@ mutation UpdateStock($productId: Int!, $quantity: Int!) {
           }
           addresses {
             id
+            name
+            addressLine
             city
             state
             pincode
@@ -717,6 +856,20 @@ mutation UpdateStock($productId: Int!, $quantity: Int!) {
           sku
           price
           isActive
+          storefrontReservedQuantity
+    systemReservedQuantity
+
+    storefrontStock {
+      quantity
+      reservedQuantity
+      availableQuantity
+    }
+
+    systemStock {
+      quantity
+      reservedQuantity
+      availableQuantity
+    }
           stock {
             quantity
             reservedQuantity

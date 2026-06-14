@@ -1,16 +1,16 @@
 import { MinusCircleOutlined, PlusOutlined } from '@ant-design/icons';
 import {
-    Button,
-    Card,
-    Form,
-    Input,
-    InputNumber,
-    Modal,
-    Row,
-    Select,
-    Space,
-    Table,
-    Typography
+  Button,
+  Card,
+  Form,
+  Input,
+  InputNumber,
+  Modal,
+  Row,
+  Select,
+  Space,
+  Table,
+  Typography
 } from 'antd';
 import { useEffect, useMemo, useState } from 'react';
 
@@ -134,7 +134,7 @@ const BulkOrderModal = ({ visible, onClose, onSubmit, loading, products, isEdit,
         </Form.Item>
 
         {isEdit ? (
-          <Form.Item name="status" label="Status" rules={[{ required: true }]}> 
+          <Form.Item name="status" label="Status" rules={[{ required: true }]}>
             <Select>
               <Option value="pending">Pending</Option>
               <Option value="confirmed">Confirmed</Option>

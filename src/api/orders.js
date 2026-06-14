@@ -40,37 +40,7 @@ export const getProductsForOrder = async () => {
   }
 };
 
-// Create admin order
-// export const createAdminOrder = async (userId, shippingAddress, items, orderType = null, paymentMethod = null) => {
-//   try {
-//     const variables = {
-//       userId: parseInt(userId, 10),
-//       shippingAddress,
-//       items: items,
-//       ...(orderType ? { orderType } : {}),
-//       ...(paymentMethod ? { paymentMethod } : {}),
-//     };
 
-//     const data = await graphqlRequest(GRAPHQL_QUERIES.CREATE_ADMIN_ORDER, variables);
-
-//     if (data && data.createAdminOrder) {
-//       return {
-//         success: true,
-//         order: data.createAdminOrder.order
-//       };
-//     }
-
-//     return {
-//       success: false,
-//       message: 'Failed to create order'
-//     };
-//   } catch (error) {
-//     return {
-//       success: false,
-//       message: error.message || 'Failed to create order'
-//     };
-//   }
-// };
 
 export const createAdminOrder = async (
   userId,
@@ -78,6 +48,7 @@ export const createAdminOrder = async (
   items,
   orderType,
   paymentMethod,
+  purchaseType,
   isAdvanceBooking,
   advanceDeliveryDatetime
 ) => {
@@ -94,6 +65,7 @@ export const createAdminOrder = async (
       orderType,
 
       paymentMethod,
+      purchaseType,
 
       isAdvanceBooking,
 
@@ -216,6 +188,7 @@ export const addShippingAddress = async (
     const mutation = `
       mutation AddShippingAddress(
         $customerId: ID!,
+        $addressLine: String!,
         $city: String!,
         $state: String!,
         $pincode: String!,
@@ -224,6 +197,7 @@ export const addShippingAddress = async (
 
         addShippingAddress(
           customerId: $customerId
+          addressLine: $addressLine
           city: $city
           state: $state
           pincode: $pincode
@@ -232,6 +206,7 @@ export const addShippingAddress = async (
 
           address {
             id
+            addressLine
             city
             state
             pincode
@@ -245,7 +220,7 @@ export const addShippingAddress = async (
     const variables = {
 
       customerId: (customerId),
-
+      addressLine: values.addressLine,
       city: values.city,
       state: values.state,
       pincode: values.pincode,

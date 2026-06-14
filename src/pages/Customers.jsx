@@ -3,6 +3,7 @@ import { Button, Card, Input, message, Typography } from 'antd';
 import { useState } from 'react';
 import AddCustomerModal from '../components/modals/AddCustomerModal';
 import { useCustomers } from '../hooks/useCustomers';
+import CustomerDetailsModal from './customers/CustomerDetailsModal';
 import CustomerTable from './customers/CustomerTable';
 import EditCustomerModal from './customers/EditCustomerModal';
 
@@ -22,11 +23,20 @@ const Customers = () => {
     loadCustomers,
     deleteCustomer,
     updateCustomer,
+    toggleCustomerStatus,
   } = useCustomers();
 
   const [editingCustomer, setEditingCustomer] = useState(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+
+  const [selectedCustomer, setSelectedCustomer] = useState(null);
+  const [detailsModalOpen, setDetailsModalOpen] = useState(false);
+
+  const handleViewCustomer = (customer) => {
+    setSelectedCustomer(customer);
+    setDetailsModalOpen(true);
+  };
 
   const handleEdit = (customer) => {
     setEditingCustomer(customer);
@@ -36,8 +46,10 @@ const Customers = () => {
   const handleEditSubmit = async (values) => {
     try {
       await updateCustomer(editingCustomer.id, values);
+
       setIsEditModalOpen(false);
       setEditingCustomer(null);
+
     } catch (error) {
       message.error('Error updating customer: ' + error.message);
     }
@@ -45,6 +57,15 @@ const Customers = () => {
 
   const handleAddSuccess = () => {
     loadCustomers(null, true);
+  };
+
+  const handleToggleStatus = async (customer) => {
+    try {
+      await toggleCustomerStatus(customer);
+      await loadCustomers(null, true);
+    } catch (error) {
+      message.error(error.message);
+    }
   };
 
   return (
@@ -89,8 +110,7 @@ const Customers = () => {
         <div
           style={{
             flex: 1,
-            overflowY: "auto",
-            overflowX: "hidden",
+            overflow: "hidden",
             minHeight: 0,
             padding: 16,
           }}
@@ -107,22 +127,23 @@ const Customers = () => {
             onLoadMore={(cursor) =>
               loadCustomers(cursor, false)
             }
+            onView={handleViewCustomer}
+            onToggleStatus={handleToggleStatus}
           />
 
-          {fetchingMore && (
-            <div
-              style={{
-                textAlign: "center",
-                padding: 12,
-              }}
-            >
-              Loading more customers...
-            </div>
-          )}
+          <CustomerDetailsModal
+            open={detailsModalOpen}
+            customer={selectedCustomer}
+            onClose={() => {
+              setDetailsModalOpen(false);
+              setSelectedCustomer(null);
+            }}
+          />
+
 
 
         </div>
-      </Card>
+      </Card >
 
       <EditCustomerModal
         open={isEditModalOpen}
@@ -139,7 +160,7 @@ const Customers = () => {
         onCancel={() => setIsAddModalOpen(false)}
         onSuccess={handleAddSuccess}
       />
-    </div>
+    </div >
   );
 };
 

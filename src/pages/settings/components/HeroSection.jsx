@@ -1,19 +1,19 @@
 import {
-    Button,
-    Card,
-    Col,
-    Form,
-    Input,
-    message,
-    Row,
-    Upload,
+  Button,
+  Card,
+  Col,
+  Form,
+  Input,
+  message,
+  Row,
+  Upload,
 } from 'antd';
 
 import { useEffect, useState } from 'react';
 
 import {
-    getHeroSections,
-    updateHero,
+  getHeroSections,
+  updateHero,
 } from '../../../api/cms';
 
 import SaveButton from './SaveButton';
@@ -132,6 +132,7 @@ const HeroSection = () => {
         <Form.Item
           label="Hero Image"
           name="heroImage"
+          valuePropName="fileList"
         >
 
           <Upload beforeUpload={() => false}>

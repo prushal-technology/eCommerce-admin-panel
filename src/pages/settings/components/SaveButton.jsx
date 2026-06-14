@@ -7,11 +7,11 @@ const SaveButton = ({
 }) => {
   return (
     <Button
-    size="smalls"
+      size="small"
       type="primary"
       htmlType="submit"
       loading={loading}
-      icon={<SaveOutlined />}a
+      icon={<SaveOutlined />}
     >
       {children}
     </Button>

@@ -17,15 +17,12 @@ export const useCustomers = () => {
     const [nextCursor, setNextCursor] = useState(null);
     const [hasMore, setHasMore] = useState(false);
     const [searchText, setSearchText] = useState('');
-
-    const initialFetchDone = useRef(false);
     const skipSearchEffect = useRef(true);
+    const isFetching = useRef(false);
 
     // Initial load
     useEffect(() => {
-        if (initialFetchDone.current) return;
-        initialFetchDone.current = true;
-        loadCustomers(null, true);
+        loadCustomers();
     }, []);
 
     // Debounced search
@@ -39,10 +36,13 @@ export const useCustomers = () => {
     }, [searchText]);
 
     const loadCustomers = async (cursor = null, isNewSearch = false) => {
+        if (isFetching.current) return;
+        isFetching.current = true;
+
         isNewSearch ? setLoading(true) : setFetchingMore(true);
 
         try {
-            let queryArgs = 'first: 10';
+            let queryArgs = 'first: 15';
             if (cursor) queryArgs += `, after: "${cursor}"`;
             if (searchText) queryArgs += `, search: ${JSON.stringify(searchText)}`;
 
@@ -54,9 +54,31 @@ export const useCustomers = () => {
             query {
               customers(${queryArgs}) {
                 customers {
-                  id
-                  user { firstName lastName email phone }
-                }
+      id
+      customerId
+      
+
+      user {
+        id
+        firstName
+        lastName
+        email
+        phone
+        isActive
+      }
+
+      addresses {
+        id
+        name
+        phone
+        addressLine
+        city
+        state
+        landmark
+        pincode
+        isDefault
+      }
+    }
                 nextCursor
                 hasMore
               }
@@ -69,19 +91,24 @@ export const useCustomers = () => {
             if (result.errors) throw new Error(result.errors[0].message);
 
             const transformed = (result.data?.customers?.customers || []).map((c) => ({
+                ...c,
+
                 id: c.id,
-                customerId: c.id,
+                customerId: c.customerId,
                 firstName: c.user?.firstName || '',
                 lastName: c.user?.lastName || '',
                 email: c.user?.email || 'N/A',
                 phone: c.user?.phone || null,
+                isActive: c.user?.isActive ?? false,
                 fullName: `${c.user?.firstName || ''} ${c.user?.lastName || ''}`.trim() || 'N/A',
             }));
 
             setCustomers((prev) => {
-                if (isNewSearch) return transformed;
-                const newIds = new Set(transformed.map((c) => c.id));
-                return [...prev.filter((c) => !newIds.has(c.id)), ...transformed];
+                if (isNewSearch) {
+                    return transformed;
+                }
+
+                return [...prev, ...transformed];
             });
 
             setNextCursor(result.data?.customers?.nextCursor);
@@ -91,6 +118,7 @@ export const useCustomers = () => {
         } finally {
             setLoading(false);
             setFetchingMore(false);
+            isFetching.current = false;
         }
     };
 
@@ -123,23 +151,42 @@ export const useCustomers = () => {
         }
     };
 
+    const toggleCustomerStatus = async (record) => {
+        try {
+            await updateCustomer(record.id, {
+                firstName: record.firstName,
+                lastName: record.lastName,
+                phone: record.phone,
+                isActive: !record.isActive,
+            });
+
+            message.success(
+                `Customer ${!record.isActive ? 'activated' : 'deactivated'} successfully`
+            );
+        } catch (error) {
+            console.log(error);
+        }
+    };
+
     const updateCustomer = async (id, values) => {
         const response = await fetch(GRAPHQL_URI, {
             method: 'POST',
             headers: getAuthHeaders(),
             body: JSON.stringify({
                 query: `
-          mutation {
-            updateCustomer(
-              id: ${id},
-              firstName: "${values.firstName || ''}",
-              lastName: "${values.lastName || ''}",
-              phone: "${values.phone || ''}"
-            ) {
-              customer { id }
+            mutation {
+                updateCustomer(
+                id: ${id},
+                firstName: "${values.firstName || ''}",
+                lastName: "${values.lastName || ''}",
+                phone: "${values.phone || ''}"
+                isActive: ${values.isActive}
+                
+                ) {
+                customer { id }
+                }
             }
-          }
-        `,
+            `,
             }),
         });
 
@@ -166,7 +213,7 @@ export const useCustomers = () => {
     };
 
     const skeletonRows = useMemo(
-        () => Array.from({ length: 8 }).map((_, i) => ({ id: `skeleton-${i}`, isSkeleton: true })),
+        () => Array.from({ length: 11 }).map((_, i) => ({ id: `skeleton-${i}`, isSkeleton: true })),
         []
     );
 
@@ -182,5 +229,6 @@ export const useCustomers = () => {
         loadCustomers,
         deleteCustomer,
         updateCustomer,
+        toggleCustomerStatus,
     };
 };

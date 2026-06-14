@@ -381,16 +381,6 @@ export const CREATE_EMPLOYEE = gql`
   }
 `;
 
-export const UPDATE_EMPLOYEE_STATUS = gql`
-  mutation UpdateEmployeeStatus($employeeId: ID!, $isActive: Boolean!) {
-    updateEmployeeStatus(employeeId: $employeeId, isActive: $isActive) {
-      employee {
-        id
-        isActive
-      }
-    }
-  }
-`;
 
 export const DELETE_EMPLOYEE = gql`
   mutation DeleteEmployee($employeeId: ID!) {
