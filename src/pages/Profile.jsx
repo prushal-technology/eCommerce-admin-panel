@@ -2,14 +2,13 @@ import {
   BankOutlined,
   CalendarOutlined,
   CreditCardOutlined,
-  DollarCircleOutlined,
   HomeOutlined,
   MailOutlined,
   PhoneOutlined,
   SettingOutlined,
   ShoppingOutlined,
   TeamOutlined,
-  UserOutlined,
+  UserOutlined
 } from "@ant-design/icons";
 
 import { Avatar, Card, Col, Descriptions, Grid, Row, Tag } from "antd";
@@ -53,10 +52,10 @@ export default function Profile() {
               </h2>
 
               <Tag color="blue">
-                {u?.role === "admin" ? "Administrator" : 
-                 u?.role === "manager" ? "Store Manager" : 
-                 u?.role === "employee" ? "Sales Associate" : 
-                 "E-Commerce Staff"}
+                {u?.role === "admin" ? "Administrator" :
+                  u?.role === "manager" ? "Store Manager" :
+                    u?.role === "employee" ? "Sales Associate" :
+                      "E-Commerce Staff"}
               </Tag>
             </Col>
           </Row>
@@ -82,10 +81,10 @@ export default function Profile() {
 
             <Descriptions.Item label={<><TeamOutlined /> Role</>}>
               <Tag color={u?.role === "admin" ? "red" : u?.role === "manager" ? "blue" : "green"}>
-                {u?.role === "admin" ? "Administrator" : 
-                 u?.role === "manager" ? "Store Manager" : 
-                 u?.role === "employee" ? "Sales Associate" : 
-                 "Staff"}
+                {u?.role === "admin" ? "Administrator" :
+                  u?.role === "manager" ? "Store Manager" :
+                    u?.role === "employee" ? "Sales Associate" :
+                      "Staff"}
               </Tag>
             </Descriptions.Item>
 
@@ -97,7 +96,7 @@ export default function Profile() {
               {u?.department || "E-Commerce Operations"}
             </Descriptions.Item>
 
-            <Descriptions.Item label={<><DollarCircleOutlined /> Sales Target</>}>
+            <Descriptions.Item label={<>₹ Sales Target</>}>
               {show(u.salesTarget || "Not Assigned")}
             </Descriptions.Item>
 

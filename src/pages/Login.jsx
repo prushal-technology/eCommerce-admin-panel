@@ -1,5 +1,4 @@
 import {
-  DollarCircleOutlined,
   EyeInvisibleOutlined,
   EyeOutlined,
   LockOutlined,
@@ -11,6 +10,7 @@ import { message as antdMessage, Button, Card, Form, Input, notification, Typogr
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { loginAPI } from "../api/auth";
+import { useAuth } from "../hooks/useAuth";
 import "./login.css";
 
 const { Title, Text } = Typography;
@@ -19,6 +19,7 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
+  const { setUser } = useAuth();
   const [messageApi, contextHolder] = antdMessage.useMessage();
 
   useEffect(() => {
@@ -39,6 +40,7 @@ export default function Login() {
       const result = await loginAPI(values.email, values.password);
       
       if (result.success) {
+        setUser(result.user);
         messageApi.success("Login successful!");
         navigate("/", { replace: true });
       } else {
@@ -78,7 +80,7 @@ export default function Login() {
               <ShoppingOutlined /> Product Management
             </div>
             <div className="feature-card">
-              <DollarCircleOutlined /> Sales Analytics
+              ₹ Sales Analytics
             </div>
             <div className="feature-card">
               <SafetyOutlined /> Secure & Role-based Access

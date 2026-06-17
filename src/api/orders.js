@@ -2,13 +2,19 @@
 import { GRAPHQL_QUERIES, graphqlRequest } from './graphql';
 
 // Get all customers for manual order
-export const getCustomers = async (search = null) => {
+export const getCustomers = async (search = null, after = null, first = 10) => {
   try {
-    const variables = search ? { search } : {};
+    const variables = {
+      first,
+      ...(search ? { search } : {}),
+      ...(after ? { after } : {})
+    };
     const data = await graphqlRequest(GRAPHQL_QUERIES.GET_CUSTOMERS, variables);
     return {
       success: true,
-      customers: data.customers?.customers || []
+      customers: data.customers?.customers || [],
+      nextCursor: data.customers?.nextCursor || null,
+      hasMore: data.customers?.hasMore || false,
     };
   } catch (error) {
     return {
@@ -21,10 +27,10 @@ export const getCustomers = async (search = null) => {
 // Get all products for manual order
 export const getProductsForOrder = async () => {
   try {
-    const data = await graphqlRequest(GRAPHQL_QUERIES.GET_PRODUCTS_SIMPLE);
+    const data = await graphqlRequest(GRAPHQL_QUERIES.GET_PRODUCTS_SIMPLE, { first: 5 });
     return {
       success: true,
-      products: data.products || []
+      products: data.products?.products || []
     };
   } catch (error) {
     return {
@@ -34,42 +40,101 @@ export const getProductsForOrder = async () => {
   }
 };
 
-// Create admin order
-export const createAdminOrder = async (userId, shippingAddress, items) => {
-  try {
-    const data = await graphqlRequest(GRAPHQL_QUERIES.CREATE_ADMIN_ORDER, {
-      userId,
+
+
+export const createAdminOrder = async (
+  userId,
+  shippingAddress,
+  items,
+  orderType,
+  paymentMethod,
+  purchaseType,
+  isAdvanceBooking,
+  advanceDeliveryDatetime
+) => {
+
+  const response = await graphqlRequest(
+    GRAPHQL_QUERIES.CREATE_ADMIN_ORDER,
+    {
+      userId: parseInt(userId),
+
       shippingAddress,
-      items
-    });
-    
-    if (data && data.createAdminOrder) {
-      return {
-        success: true,
-        order: data.createAdminOrder.order
-      };
+
+      items,
+
+      orderType,
+
+      paymentMethod,
+      purchaseType,
+
+      isAdvanceBooking,
+
+      advanceDeliveryDatetime,
     }
-    
-    return {
-      success: false,
-      message: 'Failed to create order'
-    };
-  } catch (error) {
-    return {
-      success: false,
-      message: error.message || 'Failed to create order'
-    };
-  }
+  );
+
+  return {
+    success: true,
+    order: response.createAdminOrder.order,
+  };
 };
 
+
+
 // Get all orders
-export const getAllOrders = async () => {
+// export const getAllOrders = async (orderFrom = null, query = null, orderType = null) => {
+//   try {
+//     const variables = {
+//       ...(orderFrom ? { orderFrom } : {}),
+//       ...(query ? { query } : {}),
+//       ...(orderType ? { orderType } : {})
+//     };
+//     const data = await graphqlRequest(GRAPHQL_QUERIES.GET_ALL_ORDERS, variables);
+//     return {
+//       success: true,
+//       orders: data.allOrders || []
+//     };
+//   } catch (error) {
+//     return {
+//       success: false,
+//       message: error.message || 'Failed to fetch orders'
+//     };
+//   }
+// };
+export const getAllOrders = async (
+  orderFrom = null,
+  query = null,
+  orderType = null,
+  after = null,
+  first = 10
+) => {
   try {
-    const data = await graphqlRequest(GRAPHQL_QUERIES.GET_ALL_ORDERS);
+    const variables = {
+      first,
+      ...(after ? { after } : {}),
+      ...(orderFrom ? { orderFrom } : {}),
+      ...(query ? { query } : {}),
+      ...(orderType ? { orderType } : {})
+    };
+
+    const data = await graphqlRequest(
+      GRAPHQL_QUERIES.GET_ALL_ORDERS,
+      variables
+    );
+
     return {
       success: true,
-      orders: data.allOrders || []
+      orders: data.allOrders?.orders || [],
+      totalOrders: data.allOrders?.totalOrders ?? 0,
+      pendingOrders: data.allOrders?.pendingOrders ?? 0,
+      dispatchedOrders: data.allOrders?.dispatchedOrders ?? 0,
+      deliveredOrders: data.allOrders?.deliveredOrders ?? 0,
+      cancelledOrders: data.allOrders?.cancelledOrders ?? 0,
+      revenue: data.allOrders?.revenue ?? 0,
+      nextCursor: data.allOrders?.nextCursor || null,
+      hasMore: data.allOrders?.hasMore || false
     };
+
   } catch (error) {
     return {
       success: false,
@@ -86,7 +151,7 @@ export const updateOrderStatus = async (orderId, status, note = "") => {
       status,
       note
     });
-    
+
     if (data && data.updateOrderStatus) {
       if (data.updateOrderStatus.success === false) {
         return {
@@ -99,7 +164,7 @@ export const updateOrderStatus = async (orderId, status, note = "") => {
         order: data.updateOrderStatus.order
       };
     }
-    
+
     return {
       success: false,
       message: 'Failed to update order status'
@@ -109,5 +174,107 @@ export const updateOrderStatus = async (orderId, status, note = "") => {
       success: false,
       message: error.message || 'Failed to update order status'
     };
+  }
+};
+
+
+export const addShippingAddress = async (
+  customerId,
+  values
+) => {
+
+  try {
+
+    const mutation = `
+      mutation AddShippingAddress(
+        $customerId: ID!,
+        $addressLine: String!,
+        $city: String!,
+        $state: String!,
+        $pincode: String!,
+        $landmark: String
+      ) {
+
+        addShippingAddress(
+          customerId: $customerId
+          addressLine: $addressLine
+          city: $city
+          state: $state
+          pincode: $pincode
+          landmark: $landmark
+        ) {
+
+          address {
+            id
+            addressLine
+            city
+            state
+            pincode
+            isDefault
+            landmark
+          }
+        }
+      }
+    `;
+
+    const variables = {
+
+      customerId: (customerId),
+      addressLine: values.addressLine,
+      city: values.city,
+      state: values.state,
+      pincode: values.pincode,
+      landmark: values.landmark || '',
+    };
+
+    const data = await graphqlRequest(
+      mutation,
+      variables
+    );
+
+    if (data?.addShippingAddress?.address) {
+
+      return {
+        success: true,
+        address:
+          data.addShippingAddress.address,
+      };
+    }
+
+    return {
+      success: false,
+      message: 'Failed to add address',
+    };
+
+  } catch (error) {
+
+    return {
+      success: false,
+      message:
+        error.message ||
+        'Failed to add address',
+    };
+  }
+};
+
+
+// Fetch order tracking data
+export const getOrderTracking = async (orderId) => {
+  try {
+    const query = `
+      query GetOrderTracking($orderId: Int!) {
+        orderTracking(orderId: $orderId) {
+          status
+          notes
+          updatedAt
+          date
+          time
+        }
+      }
+    `;
+    const data = await graphqlRequest(query, { orderId: Number(orderId) });
+    return { success: true, tracking: data.orderTracking || [] };
+  } catch (error) {
+    return { success: false, message: error.message || 'Failed to fetch tracking' };
   }
 };

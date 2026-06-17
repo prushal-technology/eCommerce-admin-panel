@@ -1,53 +1,131 @@
 // GraphQL Client Configuration
 
-const GRAPHQL_ENDPOINT = import.meta.env.VITE_GRAPHQL_URI;
+
+const GRAPHQL_ENDPOINT =
+  import.meta.env.VITE_GRAPHQL_URI;
 
 // GraphQL request function
-export const graphqlRequest = async (query, variables = {}) => {
+export const graphqlRequest = async (
+  query,
+  variables = {}
+) => {
+
   try {
-    // Handle gql Document objects - extract the query string
-    const queryString = typeof query === 'object' && query.kind === 'Document'
-      ? query.loc?.source?.body || query.definitions?.[0]?.loc?.source?.body
-      : query;
+    // Handle gql Document objects
+    const queryString =
+      typeof query === 'object' &&
+        query.kind === 'Document'
+        ? query.loc?.source?.body ||
+        query.definitions?.[0]?.loc?.source?.body
+        : query;
 
-    const response = await fetch(GRAPHQL_ENDPOINT, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        // Add authentication token if available
-        ...(localStorage.getItem('authToken') && {
-          'Authorization': `JWT ${localStorage.getItem('authToken')}`
-        })
-      },
-      body: JSON.stringify({
+    // ───────────────── CHECK FILE ─────────────────
+    const hasFile = Object.values(variables).some(
+      (value) => value instanceof File
+    );
+    let response;
+    // ───────────────── FILE UPLOAD REQUEST ─────────────────
+    if (hasFile) {
+      const formData = new FormData();
+      const operations = {
         query: queryString,
-        variables
-      })
-    });
+        variables: { ...variables },
+      };
+      const map = {};
+      let fileIndex = 0;
+      Object.keys(variables).forEach((key) => {
+        if (variables[key] instanceof File) {
+          map[fileIndex] = [
+            `variables.${key}`,
+          ];
+          operations.variables[key] = null;
+          fileIndex++;
+        }
+      });
 
-    const result = await response.json();
+      formData.append(
+        'operations',
+        JSON.stringify(operations)
+      );
+      formData.append(
+        'map',
+        JSON.stringify(map)
+      );
+      fileIndex = 0;
+      Object.keys(variables).forEach((key) => {
+        if (variables[key] instanceof File) {
+          formData.append(
+            fileIndex,
+            variables[key]
+          );
+          fileIndex++;
+        }
+      });
 
-    // ✅ Handle GraphQL errors
-    if (result.errors && result.errors.length > 0) {
-      const errorMessage = result.errors[0].message;
-      console.error("GraphQL Error:", errorMessage);
-      throw new Error(errorMessage);
+      response = await fetch(
+        GRAPHQL_ENDPOINT,
+        {
+          method: 'POST',
+          headers: {
+            ...(localStorage.getItem(
+              'authToken'
+            ) && {
+              Authorization: `JWT ${localStorage.getItem(
+                'authToken'
+              )}`,
+            }),
+          },
+          body: formData,
+        }
+      );
+
+    } else {
+      // ───────────────── NORMAL REQUEST ─────────────────
+      response = await fetch(
+        GRAPHQL_ENDPOINT,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type':
+              'application/json',
+
+            ...(localStorage.getItem(
+              'authToken'
+            ) && {
+              Authorization: `JWT ${localStorage.getItem(
+                'authToken'
+              )}`,
+            }),
+          },
+          body: JSON.stringify({
+            query: queryString,
+            variables,
+          }),
+        }
+      );
     }
 
+    const result = await response.json();
+    // ───────────────── HANDLE ERRORS ─────────────────
+    if (
+      result.errors &&
+      result.errors.length > 0
+    ) {
+      const errorMessage =
+        result.errors[0].message;
+      console.error(
+        'GraphQL Error:',
+        errorMessage
+      );
+      throw new Error(errorMessage);
+    }
     return result.data;
-  } catch (error) {
-    // Handle network errors
-    // if (error.message === 'Failed to fetch') {
-    //   notification.error({
-    //     message: 'Network Error',
-    //     description: 'Unable to connect to the server. Please check your internet connection.',
-    //     placement: 'topRight',
-    //   });
-    //   throw new Error('Network connection failed');
-    // }
 
-    // Re-throw other errors
-    console.error("GraphQL Error:", error);
+  } catch (error) {
+    console.error(
+      'GraphQL Error:',
+      error
+    );
     throw error;
   }
 };
@@ -77,18 +155,43 @@ export const GRAPHQL_QUERIES = {
       tokenAuth(email: $email, password: $password) {
         token
         role
+        employeeId
+        roleName
+        permissions {
+          module
+          access
+        }
+        employeeId
+        roleName
+        permissions {
+          module
+          access
+        }
         user {
           id
           email
           role
+          firstName
+          lastName
+          phone
+          firstName
+          lastName
+          phone
         }
+        
+        
       }
     }
   `,
 
   GET_CATEGORIES: `
-    query GetAllCategories {
-      allCategories {
+  query GetAllCategories($first: Int!, $after: String, $query: String) {
+    allCategories(
+      first: $first
+      after: $after
+      query: $query
+    ) {
+      categories {
         id
         name
         description
@@ -98,8 +201,15 @@ export const GRAPHQL_QUERIES = {
           name
         }
       }
+
+      nextCursor
+      hasMore
+      totalCategories
+      activeCategories
+      inactiveCategories
     }
-  `,
+  }
+`,
 
   GET_ALL_PRODUCTS: `
     query GetAllProducts($first: Int!, $after: String, $search: String, $categoryId: Int) {
@@ -108,8 +218,12 @@ export const GRAPHQL_QUERIES = {
           id
           name
           description
+          keywords
+          shortDescription
+          deliveryRuleDays
           price
           discountPrice
+          bulkOrderPrice
           unit
           sku
           measureValue
@@ -117,11 +231,16 @@ export const GRAPHQL_QUERIES = {
           isFeatured
           isWishlisted
           isAddedcart
-          stock {
+          storefrontReservedQuantity
+          systemReservedQuantity
+          storefrontStock {
             quantity
-            reservedQuantity
             availableQuantity
-            isOutOfStock
+          }
+
+          systemStock {
+            quantity
+            availableQuantity
           }
           images {
             id
@@ -139,33 +258,85 @@ export const GRAPHQL_QUERIES = {
     }
   `,
 
+
   CREATE_PRODUCT: `
-    mutation CreateProduct($categoryId: Int!, $name: String!, $description: String, $sku: String!, $price: Float!, $discountPrice: Float, $isActive: Boolean, $unit: String!, $measureValue: Decimal!, $isFeatured: Boolean, $quantity: Int!, $reservedQuantity: Int) {
-      createProduct(categoryId: $categoryId, name: $name, description: $description, sku: $sku, price: $price, discountPrice: $discountPrice, isActive: $isActive, unit: $unit, measureValue: $measureValue, isFeatured: $isFeatured, quantity: $quantity, reservedQuantity: $reservedQuantity) {
-        product {
-          id
-          name
-          unit
-          measureValue
-          isFeatured
-          stock {
-            quantity
-            reservedQuantity
-          }
+  mutation CreateProduct(
+    $categoryId: Int!,
+    $name: String!,
+    $keywords: [String!]
+    $shortDescription: String,
+    $description: String,
+    $sku: String!,
+    $price: Float!,
+    $discountPrice: Float,
+    $bulkOrderPrice: Float,
+    $deliveryRuleDays: Int,
+    $isActive: Boolean,
+    $unit: String!,
+    $measureValue: Decimal!,
+    $isFeatured: Boolean,
+    $storefrontQuantity: Int!,
+    $systemQuantity: Int!,
+    $storefrontReservedQuantity: Int!,
+    $systemReservedQuantity: Int!
+  ) {
+
+    createProduct(
+      categoryId: $categoryId
+      name: $name
+      keywords: $keywords
+      shortDescription: $shortDescription
+      description: $description
+      sku: $sku
+      price: $price
+      discountPrice: $discountPrice
+      bulkOrderPrice: $bulkOrderPrice
+      deliveryRuleDays: $deliveryRuleDays
+      isActive: $isActive
+      unit: $unit
+      measureValue: $measureValue
+      isFeatured: $isFeatured
+      storefrontQuantity: $storefrontQuantity
+      systemQuantity: $systemQuantity
+      storefrontReservedQuantity: $storefrontReservedQuantity
+      systemReservedQuantity: $systemReservedQuantity
+    ) {
+
+      product {
+        id
+        name
+        keywords
+        shortDescription
+        description
+        deliveryRuleDays
+        unit
+        measureValue
+        isFeatured
+
+        stock {
+          quantity
+          reservedQuantity
         }
       }
     }
-  `,
+  }
+`,
+
 
   UPDATE_PRODUCT: `
-    mutation UpdateProduct($id: Int!, $name: String, $description: String, $sku: String, $price: Float, $discountPrice: Float, $isActive: Boolean, $isFeatured: Boolean, $unit: String, $measureValue: Decimal, $categoryId: Int, $quantity: Int!, $reservedQuantity: Int) {
-      updateProduct(id: $id, name: $name, description: $description, sku: $sku, price: $price, discountPrice: $discountPrice, isActive: $isActive, isFeatured: $isFeatured, unit: $unit, measureValue: $measureValue, categoryId: $categoryId, quantity: $quantity, reservedQuantity: $reservedQuantity) {
+    mutation UpdateProduct($id: Int!, $name: String, $keywords: [String!], $shortDescription: String, $description: String, $sku: String, $price: Float, $discountPrice: Float,$bulkOrderPrice:Float, $deliveryRuleDays: Int, $isActive: Boolean, $isFeatured: Boolean, $unit: String, $measureValue: Decimal, $categoryId: Int, $storefrontQuantity: Int, $systemQuantity: Int, $storefrontReservedQuantity: Int, $systemReservedQuantity: Int) {
+      updateProduct(id: $id, name: $name, keywords: $keywords, shortDescription: $shortDescription, description: $description, sku: $sku, price: $price, discountPrice: $discountPrice, bulkOrderPrice:$bulkOrderPrice, deliveryRuleDays: $deliveryRuleDays, isActive: $isActive, isFeatured: $isFeatured, unit: $unit, measureValue: $measureValue, categoryId: $categoryId, storefrontQuantity: $storefrontQuantity, systemQuantity: $systemQuantity, storefrontReservedQuantity: $storefrontReservedQuantity, systemReservedQuantity: $systemReservedQuantity) {
         product {
           id
           name
+          keywords
+          shortDescription
+          description
+          deliveryRuleDays
           sku
           price
           discountPrice
+          bulkOrderPrice
           isActive
           isFeatured
           unit
@@ -226,6 +397,8 @@ export const GRAPHQL_QUERIES = {
       id
       name
       description
+      shortDescription
+      deliveryRuleDays
       sku
       price
       discountPrice
@@ -233,11 +406,16 @@ export const GRAPHQL_QUERIES = {
       unit
       measureValue
       isFeatured
-      stock {
-      id
-      quantity
-      reservedQuantity
-    }
+      storefrontReservedQuantity
+      systemReservedQuantity
+      storefrontStock {
+        quantity
+        availableQuantity
+      }
+      systemStock {
+        quantity
+        availableQuantity
+      }
       category {
         id
         name
@@ -250,11 +428,31 @@ export const GRAPHQL_QUERIES = {
     }
   }
 `,
+  //   UPDATE_STOCK: `
+  // mutation UpdateStock($productId: Int!, $quantity: Int!) {
+  //   updateStock(productId: $productId, quantity: $quantity) {
+  //     stock {
+  //       id
+  //       quantity
+  //       reservedQuantity
+  //     }
+  //   }
+  // }
+  // `,
   UPDATE_STOCK: `
-mutation UpdateStock($productId: Int!, $quantity: Int!) {
-  updateStock(productId: $productId, quantity: $quantity) {
+mutation UpdateStock(
+  $productId: Int!,
+  $inventoryType: String!,
+  $quantity: Int!
+) {
+  updateStock(
+    productId: $productId
+    inventoryType: $inventoryType
+    quantity: $quantity
+  ) {
     stock {
       id
+      inventoryType
       quantity
       reservedQuantity
     }
@@ -262,23 +460,151 @@ mutation UpdateStock($productId: Int!, $quantity: Int!) {
 }
 `,
 
+
+  //   GET_ALL_STOCKS: `
+  //   query GetAllStocks(
+  //     $query: String,
+  //     $first: Int!,
+  //     $after: String
+  //   ) {
+  //     allStocks(
+  //       query: $query,
+  //       first: $first,
+  //       after: $after
+  //     ) {
+
+  //       stocks {
+  //         id
+  //         quantity
+  //         reservedQuantity
+  //         availableQuantity
+  //         isOutOfStock
+
+  //         product {
+  //           id
+  //           name
+  //           price
+  //           unit
+
+  //           images {
+  //             id
+  //             image
+  //           }
+  //         }
+  //       }
+  //          totalProducts
+  //     lowStock
+  //     criticalStock
+  //     outOfStock
+  //       nextCursor
+  //       hasMore
+  //     }
+  //   }
+  // `,
   GET_ALL_STOCKS: `
-    query GetAllStocks {
-      allStocks {
+query GetAllStocks(
+  $query: String,
+  $first: Int!,
+  $after: String
+) {
+  allStocks(
+    query: $query,
+    first: $first,
+    after: $after
+  ) {
+
+    stocks {
+      id
+      inventoryType
+      quantity
+      reservedQuantity
+
+      product {
         id
-        product {
+        name
+        price
+        unit
+
+        images {
           id
-          name
-          sku
-          category {
+          image
+        }
+      }
+    }
+
+    totalProducts
+    lowStock
+    criticalStock
+    outOfStock
+    nextCursor
+    hasMore
+  }
+}
+`,
+
+  GET_BULK_ORDERS: `
+    query GetBulkOrders($query: String) {
+      allBulkOrderEnquiries(query: $query) {
+        id
+        status
+        bulkOrderDetails
+        createdAt
+        items {
+          id
+          quantity
+          product {
+            id
             name
+            images {
+              image
+            }
           }
         }
-        quantity
-        reservedQuantity
       }
     }
   `,
+
+  CREATE_BULK_ORDER_ENQUIRY: `
+    mutation CreateBulkOrderEnquiry($bulkOrderDetails: String!, $items: [BulkOrderItemInput!]!) {
+      createBulkOrderEnquiry(bulkOrderDetails: $bulkOrderDetails, items: $items) {
+        bulkOrder {
+          id
+          status
+          bulkOrderDetails
+          items {
+            id
+            quantity
+            product {
+              id
+              name
+            }
+          }
+        }
+      }
+    }
+  `,
+
+  UPDATE_BULK_ORDER_ENQUIRY: `
+    mutation UpdateBulkOrderEnquiry($bulkOrderId: Int!, $status: String!, $bulkOrderDetails: String!) {
+      updateBulkOrderEnquiry(bulkOrderId: $bulkOrderId, status: $status, bulkOrderDetails: $bulkOrderDetails) {
+        bulkOrder {
+          id
+          status
+          bulkOrderDetails
+          items {
+            id
+            quantity
+            product {
+              id
+              name
+            }
+          }
+        }
+      }
+    }
+  `,
+
+
 
   GET_DASHBOARD: `
     query AdminDashboard {
@@ -319,26 +645,79 @@ mutation UpdateStock($productId: Int!, $quantity: Int!) {
     }
   `,
 
+
+  //   CREATE_ADMIN_ORDER: `
+  //   mutation CreateAdminOrder($userId: Int,$shippingAddress: String,$orderType: String!,$paymentMethod: String,$purchaseType: String!, $isAdvanceBooking: Boolean!,$advanceDeliveryDatetime: DateTime,$items: [OrderItemInput!]!) {
+  //     createAdminOrder(userId: $userId,shippingAddress: $shippingAddress,orderType: $orderType,paymentMethod: $paymentMethod,purchaseType: $purchaseType,isAdvanceBooking: $isAdvanceBooking,advanceDeliveryDatetime: $advanceDeliveryDatetime,items: $items) {
+  //       order {
+  //         id
+  //         orderNumber
+  //         orderType
+  //         finalAmount
+  //         customerName
+  //         isAdvanceBooking
+  //         advanceDeliveryDatetime
+  //         items {
+  //           product {
+  //             name
+  //           }
+  //           quantity
+  //           subtotal
+  //         }
+  //         status
+  //         createdAt
+  //       }
+  //     }
+  //   }
+  // `,
+
+  // ─── 1. Fix in graphql.js — replace CREATE_ADMIN_ORDER with this ─────────────
+  //
+  // Changes:
+  //  - $userId: Int   (removed ! — optional for Walk-in)
+  //  - Fixed stray $ on purchaseType arg in mutation body
+  //  - $shippingAddress stays optional (no !)
+
   CREATE_ADMIN_ORDER: `
-    mutation CreateAdminOrder($userId: Int!, $shippingAddress: String!, $items: [OrderItemInput!]!) {
-      createAdminOrder(userId: $userId, shippingAddress: $shippingAddress, items: $items) {
-        order {
-          id
-          orderNumber
-          customerName
-          items {
-            product {
-              name
-            }
-            quantity
-            subtotal
-          }
-          status
-          createdAt
+  mutation CreateAdminOrder(
+    $userId: Int,
+    $shippingAddress: String,
+    $orderType: String!,
+    $paymentMethod: String,
+    $purchaseType: String!,
+    $isAdvanceBooking: Boolean!,
+    $advanceDeliveryDatetime: DateTime,
+    $items: [OrderItemInput!]!
+  ) {
+    createAdminOrder(
+      userId: $userId,
+      shippingAddress: $shippingAddress,
+      orderType: $orderType,
+      paymentMethod: $paymentMethod,
+      purchaseType: $purchaseType,
+      isAdvanceBooking: $isAdvanceBooking,
+      advanceDeliveryDatetime: $advanceDeliveryDatetime,
+      items: $items
+    ) {
+      order {
+        id
+        orderNumber
+        orderType
+        finalAmount
+        customerName
+        isAdvanceBooking
+        advanceDeliveryDatetime
+        items {
+          product { name }
+          quantity
+          subtotal
         }
+        status
+        createdAt
       }
     }
-  `,
+  }
+`,
 
   UPDATE_ORDER_STATUS: `
     mutation UpdateOrderStatus($orderId: Int!, $status: String!, $note: String) {
@@ -353,14 +732,29 @@ mutation UpdateStock($productId: Int!, $quantity: Int!) {
   `,
 
   GET_ALL_ORDERS: `
-    query GetAllOrders($orderFrom: String) {
-      allOrders(orderFrom: $orderFrom) {
+  query GetAllOrders(
+    $first: Int!
+    $after: String
+    $orderFrom: String
+    $query: String
+    $orderType: String
+  ) {
+    allOrders(
+      first: $first
+      after: $after
+      orderFrom: $orderFrom
+      query: $query
+      orderType: $orderType
+    ) {
+      orders {
         id
         orderNumber
+        orderType
         status
         totalAmount
         finalAmount
         createdAt
+
         customer {
           id
           firstName
@@ -368,39 +762,81 @@ mutation UpdateStock($productId: Int!, $quantity: Int!) {
           email
           phone
         }
+
         shippingAddress
+
         items {
           quantity
           subtotal
+
           product {
+            id
             name
             unit
             measureValue
+
             images {
               image
             }
           }
         }
       }
+
+      totalOrders
+      pendingOrders
+      dispatchedOrders
+      deliveredOrders
+      cancelledOrders
+      revenue
+      nextCursor
+      hasMore
     }
-  `,
+  }
+`,
 
   ADMIN_CREATE_CUSTOMER: `
-    mutation AdminCreateCustomer($email: String!, $password: String!, $firstName: String!, $lastName: String!, $phone: String) {
-      adminCreateCustomer(email: $email, password: $password, firstName: $firstName, lastName: $lastName, phone: $phone) {
-        customer {
-          id
-        }
+  mutation AdminCreateCustomer(
+    $email: String!,
+    $password: String!,
+    $firstName: String!,
+    $lastName: String!,
+    $phone: String!,
+    $city: String!,
+    $state: String!,
+    $pincode: String!,
+    $landmark: String
+  ) {
+
+    adminCreateCustomer(
+      email: $email,
+      password: $password,
+      firstName: $firstName,
+      lastName: $lastName,
+      phone: $phone,
+
+      city: $city,
+      state: $state,
+      pincode: $pincode,
+      landmark: $landmark
+    ) {
+
+      customer {
+        id
+        customerId
       }
     }
-  `,
+  }
+`,
 
   GET_CUSTOMERS: `
-    query GetCustomers($search: String) {
-      customers(first: 10, search: $search) {
+    query GetCustomers($search: String, $after: String, $first: Int = 10) {
+      customers(first: $first, after: $after, search: $search) {
         customers {
+          customerId
           id
           user {
+          id
+          id
             firstName
             lastName
             email
@@ -408,6 +844,9 @@ mutation UpdateStock($productId: Int!, $quantity: Int!) {
           }
           addresses {
             id
+            name
+            name
+            addressLine
             city
             state
             pincode
@@ -421,17 +860,40 @@ mutation UpdateStock($productId: Int!, $quantity: Int!) {
   `,
 
   GET_PRODUCTS_SIMPLE: `
-    query GetProductsSimple {
-      products {
-        id
-        name
-        sku
-        price
-        stock
-        status
-        category {
+    query GetProductsSimple($first: Int = 100) {
+      products(first: $first) {
+        products {
+          id
           name
+          sku
+          price
+          isActive
+          storefrontReservedQuantity
+    systemReservedQuantity
+
+    storefrontStock {
+      quantity
+      reservedQuantity
+      availableQuantity
+    }
+
+    systemStock {
+      quantity
+      reservedQuantity
+      availableQuantity
+    }
+          stock {
+            quantity
+            reservedQuantity
+            availableQuantity
+            isOutOfStock
+          }
+          category {
+            name
+          }
         }
+        nextCursor
+        hasMore
       }
     }
   `,

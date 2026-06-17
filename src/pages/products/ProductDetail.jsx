@@ -17,7 +17,7 @@ import {
 } from 'antd';
 import { useEffect, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
-import { addProductImage, deleteProductImage, getProductById } from '../../api/products';
+import useProducts from '../../hooks/useProducts';
 
 const { Title, Text } = Typography;
 
@@ -25,6 +25,7 @@ const ProductDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
 
+  const { getProductById, addProductImage, deleteProductImage } = useProducts();
   const location = useLocation();
   const [product, setProduct] = useState(location.state?.product || null);
   const [loading, setLoading] = useState(!location.state?.product);
@@ -43,9 +44,9 @@ const ProductDetail = () => {
     setLoading(true);
     const result = await getProductById(id);
 
-    if (result.success) {
-      setProduct(result.product);
-      setImageList(result.product.images || []);
+    if (result) {
+      setProduct(result);
+      setImageList(result.images || []);
     } else {
       message.error("Product not found");
       navigate("/products/all");
@@ -56,7 +57,7 @@ const ProductDetail = () => {
 
   const handleDeleteImage = (index) => {
     const imageToDelete = imageList[index];
-    
+
     Modal.confirm({
       title: "Delete Image",
       content: "Are you sure you want to delete this image?",
@@ -64,12 +65,12 @@ const ProductDetail = () => {
         // If the image has an ID, it's an existing image from the server
         if (imageToDelete?.id) {
           const result = await deleteProductImage(imageToDelete.id);
-          if (!result.success) {
-            message.error(result.message || 'Failed to delete image');
+          if (!result) {
+            message.error('Failed to delete image');
             return;
           }
         }
-        
+
         // Remove from local state
         const updated = imageList.filter((_, i) => i !== index);
         setImageList(updated);
@@ -88,7 +89,7 @@ const ProductDetail = () => {
 
       const res = await addProductImage(product.id, file);
 
-      if (res.success) {
+      if (res) {
         message.success("Image uploaded");
         loadProduct();
       } else {
@@ -130,7 +131,7 @@ const ProductDetail = () => {
           <Descriptions.Item label="Name">{product.name}</Descriptions.Item>
           <Descriptions.Item label="SKU">{product.sku}</Descriptions.Item>
           <Descriptions.Item label="Price">{formatPrice(product.price)}</Descriptions.Item>
-          <Descriptions.Item label="Discount">
+          <Descriptions.Item label="Discount Price">
             {product.discountPrice ? formatPrice(product.discountPrice) : "-"}
           </Descriptions.Item>
           <Descriptions.Item label="Status">
@@ -143,6 +144,17 @@ const ProductDetail = () => {
           </Descriptions.Item>
           <Descriptions.Item label="Description" span={2}>
             {product.description || "-"}
+          </Descriptions.Item>
+          <Descriptions.Item label="Short Description" span={2}>
+            {product.shortDescription || "-"}
+          </Descriptions.Item>
+          <Descriptions.Item label="Keywords" span={2}>
+            {product.keywords?.map((keyword, index) => (
+              <Tag key={index}>{keyword}</Tag>
+            )) || "-"}
+          </Descriptions.Item>
+          <Descriptions.Item label="Delivery Rule (Days)">
+            {product.deliveryRuleDays != null ? product.deliveryRuleDays : "-"}
           </Descriptions.Item>
         </Descriptions>
       </Card>

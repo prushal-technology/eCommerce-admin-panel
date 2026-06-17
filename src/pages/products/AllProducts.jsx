@@ -1,49 +1,56 @@
 import {
-    DeleteOutlined,
-    EditOutlined,
-    EyeOutlined
+  DeleteOutlined,
+  EditOutlined,
+  EyeOutlined,
+  PlusOutlined
 } from '@ant-design/icons';
 import {
-    Button,
-    Card,
-    Input,
-    message,
-    Popconfirm,
-    Select,
-    Space,
-    Spin,
-    Table,
-    Tag
+  Button,
+  Card,
+  Input,
+  message,
+  Popconfirm,
+  Select,
+  Skeleton,
+  Space,
+  Table,
+  Tag,
+  Typography
 } from 'antd';
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getAllCategories } from '../../api/categories';
-import { addProductImage, createProduct, deleteProduct, deleteProductImage, getAllProducts, updateProduct } from '../../api/products';
 import ImagePreviewModal from '../../components/modals/ImagePreviewModal';
 import ProductModal from '../../components/modals/ProductModal';
-import { getDecryptedUser } from "../../utils/crypto"; // adjust path
+import usePermissions from '../../hooks/usePermissions';
+import useProducts from '../../hooks/useProducts';
 
 const { Search } = Input;
 const { Option } = Select;
+const { Title, Text } = Typography;
 
 const AllProducts = () => {
   const navigate = useNavigate();
-  const user = getDecryptedUser();
-  const role = user?.role;
+  const { canUpdate } = usePermissions();
+  const canManageProducts = canUpdate('product');
 
-  const normalizedRole = role?.toLowerCase();
-
-  const isAdmin = ["admin", "manager"].includes(normalizedRole);
-  const isEmployee = ["employee", "sales associate"].includes(normalizedRole);
-
-  const [products, setProducts] = useState([]);
+  const {
+    products,
+    categories,
+    actionLoading,
+    fetchProducts,
+    fetchCategories,
+    createProduct,
+    updateProduct,
+    deleteProduct,
+    addProductImage,
+    deleteProductImage,
+  } = useProducts();
   const [loading, setLoading] = useState(false);
   const [searchText, setSearchText] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
-  const [categories, setCategories] = useState([]);
   const [selectedImage, setSelectedImage] = useState(null);
   const [imageModalVisible, setImageModalVisible] = useState(false);
   const [imageList, setImageList] = useState([]);
@@ -90,11 +97,8 @@ const AllProducts = () => {
 
   const loadCategories = async () => {
     try {
-      const result = await getAllCategories();
-      if (result.success) {
-        setCategories(result.categories);
-      }
-    } catch (error) {
+      await fetchCategories();
+    } catch {
       message.error('Failed to load categories');
     }
   };
@@ -113,27 +117,21 @@ const AllProducts = () => {
     }
 
     try {
-      let categoryId = categoryFilter === 'all' ? null : categoryFilter;
-      let search = searchText ? searchText : null;
+      const categoryId = categoryFilter === 'all' ? null : categoryFilter;
+      const search = searchText ? searchText : null;
 
-      const result = await getAllProducts(10, cursor, search, categoryId);
+      const result = await fetchProducts(10, cursor, search, categoryId, !isNewSearch);
 
-      if (result.success) {
+      if (result) {
         if (isNewSearch) {
-          setProducts(result.products);
+          setNextCursor(result.nextCursor);
+          setHasMore(result.hasMore);
         } else {
-          setProducts(prev => {
-            const newIds = new Set(result.products.map(p => p.id));
-            const filteredPrev = prev.filter(p => !newIds.has(p.id));
-            return [...filteredPrev, ...result.products];
-          });
+          setNextCursor(result.nextCursor);
+          setHasMore(result.hasMore);
         }
-        setNextCursor(result.nextCursor);
-        setHasMore(result.hasMore);
-      } else {
-        message.error(result.message || 'Failed to load products');
       }
-    } catch (error) {
+    } catch {
       message.error('Failed to load products');
     } finally {
       setLoading(false);
@@ -154,15 +152,21 @@ const AllProducts = () => {
       name: record.name,
       sku: record.sku,
       description: record.description,
+      keywords: record.keywords,
+      shortDescription: record.shortDescription,
+      deliveryRuleDays: record.deliveryRuleDays,
       price: record.price,
       discountPrice: record.discountPrice,
+      bulkOrderPrice: record.bulkOrderPrice,
       categoryId: record.category?.id,
       isActive: record.isActive,
       unit: record.unit,
       measureValue: record.measureValue,
       isFeatured: record.isFeatured,
-      quantity: record.stock?.quantity,
-      reservedQuantity: record.stock?.reservedQuantity ?? 0
+      storefrontQuantity: record.storefrontStock?.quantity ?? 0,
+      systemQuantity: record.systemStock?.quantity ?? 0,
+      storefrontReservedQuantity: record.storefrontReservedQuantity ?? 0,
+      systemReservedQuantity: record.systemReservedQuantity ?? 0
     };
     setEditingProduct(mappedData);
 
@@ -190,14 +194,11 @@ const AllProducts = () => {
 
   const handleDelete = async (id) => {
     try {
-      const result = await deleteProduct(id);
-      if (result.success) {
-        setProducts(products.filter(p => p.id !== id));
-        message.success(result.message);
-      } else {
-        message.error(result.message || 'Failed to delete product');
+      const deleted = await deleteProduct(id);
+      if (deleted) {
+        await loadProducts(null, true);
       }
-    } catch (error) {
+    } catch {
       message.error('Failed to delete product');
     }
   };
@@ -213,25 +214,71 @@ const AllProducts = () => {
     return isActive ? 'green' : 'red';
   };
 
+  const skeletonRows = Array.from({ length: 6 }).map((_, index) => ({
+    id: `skeleton-${index}`,
+    isSkeleton: true,
+  }));
+
   const columns = [
     {
       title: <span>Product</span>,
       dataIndex: 'name',
       key: 'name',
       render: (text, record) => {
-        // Find the first valid image (non-empty image string)
+
+        // Skeleton UI
+        if (record.isSkeleton) {
+          return (
+            <Space align="start">
+              <Skeleton.Image
+                active
+                style={{
+                  width: 60,
+                  height: 60,
+                  borderRadius: 8
+                }}
+              />
+
+              <div>
+                <Skeleton.Input
+                  active
+                  size="small"
+                  style={{ width: 140 }}
+                />
+
+                <div style={{ marginTop: 8 }}>
+                  <Skeleton.Input
+                    active
+                    size="small"
+                    style={{ width: 100 }}
+                  />
+                </div>
+
+                <div style={{ marginTop: 8 }}>
+                  <Skeleton.Input
+                    active
+                    size="small"
+                    style={{ width: 80 }}
+                  />
+                </div>
+              </div>
+            </Space>
+          );
+        }
+
+        // Find the first valid image
         const validImage = record.images && record.images.length > 0
           ? record.images.find(img => img.image && img.image.trim() !== '')
           : null;
 
         // Construct full URL for image paths
         const imageSrc = validImage
-          ? (validImage.image.startsWith('data:')
-            ? validImage.image
-            : `${import.meta.env.VITE_GRAPHQL_URI.replace('/graphql/', '').replace('/graphql', '')}/media/${validImage.image}`)
+          ? (
+            validImage.image.startsWith('data:')
+              ? validImage.image
+              : `${import.meta.env.VITE_GRAPHQL_URI.replace('/graphql/', '').replace('/graphql', '')}/media/${validImage.image}`
+          )
           : undefined;
-
-        //console.log('Image source:', imageSrc); // Debug log
 
         const handleImageClick = () => {
           if (imageSrc) {
@@ -275,21 +322,36 @@ const AllProducts = () => {
                 No Image
               </div>
             )}
+
             <div>
               <div style={{ fontWeight: 500 }}>
                 {text}
+
                 {record.isFeatured && (
-                  <Tag color="gold" size="small" style={{ marginLeft: 8, fontSize: 10, lineHeight: '14px' }}>
+                  <Tag
+                    color="gold"
+                    size="small"
+                    style={{
+                      marginLeft: 8,
+                      fontSize: 10,
+                      lineHeight: '14px'
+                    }}
+                  >
                     FEATURED
                   </Tag>
                 )}
               </div>
-              <div style={{ fontSize: 12, color: '#666' }}>SKU: {record.sku}</div>
+
+              <div style={{ fontSize: 12, color: '#666' }}>
+                SKU: {record.sku}
+              </div>
+
               {record.measureValue && record.unit && (
                 <div style={{ fontSize: 12, color: '#888' }}>
                   Quantity: {record.measureValue} {record.unit}
                 </div>
               )}
+
               {record.images && record.images.length > 0 && (
                 <div style={{ fontSize: 12, color: '#1890ff' }}>
                   {record.images.length} image(s)
@@ -300,35 +362,82 @@ const AllProducts = () => {
         );
       },
     },
+
     {
       title: <span>Category</span>,
       dataIndex: 'category',
       key: 'category',
-      render: (category) => (
-        <span>
-          {category ? category.name : 'N/A'}
-        </span>
-      )
+      render: (category, record) => {
+
+        if (record.isSkeleton) {
+          return (
+            <Skeleton.Input
+              active
+              size="small"
+              style={{ width: 100 }}
+            />
+          );
+        }
+
+        return (
+          <span>
+            {category ? category.name : 'N/A'}
+          </span>
+        );
+      }
     },
+
     {
       title: <span>Price</span>,
       dataIndex: 'price',
       key: 'price',
       render: (price, record) => {
+
+        if (record.isSkeleton) {
+          return (
+            <div>
+              <Skeleton.Input
+                active
+                size="small"
+                style={{ width: 100 }}
+              />
+
+              <div style={{ marginTop: 8 }}>
+                <Skeleton.Input
+                  active
+                  size="small"
+                  style={{ width: 70 }}
+                />
+              </div>
+            </div>
+          );
+        }
+
         const p = Number(price);
         const dp = Number(record.discountPrice);
+
         const hasDiscount = record.discountPrice && dp < p;
         const invalidDiscount = record.discountPrice && dp >= p;
 
         return (
           <div>
-            <div>₹{p.toLocaleString('en-IN')}</div>
             {hasDiscount && (
               <div>
                 ₹{dp.toLocaleString('en-IN')}{' '}
-                <span className="text-muted">(Save ₹{(p - dp).toFixed(2)})</span>
+                <span className="text-muted">
+                  (Save ₹{(p - dp).toFixed(2)})
+                </span>
               </div>
             )}
+
+            <div
+              style={{
+                textDecoration: hasDiscount ? 'line-through' : 'none'
+              }}
+            >
+              ₹{p.toLocaleString('en-IN')}
+            </div>
+
             {invalidDiscount && (
               <div style={{ color: '#fa8c16', fontSize: 11 }}>
                 ⚠️ Discount price must be lower than regular price
@@ -338,11 +447,23 @@ const AllProducts = () => {
         );
       },
     },
+
     {
-      title: <span>Stock</span>,
-      dataIndex: 'stock',
-      key: 'stock',
-      render: (stockObj) => {
+      title: <span>Store front Stock</span>,
+      dataIndex: 'storefrontStock',
+      key: 'storefrontStock',
+      render: (stockObj, record) => {
+
+        if (record.isSkeleton) {
+          return (
+            <Skeleton.Button
+              active
+              size="small"
+              style={{ width: 70 }}
+            />
+          );
+        }
+
         const qty = stockObj?.quantity || 0;
 
         return (
@@ -354,17 +475,74 @@ const AllProducts = () => {
         );
       },
     },
+    // System Stock column
+    {
+      title: <span>System Stock</span>,
+      dataIndex: 'systemStock',
+      key: 'systemStock',
+      render: (stockObj, record) => {
+        if (record.isSkeleton) {
+          return (
+            <Skeleton.Button
+              active
+              size="small"
+              style={{ width: 70 }}
+            />
+          );
+        }
+        const qty = stockObj?.quantity || 0;
+        return (
+          <Tag color={qty === 0 ? 'red' : qty < 10 ? 'orange' : 'green'}>
+            {qty} units
+          </Tag>
+        );
+      },
+    },
+    // Reserved Quantities column
+    {
+      title: <span>Reserved</span>,
+      dataIndex: 'reserved',
+      key: 'reserved',
+      render: (_, record) => {
+        if (record.isSkeleton) {
+          return (
+            <Skeleton.Button
+              active
+              size="small"
+              style={{ width: 70 }}
+            />
+          );
+        }
+        const storefrontRes = record.storefrontReservedQuantity ?? 0;
+        const systemRes = record.systemReservedQuantity ?? 0;
+        return (
+          <span>Storefront: {storefrontRes}, System: {systemRes}</span>
+        );
+      },
+    },
+
     {
       title: <span>Status</span>,
       dataIndex: 'isActive',
       key: 'isActive',
-      render: (isActive) => (
-        <Tag
-          color={getStatusColor(isActive)}
-        >
-          {isActive ? 'ACTIVE' : 'INACTIVE'}
-        </Tag>
-      ),
+      render: (isActive, record) => {
+
+        if (record.isSkeleton) {
+          return (
+            <Skeleton.Button
+              active
+              size="small"
+              style={{ width: 80 }}
+            />
+          );
+        }
+
+        return (
+          <Tag color={getStatusColor(isActive)}>
+            {isActive ? 'ACTIVE' : 'INACTIVE'}
+          </Tag>
+        );
+      },
     },
 
     {
@@ -372,21 +550,46 @@ const AllProducts = () => {
       key: 'actions',
       render: (_, record) => {
 
-        if (isEmployee) {
-          return null; // No actions available for employee after cart/wishlist removal
-        }
-
-        if (isAdmin) {
+        // Skeleton UI
+        if (record.isSkeleton) {
           return (
             <Space size="small">
-              <Button size="small" icon={<EyeOutlined />} onClick={() => navigate(`/products/${record.id}`, { state: { product: record } })} />
-              <Button size="small" icon={<EditOutlined />} onClick={() => handleEdit(record)} />
+              <Skeleton.Button active size="small" shape="circle" />
+              <Skeleton.Button active size="small" shape="circle" />
+              <Skeleton.Button active size="small" shape="circle" />
+            </Space>
+          );
+        }
+
+        if (canManageProducts) {
+          return (
+            <Space size="small">
+              <Button
+                size="small"
+                icon={<EyeOutlined />}
+                onClick={() =>
+                  navigate(`/products/${record.id}`, {
+                    state: { product: record }
+                  })
+                }
+              />
+
+              <Button
+                size="small"
+                icon={<EditOutlined />}
+                onClick={() => handleEdit(record)}
+              />
+
               <Popconfirm
                 title="Delete Product"
                 description="Are you sure you want to delete this product?"
                 onConfirm={() => handleDelete(record.id)}
               >
-                <Button size="small" danger icon={<DeleteOutlined />} />
+                <Button
+                  size="small"
+                  danger
+                  icon={<DeleteOutlined />}
+                />
               </Popconfirm>
             </Space>
           );
@@ -398,91 +601,75 @@ const AllProducts = () => {
   ];
 
   return (
-    <div>
-      {/* API Status Alert */}
-      {/* <Alert
-        title="API Integration - Status: IN PROGRESS"
-        description="Product management is now connected to GraphQL backend API"
-        type="info"
-        showIcon
-      /> */}
+    <div style={{ height: "100%", display: "flex", flexDirection: "column", overflow: "hidden" }}>
+      <Title level={4} style={{ marginBottom: 20 }}>Products Management</Title>
 
 
-      <div style={{ marginBottom: 12, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-        <Search
-          size="small"
-          className="small-search"
-          placeholder="Search products..."
-          allowClear
-          onChange={(e) => setSearchText(e.target.value)}
-          style={{ width: 200 }}
-        />
-
-        <Select
-          size="small"
-          value={statusFilter}
-          onChange={setStatusFilter}
-          style={{ width: 130 }}
-        >
-          <Option value="all">All</Option>
-          <Option value="active">Active</Option>
-          <Option value="inactive">Inactive</Option>
-        </Select>
-
-        <Select
-          size="small"
-          value={categoryFilter}
-          onChange={setCategoryFilter}
-          style={{ width: 140 }}
-          popupMatchSelectWidth={false}
-          styles={{ popup: { root: { width: 140 } } }}
-        >
-          <Option value="all">Categories</Option>
-          {categories.map(cat => (
-            <Option key={cat.id} value={cat.id}>
-              {cat.name}
-            </Option>
-          ))}
-        </Select>
+      <div style={{ marginBottom: 12, display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'space-between' }}>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', }} >
+          <Search
+            size="small"
+            className="small-search"
+            placeholder="Search products..."
+            allowClear onChange={(e) => setSearchText(e.target.value)}
+            style={{ width: 250 }}
+          />
+          <Select
+            size="small"
+            value={statusFilter}
+            onChange={setStatusFilter}
+            style={{ width: 130 }}
+          > <Option value="all">All</Option>
+            <Option value="active">Active</Option>
+            <Option value="inactive">Inactive</Option>
+          </Select>
+          <Select
+            size="small"
+            value={categoryFilter}
+            onChange={setCategoryFilter}
+            style={{ width: 140 }}
+            popupMatchSelectWidth={false}
+            styles={{ popup: { root: { width: 140 }, }, }}
+          >
+            <Option value="all"> Categories </Option>
+            {categories.map((cat) => (
+              <Option key={cat.id} value={cat.id}
+              >
+                {cat.name}
+              </Option>))}
+          </Select>
+        </div>
+        {/* RIGHT SIDE BUTTON */}
+        {canManageProducts && (
+          <Button
+            type="primary"
+            size="small"
+            icon={<PlusOutlined />}
+            onClick={handleAdd}
+          >
+            Add Product
+          </Button>)}
       </div>
 
-      <Card
-        title="Products Management"
-        extra={
-          isAdmin ? (
-            <Button type="primary" size="small" onClick={handleAdd}>
-              Add Product
-            </Button>
-          ) : null
-        }
-      >
-        <div ref={tableContainerRef}>
+      <Card style={{ flex: 1, overflow: "hidden", display: "flex", flexDirection: "column" }}>
+        <div
+          ref={tableContainerRef}
+          style={{
+            flex: 1,
+            minHeight: 0,
+          }}
+        >
           <Table
             rowKey="id"
             columns={columns}
-            dataSource={visibleProducts}
-            loading={{
-              spinning: loading || fetchingMore,
-              indicator: <Spin size="large" />,
-              tip: loading ? "Loading products..." : "Loading more products..."
-            }}
+            dataSource={loading ? skeletonRows : visibleProducts}
             size="small"
             pagination={false}
-            scroll={{ x: 'max-content', y: 500 }}
-            locale={{
-              emptyText: loading ? '' : 'No products found'
-            }}
+            scroll={{ x: 'max-content', y: 'calc(100vh - 320px)' }}
+            locale={{ emptyText: loading ? '' : 'No products found' }}
           />
-
-          {/* No more data indicator at bottom */}
           {!hasMore && visibleProducts.length > 0 && !loading && !fetchingMore && (
-            <div style={{
-              textAlign: "center",
-              padding: "10px",
-              color: '#999',
-              fontSize: '12px',
-              borderTop: '1px solid #f0f0f0'
-            }}>
+            <div style={{ textAlign: "center", padding: "10px", color: '#999', fontSize: '12px', borderTop: '1px solid #f0f0f0' }}>
               No more products to load
             </div>
           )}
@@ -490,63 +677,90 @@ const AllProducts = () => {
       </Card>
 
       {/* Add/Edit Product Modal */}
-      {(role === "admin" || role === "manager") && (
+      {canManageProducts && (
         <ProductModal
           visible={isModalVisible}
           onCancel={() => setIsModalVisible(false)}
-          onSubmit={async (productData, imageData) => {
+          onSubmit={async (
+            productData,
+            imageData
+          ) => {
+
+            const payload = {
+
+              ...productData,
+
+              price: Number(
+                productData.price
+              ),
+
+              discountPrice:
+                productData.discountPrice
+                  ? Number(
+                    productData.discountPrice
+                  )
+                  : null,
+            };
+
             if (editingProduct) {
-              // const result = await updateProduct(editingProduct.id, productData);
-              const payload = {
-                ...productData,
-                price: Number(productData.price),
-                discountPrice: productData.discountPrice
-                  ? Number(productData.discountPrice)
-                  : null
-              };
 
-              const result = await updateProduct(editingProduct.id, payload);
-              if (result.success) {
-                // Refresh products list to get updated data
-                await loadProducts(null, true);
-                message.success(result.message);
-              } else {
-                message.error(result.message || 'Failed to update product');
+              // EDIT PRODUCT
+
+              const updated =
+                await updateProduct(
+                  editingProduct.id,
+                  payload
+                );
+
+              if (updated) {
+
+                await loadProducts(
+                  null,
+                  true
+                );
               }
-            } else {
-              // const result = await createProduct(productData);
-              const payload = {
-                ...productData,
-                price: Number(productData.price),
-                discountPrice: productData.discountPrice
-                  ? Number(productData.discountPrice)
-                  : null
-              };
 
-              const result = await createProduct(payload);
-              if (result.success) {
-                // Upload images if any
-                if (imageData.length > 0) {
+            } else {
+
+              // CREATE PRODUCT
+
+              const created =
+                await createProduct(payload);
+
+              if (created?.id) {
+
+                // UPLOAD IMAGES
+
+                if (
+                  imageData?.length > 0
+                ) {
+
                   for (const image of imageData) {
-                    await addProductImage(result.product.id, image);
+
+                    await addProductImage(
+                      created.id,
+                      image
+                    );
                   }
                 }
-                // Refresh products list to get updated data with images
-                await loadProducts(null, true);
-                message.success('Product added successfully!');
-              } else {
-                message.error(result.message || 'Failed to add product');
+
+                await loadProducts(
+                  null,
+                  true
+                );
               }
             }
+
             setIsModalVisible(false);
           }}
           initialValues={editingProduct}
           categories={categories}
-          loading={loading}
+          loading={actionLoading}
           imageList={imageList}
           setImageList={setImageList}
           title={editingProduct ? 'Edit Product' : 'Add Product'}
           onDeleteImage={deleteProductImage}
+          onAddImage={addProductImage}
         />
       )}
 

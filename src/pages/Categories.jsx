@@ -1,22 +1,9 @@
-import {
-  DeleteOutlined,
-  EditOutlined
-} from '@ant-design/icons';
-import {
-  Button,
-  Card,
-  Form,
-  Input,
-  message,
-  Popconfirm,
-  Space,
-  Table,
-  Tag
-} from 'antd';
-import { useEffect, useState } from 'react';
+import { DeleteOutlined, EditOutlined, PlusOutlined } from '@ant-design/icons';
+import { Button, Card, Form, Input, message, Popconfirm, Skeleton, Space, Table, Tag, Typography } from 'antd';
+import { useEffect, useRef, useState } from 'react';
 import { createCategory, deleteCategory, getAllCategories, updateCategory } from '../api/categories';
 import CategoryModal from '../components/modals/CategoryModal';
-
+import usePermissions from '../hooks/usePermissions';
 // Helper function to convert File to base64
 const fileToBase64 = (file) => {
   return new Promise((resolve, reject) => {
@@ -26,48 +13,113 @@ const fileToBase64 = (file) => {
     reader.onerror = (error) => reject(error);
   });
 };
-
 const { Search } = Input;
+const { Title, Text } = Typography;
+
 
 const Categories = () => {
+  const { canUpdate } = usePermissions();
+  const canManageCategories = canUpdate('category');
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(false);
   const [searchText, setSearchText] = useState('');
+  const [nextCursor, setNextCursor] = useState(null);
+  const [hasMore, setHasMore] = useState(false);
+  const [fetchingMore, setFetchingMore] = useState(false);
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [editingCategory, setEditingCategory] = useState(null);
   const [form] = Form.useForm();
   const [imageList, setImageList] = useState([]);
+  const tableContainerRef = useRef(null);
 
-  // Load categories on component mount
+
   useEffect(() => {
-    loadCategories();
-  }, []);
+    const timer = setTimeout(() => {
+      loadCategories(null, true);
+    }, 400);
 
+    return () => clearTimeout(timer);
+  }, [searchText]);
 
+  useEffect(() => {
+    const tableBody =
+      tableContainerRef.current?.querySelector('.ant-table-body');
 
-  const loadCategories = async () => {
+    if (tableBody) {
+      const handleScroll = (e) => {
+        const {
+          scrollTop,
+          scrollHeight,
+          clientHeight
+        } = e.target;
+
+        if (
+          scrollHeight - scrollTop <= clientHeight + 50
+        ) {
+          if (
+            hasMore &&
+            !loading &&
+            !fetchingMore
+          ) {
+            loadCategories(nextCursor, false);
+          }
+        }
+      };
+
+      tableBody.addEventListener('scroll', handleScroll);
+
+      return () =>
+        tableBody.removeEventListener(
+          'scroll',
+          handleScroll
+        );
+    }
+  }, [hasMore, loading, fetchingMore, nextCursor]);
+
+  const loadCategories = async (
+    cursor = null,
+    isNewSearch = false
+  ) => {
     try {
-      setLoading(true);
-      const res = await getAllCategories();
+      if (isNewSearch) {
+        setLoading(true);
+      } else {
+        setFetchingMore(true);
+      }
+
+      const res = await getAllCategories({
+        query: searchText || null,
+        first: 8,
+        after: cursor,
+      });
 
       if (res.success) {
-        setCategories(res.categories);
+        setCategories((prev) => {
+          const nextData = res.categories || [];
+
+          return isNewSearch
+            ? nextData
+            : [...prev, ...nextData];
+        });
+
+        setNextCursor(res.nextCursor);
+        setHasMore(res.hasMore);
       } else {
         message.error(res.message || "Failed to load categories");
       }
-    } catch (error) {
+    } catch {
       message.error("Something went wrong");
     } finally {
       setLoading(false);
+      setFetchingMore(false);
     }
   };
 
-
-
   const handleSubmit = async (values) => {
+    if (!canManageCategories) return;
+
     try {
       setLoading(true);
-
       // Convert image file to base64 if exists
       let imageBase64 = null;
       if (imageList[0]?.originFileObj) {
@@ -97,57 +149,56 @@ const Categories = () => {
         setIsModalVisible(false);
         form.resetFields();
         setImageList([]);
-        loadCategories();
+        loadCategories(null, true);
       } else {
         message.error(res.message || "Failed to save");
       }
-
-    } catch (error) {
+    } catch {
       message.error("Something went wrong");
     } finally {
       setLoading(false);
     }
   };
 
-
   const handleEdit = (category) => {
+    if (!canManageCategories) return;
+
     setEditingCategory(category);
     form.setFieldsValue({
       name: category.name,
       description: category.description || '',
       isActive: category.isActive !== false,
       parentId: category.parent?.id
-
     });
+
     setImageList(
       category.image
         ? [
-            {
-              uid: '-1',
-              name: 'image.png',
-              status: 'done',
-              url: `${import.meta.env.VITE_GRAPHQL_URI.replace('/graphql/', '').replace('/graphql', '')}/media/${category.image}`
-            }
-          ]
+          {
+            uid: '-1',
+            name: 'image.png',
+            status: 'done',
+            url: `${import.meta.env.VITE_GRAPHQL_URI.replace('/graphql/', '').replace('/graphql', '')}/media/${category.image}`
+          }
+        ]
         : []
     );
     setIsModalVisible(true);
   };
-
-
   const handleDelete = async (id) => {
+    if (!canManageCategories) return;
+
     try {
       const res = await deleteCategory(id);
-
       if (res.success) {
         message.success("Deleted");
-        loadCategories();
+        loadCategories(null, true);
       }
       else {
         message.error(res.message);
       }
     }
-    catch (error) {
+    catch {
       message.error("Something went wrong");
     }
     finally {
@@ -155,31 +206,68 @@ const Categories = () => {
     }
   };
 
-
-  const filteredCategories = categories.filter(category => {
-    const matchesSearch = (category.name || '').toLowerCase().includes(searchText.toLowerCase()) ||
-      (category.description && category.description.toLowerCase().includes(searchText.toLowerCase()));
-    return matchesSearch;
-  });
-
   const getParentCategories = () => {
     return categories.filter(c => !c.parent);
   };
+  const skeletonRows = Array.from({ length: 6 }).map((_, index) => ({
+    id: `skeleton-${index}`,
+    isSkeleton: true,
+  }));
+
   const columns = [
 
     {
       title: <span>Category</span>,
       key: "category",
+
       render: (_, record) => {
-        const categoryName = record.parent ? record.parent.name : record.name;
-        const imageUrl = record.parent?.image || record.image;
+
+        // Skeleton
+        if (record.isSkeleton) {
+          return (
+            <Space align="start">
+
+              <Skeleton.Image
+                active
+                style={{
+                  width: 40,
+                  height: 40,
+                  borderRadius: 6
+                }}
+              />
+
+              <div>
+                <Skeleton.Input
+                  active
+                  size="small"
+                  style={{
+                    width: 120,
+                    height: 18,
+                    borderRadius: 6
+                  }}
+                />
+              </div>
+
+            </Space>
+          );
+        }
+
+        const categoryName = record.parent
+          ? record.parent.name
+          : record.name;
+
+        const imageUrl =
+          record.parent?.image || record.image;
+
         const fullImageUrl = imageUrl
           ? `${import.meta.env.VITE_GRAPHQL_URI.replace('/graphql/', '').replace('/graphql', '')}/media/${imageUrl}`
           : null;
 
         return (
           <Space align="start">
+
             {fullImageUrl ? (
+
               <img
                 src={fullImageUrl}
                 alt={categoryName}
@@ -191,7 +279,9 @@ const Categories = () => {
                   border: '1px solid #f0f0f0'
                 }}
               />
+
             ) : (
+
               <div
                 style={{
                   width: 40,
@@ -208,98 +298,185 @@ const Categories = () => {
                 No Img
               </div>
             )}
+
             <span>{categoryName}</span>
+
           </Space>
         );
       },
     },
+
     {
       title: <span>Sub Category</span>,
       key: "subCategory",
-      render: (_, record) => (
-        <span>
-          {record.parent ? record.name : "-"}
-        </span>
-      ),
+
+      render: (_, record) => {
+
+        if (record.isSkeleton) {
+          return (
+            <Skeleton.Input
+              active
+              size="small"
+              style={{
+                width: 100,
+                height: 18,
+                borderRadius: 6
+              }}
+            />
+          );
+        }
+
+        if (!canManageCategories) return null;
+
+        return (
+          <span>
+            {record.parent ? record.name : "-"}
+          </span>
+        );
+      },
     },
+
     {
       title: <span>Description</span>,
       dataIndex: "description",
       key: "description",
-      render: (text) => (
-        <span>
-          {text || "-"}
-        </span>
-      ),
+
+      render: (text, record) => {
+
+        if (record.isSkeleton) {
+          return (
+            <Skeleton.Input
+              active
+              size="small"
+              style={{
+                width: '80%',
+                minWidth: 120,
+                maxWidth: 220,
+                height: 18,
+                borderRadius: 6
+              }}
+            />
+          );
+        }
+
+        return (
+          <span>
+            {text || "-"}
+          </span>
+        );
+      },
     },
+
     {
       title: <span>Status</span>,
       dataIndex: "isActive",
       key: "isActive",
-      render: (isActive) => (
-        <Tag color={isActive !== false ? "green" : "red"}>
-          {isActive !== false ? "ACTIVE" : "INACTIVE"}
-        </Tag>
-      ),
+
+      render: (isActive, record) => {
+
+        if (record.isSkeleton) {
+          return (
+            <Skeleton.Button
+              active
+              size="small"
+              style={{
+                width: 80,
+                height: 24,
+                borderRadius: 20
+              }}
+            />
+          );
+        }
+
+        return (
+          <Tag color={isActive !== false ? "green" : "red"}>
+            {isActive !== false ? "ACTIVE" : "INACTIVE"}
+          </Tag>
+        );
+      },
     },
+
     {
       title: <span>Actions</span>,
       key: "actions",
-      render: (_, record) => (
-        <Space size="small">
-          <Button
-            size='small'
-            type="link"
-            icon={<EditOutlined />}
-            onClick={() => handleEdit(record)}
-          >
-            Edit
-          </Button>
 
-          <Popconfirm
-            title="Delete Category"
-            description="Are you sure you want to delete this category?"
-            onConfirm={() => handleDelete(record.id)}
-            okText="Yes"
-            cancelText="No"
-          >
+      render: (_, record) => {
+
+        if (record.isSkeleton) {
+          return (
+            <Space size="small">
+
+              <Skeleton.Button
+                active
+                size="small"
+                shape="circle"
+              />
+
+              <Skeleton.Button
+                active
+                size="small"
+                shape="circle"
+              />
+
+            </Space>
+          );
+        }
+
+        return (
+          <Space size="small">
+
             <Button
               size='small'
-              type="link"
-              danger
-              icon={<DeleteOutlined />}
+
+              icon={<EditOutlined />}
+              onClick={() => handleEdit(record)}
             >
-              Delete
             </Button>
-          </Popconfirm>
-        </Space>
-      ),
+
+            <Popconfirm
+              title="Delete Category"
+              description="Are you sure you want to delete this category?"
+              onConfirm={() => handleDelete(record.id)}
+              okText="Yes"
+              cancelText="No"
+            >
+              <Button
+                size='small'
+
+                danger
+                icon={<DeleteOutlined />}
+              >
+              </Button>
+            </Popconfirm>
+
+          </Space>
+        );
+      },
     },
   ];
-
   return (
-    <div>
-      
-
-      <Card>
-        <Space
-          style={{
-            width: "100%",
-            justifyContent: "space-between",
-            marginBottom: 12,
-          }}
-        >
-          <Search
-            placeholder="Search categories..."
-            size="small"
-            value={searchText}
-            onChange={(e) => setSearchText(e.target.value)}
-            style={{ width: 250 }} // 🔥 control width here
-          />
-
+    <div style={{ height: "100%", display: "flex", flexDirection: "column", overflow: "hidden" }}>
+      <Title level={4} style={{ marginBottom: 20 }}>Categories Management</Title>
+      <Space
+        style={{
+          width: "100%",
+          justifyContent: "space-between",
+          marginBottom: 12,
+        }}
+      >
+        <Search
+          placeholder="Search categories..."
+          size="small"
+          className="small-search"
+          value={searchText}
+          onChange={(e) => setSearchText(e.target.value)}
+          style={{ width: 250 }} // 🔥 control width here
+        />
+        {canManageCategories && (
           <Button
             type="primary"
             size="small"
+            icon={<PlusOutlined />}
             onClick={() => {
               setEditingCategory(null);
               form.resetFields();
@@ -309,43 +486,58 @@ const Categories = () => {
           >
             Add Category
           </Button>
-        </Space>
+        )}
+      </Space>
 
-        <Table
-          columns={columns}
-          dataSource={filteredCategories}
-          rowKey="id"
-          size='small'
+      <Card style={{ flex: 1, overflow: "hidden", display: "flex", flexDirection: "column" }}>
+        <div ref={tableContainerRef} style={{ flex: 1, overflow: "hidden" }}>
+          <Table
+            columns={columns}
+            dataSource={loading ? skeletonRows : categories}
+            rowKey="id"
+            size="small"
+            pagination={false}
+            scroll={{ y: 'calc(100vh - 320px)' }}
+          />
+
+          {!hasMore &&
+            categories.length > 0 &&
+            !loading &&
+            !fetchingMore && (
+              <div
+                style={{
+                  textAlign: "center",
+                  padding: "10px",
+                  color: "#999",
+                  fontSize: "12px",
+                  borderTop: "1px solid #f0f0f0",
+                }}
+              >
+                No more categories to load
+              </div>
+            )}
+        </div>
+      </Card>
+      {canManageCategories && (
+        <CategoryModal
+          form={form}
+          open={isModalVisible}
+          onClose={() => setIsModalVisible(false)}
+          onSubmit={handleSubmit}
+          editingCategory={editingCategory}
+          parentCategories={getParentCategories()}
+          imageList={imageList}
+          setImageList={setImageList}
           loading={loading}
-          pagination={{
-            pageSize: 10,
-            showSizeChanger: true,
-            showQuickJumper: true,
-            showTotal: (total) => `Total ${total} categories`,
+          onCancel={() => {
+            setIsModalVisible(false);
+            form.resetFields();
           }}
         />
-      </Card>
-      <CategoryModal
-        form={form}
-        open={isModalVisible}
-
-
-        onClose={() => setIsModalVisible(false)}
-        onSubmit={handleSubmit}
-        editingCategory={editingCategory}
-        parentCategories={getParentCategories()}
-        imageList={imageList}
-        setImageList={setImageList}
-        loading={loading}
-
-        onCancel={() => {
-          setIsModalVisible(false);
-          form.resetFields();
-        }}
-      />
-
+      )}
     </div>
   );
 };
 
 export default Categories;
+

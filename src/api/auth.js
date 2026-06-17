@@ -1,108 +1,5 @@
-// // Authentication API Functions
-// import CryptoJS from 'crypto-js';
-// import { GRAPHQL_QUERIES, graphqlRequest, setAuthToken } from './graphql';
-
-// // User encryption key from environment
-// const ENCRYPTION_KEY = import.meta.env.VITE_USER_ENCRYPTION_KEY || 'default-encryption-key';
-
-// // Login API function
-// export const loginAPI = async (email, password) => {
-//   try {
-//     const data = await graphqlRequest(GRAPHQL_QUERIES.LOGIN, {
-//       email,
-//       password
-//     });
-    
-//     if (data && data.tokenAuth) {
-//       const token = data.tokenAuth.token;
-      
-//       // Store authentication token
-//       setAuthToken(token);
-      
-//       // Determine role based on email (simple approach for now)
-//       let userRole = 'employee'; // default
-//       if (email === 'adminnew@gmail.com') {
-//         userRole = 'admin';
-//       } else if (email.includes('manager') || email.includes('lead')) {
-//         userRole = 'manager';
-//       }
-      
-//       // Create user info object with role
-//       const userInfo = {
-//         email: email,
-//         firstName: email === 'adminnew@gmail.com' ? 'Admin' : 'User',
-//         lastName: 'User',
-//         role: userRole,
-//         token: token,
-//         isAuthenticated: true
-//       };
-      
-//       // Encrypt and store user info
-//       const encryptedUser = CryptoJS.AES.encrypt(
-//         JSON.stringify(userInfo),
-//         ENCRYPTION_KEY
-//       ).toString();
-      
-//       localStorage.setItem('user', encryptedUser);
-      
-//       return {
-//         success: true,
-//         user: userInfo,
-//         token: token
-//       };
-//     }
-    
-//     return {
-//       success: false,
-//       message: 'Invalid credentials'
-//     };
-//   } catch (error) {
-//     return {
-//       success: false,
-//       message: error.message || 'Login failed'
-//     };
-//   }
-// };
-
-// // Logout function
-// export const logout = () => {
-//   localStorage.removeItem('authToken');
-//   localStorage.removeItem('user');
-// };
-
-// // Get current user from encrypted storage
-// export const getCurrentUser = () => {
-//   try {
-//     const encryptedUser = localStorage.getItem('user');
-//     if (!encryptedUser) return null;
-    
-//     const decryptedUser = CryptoJS.AES.decrypt(encryptedUser, ENCRYPTION_KEY);
-//     const user = JSON.parse(decryptedUser.toString(CryptoJS.enc.Utf8));
-    
-//     return user;
-//   } catch (error) {
-//    console.error('Error getting current user:', error);
-//     return null;
-//   }
-// };
-
-// // Get current user role
-// export const getUserRole = () => {
-//   const user = getCurrentUser();
-//   return user ? user.role : 'employee'; // Default to employee for safety
-// };
-
-// // Check if user is authenticated
-// export const isUserAuthenticated = () => {
-//   const user = getCurrentUser();
-//   return user && user.isAuthenticated && !!localStorage.getItem('authToken');
-// };
-
-
-
-
-
 import CryptoJS from 'crypto-js';
+import { normalizePermissions } from '../utils/permissions';
 import { GRAPHQL_QUERIES, graphqlRequest, setAuthToken } from './graphql';
 
 const ENCRYPTION_KEY = import.meta.env.VITE_USER_ENCRYPTION_KEY?.trim();
@@ -127,12 +24,23 @@ export const loginAPI = async (email, password) => {
       // ✅ Normalize role (important)
       const userRole = authData.role?.toLowerCase() || 'employee';
 
+      const userDetails = authData.user || {};
+      const permissions = normalizePermissions(authData.permissions || []);
+
       const userInfo = {
-        id: authData.user?.id,
-        email: authData.user?.email,
-        first_name: authData.user?.firstName || (userRole === 'admin' ? 'Admin' : 'User'),
+        id: userDetails.id,
+        email: userDetails.email,
+        first_name:
+          userDetails.firstName ||
+          userDetails.first_name ||
+          (userRole === 'admin' ? 'Admin' : 'User'),
+        last_name: userDetails.lastName || userDetails.last_name || '',
+        phone: userDetails.phone || '',
         role: userRole,
-        isAuthenticated: true
+        employeeId: authData.employeeId || authData.employee?.id || null,
+        roleName: authData.roleName || authData.role_name || authData.role || '',
+        permissions,
+        isAuthenticated: true,
       };
 
       //console.log('Saving userInfo:', userInfo);
@@ -149,7 +57,8 @@ export const loginAPI = async (email, password) => {
 
       return {
         success: true,
-        user: userInfo
+        user: userInfo,
+        token,
       };
     }
 
@@ -172,6 +81,7 @@ export const loginAPI = async (email, password) => {
 // ================= LOGOUT =================
 export const logout = () => {
   localStorage.removeItem('authToken');
+  localStorage.removeItem('refreshToken');
   localStorage.removeItem('user');
   setAuthToken(null);
 };
@@ -185,7 +95,10 @@ export const getCurrentUser = () => {
     const bytes = CryptoJS.AES.decrypt(encryptedUser, ENCRYPTION_KEY);
     const user = JSON.parse(bytes.toString(CryptoJS.enc.Utf8));
 
-    return user;
+    return {
+      ...user,
+      permissions: normalizePermissions(user.permissions),
+    };
   } catch (error) {
     console.error('Error getting current user:', error);
     localStorage.removeItem('user');
