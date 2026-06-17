@@ -161,6 +161,12 @@ export const GRAPHQL_QUERIES = {
           module
           access
         }
+        employeeId
+        roleName
+        permissions {
+          module
+          access
+        }
         user {
           id
           email
@@ -168,7 +174,11 @@ export const GRAPHQL_QUERIES = {
           firstName
           lastName
           phone
+          firstName
+          lastName
+          phone
         }
+        
         
       }
     }
@@ -825,6 +835,7 @@ query GetAllStocks(
           customerId
           id
           user {
+          id
           id
             firstName
             lastName

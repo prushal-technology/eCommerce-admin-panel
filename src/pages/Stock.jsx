@@ -1,6 +1,8 @@
 import { Form, Space, message } from 'antd';
 import { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import ProductModal from '../components/modals/ProductModal';
+import usePermissions from '../hooks/usePermissions';
 import usePermissions from '../hooks/usePermissions';
 import useProducts from '../hooks/useProducts';
 import useStockManager from '../hooks/useStockManager';
@@ -229,11 +231,15 @@ const Stock = () => {
           onAddProduct={handleAddProduct}
           canManageStock={canManageStock}
           canCreateProduct={canCreateProduct}
+          canManageStock={canManageStock}
+          canCreateProduct={canCreateProduct}
         />
 
         {/* <StockAlerts
+        {/* <StockAlerts
           critical={stockStats.critical}
           outOfStock={stockStats.outOfStock}
+        /> */}
         /> */}
 
         <StockStats stats={stockStats} loading={stocksLoading} />
@@ -249,12 +255,28 @@ const Stock = () => {
           onFilterChange={setStockFilter}
           onEditStock={handleEditStock}
           canManageStock={canManageStock}
+          canManageStock={canManageStock}
           onLoadMore={() => loadStocks(searchText, nextCursor, false)}
           getStockQuantity={getStockQuantity}
           getStockStatus={getStockStatus}
           getStockPercentage={getStockPercentage}
         />
 
+        {canManageStock && (
+          <StockUpdateModal
+            open={isStockModalOpen}
+            onCancel={() => setIsStockModalOpen(false)}
+            onFinish={handleStockFormFinish}
+            form={stockForm}
+            actionLoading={actionLoading}
+            selectedItem={selectedStockItem}
+            onProductSelect={handleProductSelect}
+            productList={productList}
+            productListLoading={productListLoading}
+            onProductSearch={handleProductSearch}
+            onProductPopupScroll={handleProductPopupScroll}
+          />
+        )}
         {canManageStock && (
           <StockUpdateModal
             open={isStockModalOpen}
@@ -284,6 +306,19 @@ const Stock = () => {
             title="Add Product"
           />
         )}
+        {canCreateProduct && (
+          <ProductModal
+            visible={isProductModalOpen}
+            onCancel={handleProductModalClose}
+            onSubmit={handleProductSubmit}
+            form={productForm}
+            categories={categories}
+            loading={productLoading}
+            imageList={imageList}
+            setImageList={setImageList}
+            title="Add Product"
+          />
+        )}
 
       </Space>
     </div >
@@ -291,3 +326,4 @@ const Stock = () => {
 };
 
 export default Stock;
+

@@ -547,6 +547,72 @@ const EmployeeTable = ({
                 onCancel={() => setPermEmployee(null)}
             />
         </>
+                        return !hasMore &&
+        employees.length > 0 &&
+        !loading &&
+        !fetchingMore ? (
+        <Table.Summary.Row>
+            <Table.Summary.Cell
+                index={0}
+                colSpan={columns.length}
+            >
+                <div
+                    style={{
+                        textAlign: 'center',
+                        padding: '8px 0',
+                        color: '#999',
+                        fontSize: 12,
+                    }}
+                >
+                    No more employees to load
+                </div>
+            </Table.Summary.Cell>
+        </Table.Summary.Row>
+    ) : null;
+}}
+                />
+            </div >
+    { fetchingMore && (
+        <div
+            style={{
+                padding: 16,
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 12,
+            }}
+        >
+            {Array.from({ length: 3 }).map((_, i) => (
+                <Skeleton.Input
+                    key={i}
+                    active
+                    size="small"
+                    style={{
+                        width: '98%',
+                        height: 32,
+                        borderRadius: 6,
+                    }}
+                />
+            ))}
+        </div>
+    )}
+
+
+{/* Edit Modal */ }
+<EditEmployeeModal
+    open={!!editEmployee}
+    employee={editEmployee}
+    loading={editLoading}
+    onCancel={() => setEditEmployee(null)}
+    onSubmit={handleEditSubmit}
+/>
+
+{/* Permissions Modal */ }
+<EmployeePermissionsModal
+    open={!!permEmployee}
+    employee={permEmployee}
+    onCancel={() => setPermEmployee(null)}
+/>
+        </>
     );
 };
 
