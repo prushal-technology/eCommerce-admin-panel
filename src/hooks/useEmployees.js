@@ -125,8 +125,33 @@ export const useEmployees = () => {
         }
     };
 
+    const updateEmployee = async (values) => {
+        try {
+            const { graphqlRequest } = await import('../api/graphql');
+
+            await graphqlRequest(UPDATE_EMPLOYEE, {
+                id: Number(values.id),
+                firstName: values.firstName,
+                lastName: values.lastName,
+                phone: values.phone,
+                roleName: values.roleName,
+                isActive: values.isActive,
+            });
+
+            message.success('Employee updated successfully');
+
+            await loadEmployees();
+        } catch (error) {
+            message.error('Failed to update employee');
+            throw error;
+        }
+    };
+
     const deleteEmployee = async (record) => {
         const { graphqlRequest } = await import('../api/graphql');
+        await graphqlRequest(DELETE_EMPLOYEE, {
+            id: Number(record.id),
+        });
         await graphqlRequest(DELETE_EMPLOYEE, {
             id: Number(record.id),
         });
@@ -135,6 +160,22 @@ export const useEmployees = () => {
     };
 
     const toggleEmployeeStatus = async (record) => {
+        try {
+            await updateEmployee({
+                id: record.id,
+                firstName: record.firstName,
+                lastName: record.lastName,
+                phone: record.phone,
+                roleName: record.roleName,
+                isActive: !record.isActive,
+            });
+
+            message.success(
+                `Employee ${!record.isActive ? 'activated' : 'deactivated'} successfully`
+            );
+        } catch (error) {
+            console.log(error);
+        }
         try {
             await updateEmployee({
                 id: record.id,
@@ -182,6 +223,8 @@ export const useEmployees = () => {
 
 
 
+
+
     return {
         employees,
         filteredEmployees,
@@ -195,12 +238,17 @@ export const useEmployees = () => {
         hasMore,
         nextCursor,
         fetchingMore,
+        hasMore,
+        nextCursor,
+        fetchingMore,
         statusFilter,
         setStatusFilter,
         loadEmployees,
         createEmployee,
         deleteEmployee,
         updateEmployee,
+        updateEmployee,
         toggleEmployeeStatus,
     };
 };
+

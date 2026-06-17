@@ -21,6 +21,7 @@ const OrderTrackingModal = ({
   onStatusUpdate,
   statusUpdateLoading = false,
   canUpdateStatus = false,
+  canUpdateStatus = false,
 
   width = 500,
 }) => {
@@ -317,85 +318,97 @@ const OrderTrackingModal = ({
                 background: '#fafafa'
               }}
             >
-
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 12,
-                  marginBottom: 12,
-                  flexWrap: 'wrap'
-                }}
-              >
-
-                <span
+              {canUpdateStatus && (
+                <div
                   style={{
-                    fontWeight: 600,
-                    fontSize: 14
+                    marginTop: 24,
+                    padding: 16,
+                    border: '1px solid #f0f0f0',
+                    borderRadius: 8,
+                    background: '#fafafa'
                   }}
                 >
-                  Status:
-                </span>
 
-                <Select
-                  value={newStatus}
-                  onChange={setNewStatus}
-                  style={{ width: 220 }}
-                  size="small"
-                >
-                  <Option value="pending">
-                    Pending
-                  </Option>
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 12,
+                      marginBottom: 12,
+                      flexWrap: 'wrap'
+                    }}
+                  >
 
-                  <Option value="confirmed">
-                    Confirmed
-                  </Option>
+                    <span
+                      style={{
+                        fontWeight: 600,
+                        fontSize: 14
+                      }}
+                    >
+                      Status:
+                    </span>
 
-                  <Option value="dispatched">
-                    Dispatched
-                  </Option>
+                    <Select
+                      value={newStatus}
+                      onChange={setNewStatus}
+                      style={{ width: 220 }}
+                      size="small"
+                    >
+                      <Option value="pending">
+                        Pending
+                      </Option>
 
-                  <Option value="delivered">
-                    Delivered
-                  </Option>
+                      <Option value="confirmed">
+                        Confirmed
+                      </Option>
 
-                  <Option value="cancelled">
-                    Cancelled
-                  </Option>
-                </Select>
+                      <Option value="dispatched">
+                        Dispatched
+                      </Option>
 
-              </div>
+                      <Option value="delivered">
+                        Delivered
+                      </Option>
 
-              <Input.TextArea
-                size="small"
-                placeholder="Add a note (optional)"
-                value={statusNote}
-                onChange={(e) =>
-                  setStatusNote(e.target.value)
-                }
-                rows={3}
-                style={{
-                  marginBottom: 12
-                }}
-              />
+                      <Option value="cancelled">
+                        Cancelled
+                      </Option>
+                    </Select>
 
-              <Button
-                type="primary"
-                size="small"
-                onClick={async () => {
+                  </div>
 
-                  const success =
-                    await onStatusUpdate();
+                  <Input.TextArea
+                    size="small"
+                    placeholder="Add a note (optional)"
+                    value={statusNote}
+                    onChange={(e) =>
+                      setStatusNote(e.target.value)
+                    }
+                    rows={3}
+                    style={{
+                      marginBottom: 12
+                    }}
+                  />
 
-                  if (success) {
-                    onCancel();
-                  }
-                }}
-                loading={statusUpdateLoading}
-              >
-                Update Status
-              </Button>
+                  <Button
+                    type="primary"
+                    size="small"
+                    onClick={async () => {
 
+                      const success =
+                        await onStatusUpdate();
+
+                      if (success) {
+                        onCancel();
+                      }
+                    }}
+                    loading={statusUpdateLoading}
+                  >
+                    Update Status
+                  </Button>
+
+                </div>
+              )}
             </div>
 <<<<<<< HEAD
 =======
@@ -444,3 +457,4 @@ const OrderTrackingModal = ({
 };
 
 export default OrderTrackingModal;
+
