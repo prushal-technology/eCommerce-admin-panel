@@ -176,16 +176,31 @@
 import {
     DeleteOutlined,
     EditOutlined,
+<<<<<<< HEAD
     LockOutlined
 } from '@ant-design/icons';
 import {
     Button,
+=======
+    LockOutlined,
+    MoreOutlined,
+} from '@ant-design/icons';
+import {
+    Avatar,
+    Badge,
+    Button,
+    Dropdown,
+>>>>>>> 41ecfd1a33e5df750d0150edb2c4768cfe98b7b0
     Popconfirm,
     Skeleton,
     Switch,
     Table,
     Tag,
+<<<<<<< HEAD
     Typography
+=======
+    Typography,
+>>>>>>> 41ecfd1a33e5df750d0150edb2c4768cfe98b7b0
 } from 'antd';
 import { useEffect, useRef, useState } from 'react';
 import EditEmployeeModal from './EditEmployeeModal';
@@ -200,9 +215,12 @@ const roleColors = {
     hr: 'orange',
     support: 'geekblue',
     operations: 'volcano',
+<<<<<<< HEAD
     Employee: 'green',
     employee: 'green',
     test: 'pink',
+=======
+>>>>>>> 41ecfd1a33e5df750d0150edb2c4768cfe98b7b0
 };
 
 const getRoleColor = (role) => roleColors[role?.toLowerCase()] || 'default';
@@ -256,6 +274,10 @@ const EmployeeTable = ({
         onLoadMore,
     ]);
 
+<<<<<<< HEAD
+=======
+
+>>>>>>> 41ecfd1a33e5df750d0150edb2c4768cfe98b7b0
     const handleEditSubmit = async (values) => {
         setEditLoading(true);
         try {
@@ -273,6 +295,7 @@ const EmployeeTable = ({
             title: 'ID',
             dataIndex: 'employeeId',
             key: 'employeeId',
+<<<<<<< HEAD
             width: 80,
             render: (id, record) =>
                 record.isSkeleton ? (
@@ -287,10 +310,17 @@ const EmployeeTable = ({
                     />
                 ) : (
                     id
+=======
+            width: 90,
+            render: (val, record) =>
+                record.isSkeleton ? <Skeleton.Input size="small" active /> : (
+                    <Text code style={{ fontSize: 12 }}>#{val}</Text>
+>>>>>>> 41ecfd1a33e5df750d0150edb2c4768cfe98b7b0
                 ),
         },
         {
             title: 'Employee',
+<<<<<<< HEAD
             dataIndex: 'name',
             key: 'name',
             render: (text, record) =>
@@ -310,10 +340,35 @@ const EmployeeTable = ({
                     </div>
                 ),
         },
+=======
+            key: 'employee',
+            render: (_, record) => {
+                if (record.isSkeleton) return <Skeleton active title={false} paragraph={{ rows: 1 }} />;
+                const initials = `${record.firstName?.[0] || ''}${record.lastName?.[0] || ''}`.toUpperCase();
+                return (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                        <Avatar size={32} style={{ background: '#1677ff', flexShrink: 0 }}>
+                            {initials}
+                        </Avatar>
+                        <div>
+                            <Text strong style={{ display: 'block', lineHeight: 1.3 }}>
+                                {record.name}
+                            </Text>
+                            <Text type="secondary" style={{ fontSize: 12 }}>
+                                {record.email}
+                            </Text>
+                        </div>
+                    </div>
+                );
+            },
+        },
+
+>>>>>>> 41ecfd1a33e5df750d0150edb2c4768cfe98b7b0
         {
             title: 'Phone',
             dataIndex: 'phone',
             key: 'phone',
+<<<<<<< HEAD
             render: (phone, record) =>
                 record.isSkeleton ? (
                     <Skeleton.Input
@@ -361,12 +416,19 @@ const EmployeeTable = ({
                     >
                         {email}
                     </span>
+=======
+            width: 130,
+            render: (val, record) =>
+                record.isSkeleton ? <Skeleton.Input size="small" active /> : (
+                    <Text style={{ fontSize: 13 }}>{val || '—'}</Text>
+>>>>>>> 41ecfd1a33e5df750d0150edb2c4768cfe98b7b0
                 ),
         },
         {
             title: 'Role',
             dataIndex: 'roleName',
             key: 'roleName',
+<<<<<<< HEAD
             width: 120,
             render: (role, record) =>
                 record.isSkeleton ? (
@@ -383,26 +445,53 @@ const EmployeeTable = ({
                     <Tag color={getRoleColor(role)}>
                         {role || 'Employee'}
                     </Tag>
+=======
+            width: 110,
+            render: (val, record) =>
+                record.isSkeleton ? <Skeleton.Input size="small" active /> : (
+                    <Tag color={getRoleColor(val)}>{val || 'Employee'}</Tag>
+>>>>>>> 41ecfd1a33e5df750d0150edb2c4768cfe98b7b0
                 ),
         },
         {
             title: 'Status',
             key: 'status',
+<<<<<<< HEAD
             width: 90,
+=======
+            width: 100,
+            render: (_, record) =>
+                record.isSkeleton ? <Skeleton.Input size="small" active /> : (
+                    <Badge
+                        status={record.isActive ? 'success' : 'error'}
+                        text={record.isActive ? 'Active' : 'Inactive'}
+                    />
+                ),
+        },
+        {
+            title: 'Active',
+            key: 'toggle',
+            width: 80,
+>>>>>>> 41ecfd1a33e5df750d0150edb2c4768cfe98b7b0
             render: (_, record) =>
                 record.isSkeleton ? null : (
                     <Switch
                         size="small"
                         checked={record.isActive}
+<<<<<<< HEAD
                         onChange={() =>
                             onToggleStatus(record)
                         }
+=======
+                        onChange={() => onToggleStatus(record)}
+>>>>>>> 41ecfd1a33e5df750d0150edb2c4768cfe98b7b0
                     />
                 ),
         },
         {
             title: 'Actions',
             key: 'actions',
+<<<<<<< HEAD
             width: 120,
             render: (_, record) =>
                 record.isSkeleton ? (
@@ -453,6 +542,56 @@ const EmployeeTable = ({
                         </Popconfirm>
                     </Space>
                 ),
+=======
+            width: 50,
+            render: (_, record) => {
+                if (record.isSkeleton) return null;
+
+                const items = [
+                    {
+                        key: 'edit',
+                        label: 'Edit',
+                        icon: <EditOutlined />,
+                        onClick: () => setEditEmployee(record),
+                    },
+                    {
+                        key: 'permissions',
+                        label: 'Permissions',
+                        icon: <LockOutlined />,
+                        onClick: () => setPermEmployee(record),
+                    },
+                    { type: 'divider' },
+                    {
+                        key: 'delete',
+                        label: (
+                            <Popconfirm
+                                title="Delete employee?"
+                                description="This action cannot be undone."
+                                okText="Delete"
+                                okButtonProps={{ danger: true }}
+                                cancelText="Cancel"
+                                onConfirm={() => onDelete(record)}
+                            >
+                                <span style={{ color: '#ff4d4f' }}>
+                                    <DeleteOutlined style={{ marginRight: 6 }} />
+                                    Delete
+                                </span>
+                            </Popconfirm>
+                        ),
+                    },
+                ];
+
+                return (
+                    <Dropdown menu={{ items }} trigger={['click']} placement="bottomRight">
+                        <Button
+                            type="text"
+                            size="small"
+                            icon={<MoreOutlined />}
+                        />
+                    </Dropdown>
+                );
+            },
+>>>>>>> 41ecfd1a33e5df750d0150edb2c4768cfe98b7b0
         },
     ];
 
@@ -475,7 +614,11 @@ const EmployeeTable = ({
                     pagination={false}
                     scroll={{
                         x: 'max-content',
+<<<<<<< HEAD
                         y: 'calc(100vh - 300px)',
+=======
+                        y: employees.length > 6 ? 400 : undefined,
+>>>>>>> 41ecfd1a33e5df750d0150edb2c4768cfe98b7b0
                     }}
                     style={{ borderRadius: 8, overflow: 'hidden' }}
                     summary={() => {

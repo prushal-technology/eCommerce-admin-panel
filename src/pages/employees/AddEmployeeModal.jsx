@@ -1,5 +1,8 @@
 // import { Button, Col, Form, Input, Modal, Row, Space } from 'antd';
+<<<<<<< HEAD
 // import { Button, Col, Form, Input, Modal, Row, Space } from 'antd';
+=======
+>>>>>>> 41ecfd1a33e5df750d0150edb2c4768cfe98b7b0
 
 // const AddEmployeeModal = ({ open, onCancel, onSubmit }) => {
 //     const [form] = Form.useForm();
@@ -131,7 +134,11 @@
 //             okText="Add Employee"
 //             confirmLoading={loading}
 //             width={480}
+<<<<<<< HEAD
 //             destroyOnHidden
+=======
+//             destroyOnClose
+>>>>>>> 41ecfd1a33e5df750d0150edb2c4768cfe98b7b0
 //         >
 //             <Form form={form} layout="vertical" size="small" style={{ marginTop: 8 }}>
 //                 <Form.Item
@@ -230,7 +237,11 @@ const AddEmployeeModal = ({
             okText="Add Employee"
             confirmLoading={loading}
             width={700}
+<<<<<<< HEAD
             destroyOnHidden
+=======
+            destroyOnClose
+>>>>>>> 41ecfd1a33e5df750d0150edb2c4768cfe98b7b0
         >
             <Form
                 form={form}

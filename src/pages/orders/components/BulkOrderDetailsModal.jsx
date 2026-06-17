@@ -41,7 +41,11 @@
 //             onCancel={onCancel}
 //             footer={null}
 //             width={780}
+<<<<<<< HEAD
 //             destroyOnHidden
+=======
+//             destroyOnClose
+>>>>>>> 41ecfd1a33e5df750d0150edb2c4768cfe98b7b0
 //         >
 //             {enquiry && (
 //                 <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
@@ -249,7 +253,11 @@ const BulkOrderDetailsModal = ({
             onCancel={onCancel}
             footer={null}
             width={800}
+<<<<<<< HEAD
             destroyOnHidden
+=======
+            destroyOnClose
+>>>>>>> 41ecfd1a33e5df750d0150edb2c4768cfe98b7b0
         >
             {enquiry && (
                 <div>

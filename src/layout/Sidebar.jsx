@@ -9,6 +9,7 @@ import {
 } from "@ant-design/icons";
 import { Layout, Menu, Modal } from "antd";
 import { useEffect, useMemo, useState } from "react";
+<<<<<<< HEAD
 import { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
@@ -16,6 +17,12 @@ import { useAuth } from "../hooks/useAuth";
 import "./Sidebar.css";
 
 
+=======
+import { useLocation, useNavigate } from "react-router-dom";
+import { useAuth } from "../hooks/useAuth";
+import "./Sidebar.css";
+
+>>>>>>> 41ecfd1a33e5df750d0150edb2c4768cfe98b7b0
 const { Sider } = Layout;
 
 const ADMIN_MENU = [
@@ -94,6 +101,7 @@ const buildPermissionMenu = (hasPermission) => {
   return [
     { key: "/", label: "Dashboard", icon: <DashboardOutlined /> },
     ...authorizedItems,
+<<<<<<< HEAD
 const ADMIN_MENU = [
     { key: "/", label: "Dashboard", icon: <DashboardOutlined /> },
     {
@@ -215,6 +223,53 @@ const ADMIN_MENU = [
         setOpenKeys([]);
       }
     };
+=======
+    { key: "logout", label: "Logout", icon: <LogoutOutlined /> },
+  ];
+};
+
+export default function Sidebar({ collapsed, setCollapsed, criticalStock = 0, outOfStock = 0 }) {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { isAdmin, hasPermission, logout } = useAuth();
+  const [openKeys, setOpenKeys] = useState([]);
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  const items = useMemo(
+    () => (isAdmin ? ADMIN_MENU : buildPermissionMenu(hasPermission)),
+    [hasPermission, isAdmin]
+  );
+  const rootSubmenuKeys = ["/products", "/orders"];
+
+  const handleMenuClick = ({ key }) => {
+    if (key === "logout") {
+      Modal.confirm({
+        title: "Logout",
+        content: "Are you sure you want to logout?",
+        okText: "Logout",
+        okButtonProps: { danger: true },
+        cancelText: "Cancel",
+        onOk: () => {
+          logout();
+          navigate("/login", { replace: true });
+        },
+      });
+      return;
+    }
+
+    navigate(key);
+    if (isMobile) {
+      setCollapsed(true);
+      setOpenKeys([]);
+    }
+  };
+>>>>>>> 41ecfd1a33e5df750d0150edb2c4768cfe98b7b0
 
     return (
       <span>
@@ -270,6 +325,7 @@ const ADMIN_MENU = [
             {collapsed ? "EC" : "E-Commerce"}
           </div>
 
+<<<<<<< HEAD
           <Menu
             className="premium-sidebar-menu"
             mode="inline"
@@ -299,6 +355,70 @@ const ADMIN_MENU = [
 
           />
           {/* {(criticalStock > 0 || outOfStock > 0) && (
+=======
+      <Sider
+        collapsible
+        collapsed={collapsed}
+        onCollapse={setCollapsed}
+        collapsedWidth={isMobile ? 0 : 80}
+        width={200}
+        trigger={null}
+        style={{
+          position: "fixed",
+          left: 0,
+          top: 64,
+          bottom: 0,
+          height: "auto",
+          overflowY: "auto",
+          zIndex: 1000,
+        }}
+      >
+        <div
+          style={{
+            height: 32,
+            margin: 16,
+            background: "rgba(255,255,255,0.1)",
+            borderRadius: 6,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            color: "#fff",
+            fontWeight: "bold",
+          }}
+        >
+          {collapsed ? "EC" : "E-Commerce"}
+        </div>
+
+        <Menu
+          className="premium-sidebar-menu"
+          mode="inline"
+          items={items}
+          selectedKeys={[location.pathname]}
+          openKeys={openKeys}
+          onOpenChange={(keys) => {
+            const latestOpenKey = keys.find((key) => !openKeys.includes(key));
+            if (!rootSubmenuKeys.includes(latestOpenKey)) {
+              setOpenKeys(keys);
+            } else {
+              setOpenKeys(latestOpenKey ? [latestOpenKey] : []);
+            }
+          }}
+          onClick={handleMenuClick}
+          style={{
+            paddingBottom:
+              !collapsed &&
+                criticalStock > 0 &&
+                outOfStock > 0
+                ? 200
+                : !collapsed &&
+                  (criticalStock > 0 || outOfStock > 0)
+                  ? 120
+                  : 0,
+          }}
+
+        />
+        {/* {(criticalStock > 0 || outOfStock > 0) && (
+>>>>>>> 41ecfd1a33e5df750d0150edb2c4768cfe98b7b0
           <div
             onClick={() => navigate("/stock")}
             style={{
@@ -345,6 +465,7 @@ const ADMIN_MENU = [
             </div>
           </div>
         )} */}
+<<<<<<< HEAD
           {!collapsed && (criticalStock > 0 || outOfStock > 0) && (
             <div
               style={{
@@ -426,3 +547,86 @@ const ADMIN_MENU = [
       </span>
     );
   }
+=======
+        {!collapsed && (criticalStock > 0 || outOfStock > 0) && (
+          <div
+            style={{
+              position: "absolute",
+              bottom: 16,
+              left: 12,
+              right: 12,
+              display: "flex",
+              flexDirection: "column",
+              gap: 8,
+            }}
+          >
+            {outOfStock > 0 && (
+              <div
+                onClick={() => navigate("/stock")}
+                style={{
+                  cursor: "pointer",
+                  borderRadius: 8,
+                  padding: "10px 12px",
+                  background: "#fff2f0",
+                  border: "1px solid #ffccc7",
+                }}
+              >
+                <div
+                  style={{
+                    fontWeight: 600,
+                    color: "#cf1322",
+                  }}
+                >
+                  Out of Stock Alert
+                </div>
+
+                <div
+                  style={{
+                    fontSize: 12,
+                    color: "#595959",
+                    marginTop: 4,
+                  }}
+                >
+                  {outOfStock} products are out of stock
+                </div>
+              </div>
+            )}
+
+            {criticalStock > 0 && (
+              <div
+                onClick={() => navigate("/stock")}
+                style={{
+                  cursor: "pointer",
+                  borderRadius: 8,
+                  padding: "10px 12px",
+                  background: "#fffbe6",
+                  border: "1px solid #ffe58f",
+                }}
+              >
+                <div
+                  style={{
+                    fontWeight: 600,
+                    color: "#d48806",
+                  }}
+                >
+                  Critical Stock Alert
+                </div>
+
+                <div
+                  style={{
+                    fontSize: 12,
+                    color: "#595959",
+                    marginTop: 4,
+                  }}
+                >
+                  {criticalStock} products need restocking
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+      </Sider>
+    </span>
+  );
+}
+>>>>>>> 41ecfd1a33e5df750d0150edb2c4768cfe98b7b0

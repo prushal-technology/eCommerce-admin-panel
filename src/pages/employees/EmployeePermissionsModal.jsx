@@ -27,6 +27,7 @@ const EmployeePermissionsModal = ({ open, onCancel, employee }) => {
             key: 'module',
             render: (label) => <Text strong>{label}</Text>,
         },
+<<<<<<< HEAD
         // {
         //     title: 'Current Access',
         //     key: 'current',
@@ -36,6 +37,17 @@ const EmployeePermissionsModal = ({ open, onCancel, employee }) => {
         //         return <Tag color={accessColor(perm.access)}>{perm.access?.replace('_', ' ')}</Tag>;
         //     },
         // },
+=======
+        {
+            title: 'Current Access',
+            key: 'current',
+            render: (_, row) => {
+                const perm = getPermissionForModule(row.key);
+                if (!perm) return <Tag color="default">No Access</Tag>;
+                return <Tag color={accessColor(perm.access)}>{perm.access?.replace('_', ' ')}</Tag>;
+            },
+        },
+>>>>>>> 41ecfd1a33e5df750d0150edb2c4768cfe98b7b0
         {
             title: 'Set Access',
             key: 'action',
@@ -76,7 +88,11 @@ const EmployeePermissionsModal = ({ open, onCancel, employee }) => {
             onCancel={onCancel}
             footer={null}
             width={600}
+<<<<<<< HEAD
             destroyOnHidden
+=======
+            destroyOnClose
+>>>>>>> 41ecfd1a33e5df750d0150edb2c4768cfe98b7b0
         >
             {loading ? (
                 <Skeleton active />

@@ -295,6 +295,19 @@ const OrderTrackingModal = ({
           {/* STATUS UPDATE SECTION */}
 
           {canUpdateStatus && (
+<<<<<<< HEAD
+=======
+            <div
+              style={{
+                marginTop: 24,
+                padding: 16,
+                border: '1px solid #f0f0f0',
+                borderRadius: 8,
+                background: '#fafafa'
+              }}
+            >
+
+>>>>>>> 41ecfd1a33e5df750d0150edb2c4768cfe98b7b0
             <div
               style={{
                 marginTop: 24,
@@ -384,6 +397,41 @@ const OrderTrackingModal = ({
               </Button>
 
             </div>
+<<<<<<< HEAD
+=======
+
+            <Input.TextArea
+              size="small"
+              placeholder="Add a note (optional)"
+              value={statusNote}
+              onChange={(e) =>
+                setStatusNote(e.target.value)
+              }
+              rows={3}
+              style={{
+                marginBottom: 12
+              }}
+            />
+
+            <Button
+              type="primary"
+              size="small"
+              onClick={async () => {
+
+                const success =
+                  await onStatusUpdate();
+
+                if (success) {
+                  onCancel();
+                }
+              }}
+              loading={statusUpdateLoading}
+            >
+              Update Status
+            </Button>
+
+            </div>
+>>>>>>> 41ecfd1a33e5df750d0150edb2c4768cfe98b7b0
           )}
 
 

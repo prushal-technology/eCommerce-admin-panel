@@ -1,4 +1,9 @@
+<<<<<<< HEAD
 import { Card, Input, message, Select, Typography } from 'antd';
+=======
+import { PlusOutlined } from '@ant-design/icons';
+import { Button, Card, Input, message, Select, Typography } from 'antd';
+>>>>>>> 41ecfd1a33e5df750d0150edb2c4768cfe98b7b0
 import { useState } from 'react';
 import { useEmployees } from '../hooks/useEmployees';
 import AddEmployeeModal from './employees/AddEmployeeModal';

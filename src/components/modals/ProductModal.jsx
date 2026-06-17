@@ -576,7 +576,10 @@ import {
   Upload
 } from 'antd';
 import { useEffect, useRef } from 'react';
+<<<<<<< HEAD
 import { useEffect, useRef } from 'react';
+=======
+>>>>>>> 41ecfd1a33e5df750d0150edb2c4768cfe98b7b0
 
 const { Text } = Typography;
 
@@ -608,6 +611,7 @@ const ProductModal = ({
   // so a single click can never trigger onDeleteImage twice for the same file.
   const removingRef = useRef(new Set());
 
+<<<<<<< HEAD
   // Tracks file uids that are currently being removed (or were just removed),
   // so a single click can never trigger onDeleteImage twice for the same file.
   const removingRef = useRef(new Set());
@@ -625,6 +629,16 @@ const ProductModal = ({
           systemReservedQuantity: initialValues?.systemReservedQuantity ?? 0,
           bulkOrderPrice: initialValues?.bulkOrderPrice ?? null,
           keywords: Array.isArray(initialValues?.keywords)
+=======
+  useEffect(() => {
+    if (visible) {
+      if (initialValues) {
+        form.setFieldsValue({
+          ...initialValues,
+          keywords: Array.isArray(
+            initialValues?.keywords
+          )
+>>>>>>> 41ecfd1a33e5df750d0150edb2c4768cfe98b7b0
             ? initialValues.keywords.join(', ')
             : initialValues?.keywords,
         });
@@ -647,13 +661,17 @@ const ProductModal = ({
         form.resetFields();
         setImageList([]);
         removingRef.current = new Set();
+<<<<<<< HEAD
         setImageList([]);
         removingRef.current = new Set();
+=======
+>>>>>>> 41ecfd1a33e5df750d0150edb2c4768cfe98b7b0
       }
     }
   }, [
     visible, initialValues, form, setImageList
   ]);
+<<<<<<< HEAD
 }, [
   visible, initialValues, form, setImageList
 ]);
@@ -749,6 +767,221 @@ const uploadProps = {
         'Image upload failed'
       );
       onError?.(error);
+=======
+
+  const uploadProps = {
+
+    name: 'file',
+
+    multiple: true,
+
+    listType: 'picture-card',
+
+    fileList: imageList,
+
+    customRequest: async ({
+      file,
+      onSuccess,
+      onError
+    }) => {
+
+      try {
+
+        // EDIT MODE
+        if (
+          initialValues?.id &&
+          onAddImage
+        ) {
+
+          const res = await onAddImage(
+            initialValues.id,
+            file
+          );
+
+          if (res) {
+
+            message.success(
+              'Image uploaded successfully'
+            );
+
+            // await onSuccess?.('ok');
+            // Notification delegated to onAddImage callback if needed
+
+            // No local success toast here; rely on onAddImage to notify
+            // { id, image } | { id, url } | { productImage: { id, image } }
+            const imageEntity = res.productImage || res;
+            const imagePath = imageEntity.image || imageEntity.path || null;
+            const resolvedUrl = imagePath
+              ? buildMediaUrl(imagePath)
+              : (imageEntity.url || URL.createObjectURL(file));
+
+            setImageList((prev) => [
+              ...prev,
+              {
+                uid: imageEntity.id,
+                id: imageEntity.id,
+                name: imagePath || file.name,
+                status: 'done',
+                image: imagePath,
+                url: resolvedUrl,
+                thumbUrl: resolvedUrl,
+              }
+            ]);
+          } else {
+            throw new Error(
+              'Upload failed'
+            );
+          }
+
+        } else {
+          // ADD PRODUCT MODE
+          const previewUrl = URL.createObjectURL(file);
+
+          setImageList((prev) => [
+            ...prev,
+            {
+              uid: file.uid,
+              name: file.name,
+              status: 'done',
+              originFileObj: file,
+              thumbUrl: previewUrl,
+              url: previewUrl,
+            }
+          ]);
+          onSuccess?.('ok');
+        }
+      } catch (error) {
+        console.error(error);
+        message.error(
+          'Image upload failed'
+        );
+        onError?.(error);
+      }
+    },
+    onRemove: async (file) => {
+
+      // EXISTING SERVER IMAGE
+      if (file.id && onDeleteImage) {
+
+        // Guard: if this file is already being removed (or was already
+        // removed) ignore the duplicate call entirely — no second API
+        // call, no second toast.
+        if (removingRef.current.has(file.uid)) {
+          return false;
+        }
+        removingRef.current.add(file.uid);
+
+        try {
+          const result = await onDeleteImage(file.id);
+
+          if (!result?.success) {
+            message.error(result?.message || 'Failed to delete image');
+            // Allow retrying later if the delete genuinely failed
+            removingRef.current.delete(file.uid);
+            return false;
+          }
+
+          message.success('Image deleted successfully');
+
+          // Manually remove from controlled fileList; return false to let us handle UI
+          setImageList((prev) => prev.filter((img) => img.uid !== file.uid));
+          // Clean up guard
+          removingRef.current.delete(file.uid);
+          return false; // prevent Antd default removal, list already updated
+        } catch (error) {
+          console.error(error);
+          message.error('Failed to delete image');
+          removingRef.current.delete(file.uid);
+          return false;
+        }
+      }
+
+      // LOCAL IMAGE (not yet uploaded to server)
+      setImageList((prev) => prev.filter((img) => img.uid !== file.uid));
+      return false; // manually handled removal
+    },
+    beforeUpload: (file) => {
+      const isImage =
+        file.type.startsWith('image/');
+      if (!isImage) {
+        message.error(
+          'You can only upload image files!'
+        );
+        return Upload.LIST_IGNORE;
+      }
+      const isLt5M =
+        file.size / 1024 / 1024 < 5;
+      if (!isLt5M) {
+        message.error(
+          'Image must be smaller than 5MB!'
+        );
+        return Upload.LIST_IGNORE;
+      }
+      return true;
+    },
+  };
+
+  const handleSubmit = async (
+    values
+  ) => {
+    try {
+      const productData = {
+        ...values,
+        shortDescription:
+          values.shortDescription,
+        keywords: values.keywords
+          ? values.keywords
+            .split(',')
+            .map((k) => k.trim())
+            .filter(Boolean)
+          : [],
+        deliveryRuleDays:
+          values.deliveryRuleDays
+            ? Number(
+              values.deliveryRuleDays
+            )
+            : null,
+        categoryId:
+          values.categoryId,
+        price: parseFloat(
+          values.price
+        ),
+        discountPrice:
+          values.discountPrice
+            ? parseFloat(
+              values.discountPrice
+            )
+            : null,
+        isActive:
+          values.isActive !== false,
+        isFeatured:
+          values.isFeatured === true,
+        measureValue:
+          values.measureValue || null,
+      };
+      // ONLY FOR NEW PRODUCT
+      const imageData =
+        imageList
+          .filter(
+            (file) =>
+              file.originFileObj
+          )
+          .map(
+            (file) =>
+              file.originFileObj
+          );
+      await onSubmit(
+        productData,
+        imageData
+      );
+      form.resetFields();
+      setImageList([]);
+    } catch (error) {
+      console.error(
+        'Submit error:',
+        error
+      );
+>>>>>>> 41ecfd1a33e5df750d0150edb2c4768cfe98b7b0
     }
 
     customRequest: async ({
@@ -1125,6 +1358,7 @@ const uploadProps = {
           <Text strong style={{ fontSize: 14 }}>Unit & Measure</Text>
           <Divider style={{ margin: "8px 0 16px" }} />
 
+<<<<<<< HEAD
           <Row gutter={[8, 4]}>
             <Col xs={24} md={12}>
               <Form.Item
@@ -1284,3 +1518,6 @@ const uploadProps = {
   };
 
   export default ProductModal;
+=======
+export default ProductModal;
+>>>>>>> 41ecfd1a33e5df750d0150edb2c4768cfe98b7b0
