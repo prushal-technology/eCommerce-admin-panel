@@ -301,11 +301,7 @@ const StockTable = ({
             align: 'center',
             render: (_, record) =>
                 record.isSkeleton ? (
-                    <Skeleton.Button
-                        active
-                        size="small"
-                        shape="circle"
-                    />
+                    <Skeleton.Button active size="small" shape="circle" />
                 ) : canManageStock ? (
                     <Button
                         size="small"

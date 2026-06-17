@@ -1,5 +1,4 @@
-import { PlusOutlined } from '@ant-design/icons';
-import { Button, Card, Input, message, Select, Typography } from 'antd';
+import { Card, Input, message, Select, Typography } from 'antd';
 import { useState } from 'react';
 import { useEmployees } from '../hooks/useEmployees';
 import AddEmployeeModal from './employees/AddEmployeeModal';
@@ -98,73 +97,53 @@ const Employees = () => {
 
       </div>
 
+      {/* STATS */}
+      {/* <EmployeeStats stats={stats} loading={loading} /> */}
 
       {/* FILTERS */}
       <div
         style={{
           display: 'flex',
-          justifyContent: 'space-between',
+          gap: 10,
           alignItems: 'center',
           marginBottom: 16,
-          gap: 12,
           flexWrap: 'wrap',
         }}
       >
-        {/* Left Side Filters */}
-        <div
-          style={{
-            display: 'flex',
-            gap: 10,
-            alignItems: 'center',
-            flexWrap: 'wrap',
-          }}
-        >
-          <Search
-            size="small"
-            className="small-search"
-            placeholder="Search employees..."
-            allowClear
-            style={{ width: 260 }}
-            value={searchText}
-            onChange={(e) => setSearchText(e.target.value)}
-          />
-
-          <Select
-            size="small"
-            value={roleFilter}
-            onChange={setRoleFilter}
-            style={{ width: 180 }}
-          >
-            <Option value="all">All Roles</Option>
-            <Option value="admin">Admin</Option>
-            <Option value="manager">Manager</Option>
-            <Option value="sales">Sales</Option>
-            <Option value="hr">HR</Option>
-            <Option value="support">Support</Option>
-            <Option value="operations">Operations</Option>
-          </Select>
-
-          <Select
-            size="small"
-            value={statusFilter}
-            onChange={setStatusFilter}
-            style={{ width: 140 }}
-          >
-            <Option value="all">All Status</Option>
-            <Option value="active">Active</Option>
-            <Option value="inactive">Inactive</Option>
-          </Select>
-        </div>
-
-        {/* Right Side Button */}
-        <Button
-          type="primary"
-          icon={<PlusOutlined />}
-          onClick={() => setIsAddModalOpen(true)}
+        <Search
           size="small"
+          className="small-search"
+          placeholder="Search employees..."
+          allowClear
+          style={{ width: 260 }}
+          value={searchText}
+          onChange={(e) => setSearchText(e.target.value)}
+        />
+
+        <Select
+          size="small"
+          value={roleFilter}
+          onChange={setRoleFilter}
+          style={{ width: 180 }}
         >
-          Add Employee
-        </Button>
+          <Option value="all">All Roles</Option>
+          <Option value="admin">Admin</Option>
+          <Option value="manager">Manager</Option>
+          <Option value="sales">Sales</Option>
+          <Option value="hr">HR</Option>
+          <Option value="support">Support</Option>
+          <Option value="operations">Operations</Option>
+        </Select>
+        <Select
+          size="small"
+          value={statusFilter}
+          onChange={setStatusFilter}
+          style={{ width: 140 }}
+        >
+          <Option value="all">All Status</Option>
+          <Option value="active">Active</Option>
+          <Option value="inactive">Inactive</Option>
+        </Select>
       </div>
 
       {/* TABLE */}
@@ -176,16 +155,13 @@ const Employees = () => {
           flexDirection: 'column',
           minHeight: 0,
         }}
-
-        styles={{
-          body: {
-            flex: 1,
-            overflow: 'hidden',
-            display: 'flex',
-            flexDirection: 'column',
-            minHeight: 0,
-            padding: 0,
-          }
+        bodyStyle={{
+          flex: 1,
+          overflow: 'hidden',
+          display: 'flex',
+          flexDirection: 'column',
+          minHeight: 0,
+          padding: 0,
         }}
       >
 

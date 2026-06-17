@@ -464,7 +464,14 @@ const CustomerSection = ({
                             disabledDate={(current) => {
                                 const today = dayjs().startOf('day');
                                 const maxDate = today.add(7, 'day');
-                                return current && (current < today || current > maxDate);
+
+                                return (
+                                    current &&
+                                    (
+                                        current < today ||
+                                        current > maxDate
+                                    )
+                                );
                             }}
                         />
                     </Form.Item>

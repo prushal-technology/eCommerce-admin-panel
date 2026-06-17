@@ -110,7 +110,6 @@ const OrderDetailsModal = ({
                       >
                         Update Status
                       </Button>
-
                     </div>
                   </>
                 )}

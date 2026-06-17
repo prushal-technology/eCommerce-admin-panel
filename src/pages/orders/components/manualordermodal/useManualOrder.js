@@ -379,6 +379,10 @@ const buildEmptyItem = () => ({
     total: 0,
 });
 
+/**
+ * Manages order-items state, pricing calculations, and order submission
+ * for ManualOrderModal.
+ */
 const useManualOrder = ({ onOrderCreated, onClose, defaultOrderType = 'normal' }) => {
     const { createOrder } = useOrders();
 

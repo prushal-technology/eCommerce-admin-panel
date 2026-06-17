@@ -834,6 +834,7 @@ query GetAllStocks(
           addresses {
             id
             name
+            name
             addressLine
             city
             state

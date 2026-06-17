@@ -294,7 +294,7 @@ const OrderTrackingModal = ({
 
           {/* STATUS UPDATE SECTION */}
 
-          {/* {canUpdateStatus && (
+          {canUpdateStatus && (
             <div
               style={{
                 marginTop: 24,
@@ -384,7 +384,7 @@ const OrderTrackingModal = ({
               </Button>
 
             </div>
-          )} */}
+          )}
 
 
 

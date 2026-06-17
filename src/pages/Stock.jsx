@@ -5,6 +5,7 @@ import usePermissions from '../hooks/usePermissions';
 import useProducts from '../hooks/useProducts';
 import useStockManager from '../hooks/useStockManager';
 //import StockAlerts from './stocks/StockAlerts';
+//import StockAlerts from './stocks/StockAlerts';
 import StockHeader from './stocks/StockHeader';
 import StockStats from './stocks/StockStats';
 import StockTable from './stocks/StockTable';
@@ -19,6 +20,10 @@ import StockUpdateModal from './stocks/StockUpdateModal';
  *  - Delegating stock-update and product-creation side-effects
  */
 const Stock = () => {
+  const { canUpdate } = usePermissions();
+  const canManageStock = canUpdate('stock');
+  const canCreateProduct = canUpdate('product');
+
   const { canUpdate } = usePermissions();
   const canManageStock = canUpdate('stock');
   const canCreateProduct = canUpdate('product');
@@ -64,6 +69,8 @@ const Stock = () => {
   const [stockForm] = Form.useForm();
 
   const handleOpenManageStock = () => {
+    if (!canManageStock) return;
+
     if (!canManageStock) return;
 
     stockForm.resetFields();
@@ -112,6 +119,8 @@ const Stock = () => {
   const handleStockFormFinish = async (values) => {
     if (!canManageStock) return;
 
+    if (!canManageStock) return;
+
     try {
       //const currentQty = getStockQuantity(selectedStockItem);
       const currentQty =
@@ -150,7 +159,15 @@ const Stock = () => {
     }
   }, [canCreateProduct, fetchCategories]);
 
+  useEffect(() => {
+    if (canCreateProduct) {
+      fetchCategories();
+    }
+  }, [canCreateProduct, fetchCategories]);
+
   const handleAddProduct = () => {
+    if (!canCreateProduct) return;
+
     if (!canCreateProduct) return;
 
     productForm.resetFields();
@@ -165,6 +182,8 @@ const Stock = () => {
   };
 
   const handleProductSubmit = async (values) => {
+    if (!canCreateProduct) return;
+
     if (!canCreateProduct) return;
 
     setProductLoading(true);

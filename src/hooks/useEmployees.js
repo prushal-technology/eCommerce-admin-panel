@@ -5,6 +5,8 @@ import {
     DELETE_EMPLOYEE,
     UPDATE_EMPLOYEE,
 } from '../graphql/employeeMutations';
+UPDATE_EMPLOYEE,
+} from '../graphql/employeeMutations';
 import { GET_EMPLOYEES } from '../graphql/queries';
 
 const formatEmployee = (emp) => ({
