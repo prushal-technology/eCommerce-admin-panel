@@ -3,6 +3,7 @@ import dayjs from 'dayjs';
 import { useEffect, useState } from 'react';
 import OrderTrackingModal from '../../components/modals/OrderTrackingModal';
 import useBulkOrders from '../../hooks/useBulkOrdersEnquiry';
+import usePermissions from '../../hooks/usePermissions';
 import BulkOrderDetailsModal from './components/BulkOrderDetailsModal';
 import BulkOrdersEnquiryTable from './components/bulkordersenquirytable';
 
@@ -14,6 +15,8 @@ const { Option } = Select;
 const { RangePicker } = DatePicker;
 
 const BulkOrderEnquiries = () => {
+    const { canUpdate } = usePermissions();
+    const canManageOrders = canUpdate('order', 'bulk_order_enquiry');
     // ── Filter state ──────────────────────────────────────────────────────────
     const [searchText, setSearchText] = useState('');
     const [statusFilter, setStatusFilter] = useState('all');
@@ -41,6 +44,7 @@ const BulkOrderEnquiries = () => {
 
     // ── Shared status update — used by both modals ────────────────────────────
     const handleStatusUpdate = async () => {
+        if (!canManageOrders) return false;
         if (!selectedEnquiry) return false;
         const res = await changeBulkOrderStatus(
             selectedEnquiry.id,
@@ -160,6 +164,8 @@ const BulkOrderEnquiries = () => {
                 setStatusNote={setStatusNote}
                 onStatusUpdate={handleStatusUpdate}
                 updateLoading={updateLoading}
+                canUpdateStatus={canManageOrders}
+
             />
 
             {/* ── Tracking Modal (reused as-is) ──────────────────────────────────── */}
@@ -175,6 +181,7 @@ const BulkOrderEnquiries = () => {
                 setStatusNote={setStatusNote}
                 onStatusUpdate={handleStatusUpdate}
                 statusUpdateLoading={updateLoading}
+                canUpdateStatus={canManageOrders}
             />
         </div>
     );

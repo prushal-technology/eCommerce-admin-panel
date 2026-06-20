@@ -1,16 +1,10 @@
 import { Form, Space, message } from 'antd';
 import { useEffect, useState } from 'react';
-import { useEffect, useState } from 'react';
 import ProductModal from '../components/modals/ProductModal';
-import usePermissions from '../hooks/usePermissions';
 import usePermissions from '../hooks/usePermissions';
 import useProducts from '../hooks/useProducts';
 import useStockManager from '../hooks/useStockManager';
 //import StockAlerts from './stocks/StockAlerts';
-<<<<<<< HEAD
-//import StockAlerts from './stocks/StockAlerts';
-=======
->>>>>>> 41ecfd1a33e5df750d0150edb2c4768cfe98b7b0
 import StockHeader from './stocks/StockHeader';
 import StockStats from './stocks/StockStats';
 import StockTable from './stocks/StockTable';
@@ -29,13 +23,7 @@ const Stock = () => {
   const canManageStock = canUpdate('stock');
   const canCreateProduct = canUpdate('product');
 
-<<<<<<< HEAD
-  const { canUpdate } = usePermissions();
-  const canManageStock = canUpdate('stock');
-  const canCreateProduct = canUpdate('product');
 
-=======
->>>>>>> 41ecfd1a33e5df750d0150edb2c4768cfe98b7b0
   const {
     categories,
     actionLoading,
@@ -79,21 +67,13 @@ const Stock = () => {
   const handleOpenManageStock = () => {
     if (!canManageStock) return;
 
-<<<<<<< HEAD
-    if (!canManageStock) return;
-
-=======
->>>>>>> 41ecfd1a33e5df750d0150edb2c4768cfe98b7b0
     stockForm.resetFields();
     setSelectedStockItem(null);
     setIsStockModalOpen(true);
   };
 
-<<<<<<< HEAD
   const handleEditStock = (record, type, inventoryType = 'storefront') => {
-=======
-  const handleEditStock = (record, type) => {
->>>>>>> 41ecfd1a33e5df750d0150edb2c4768cfe98b7b0
+
     if (!canManageStock) return;
 
     const currentQty = getStockQuantity(record);
@@ -134,11 +114,6 @@ const Stock = () => {
   const handleStockFormFinish = async (values) => {
     if (!canManageStock) return;
 
-<<<<<<< HEAD
-    if (!canManageStock) return;
-
-=======
->>>>>>> 41ecfd1a33e5df750d0150edb2c4768cfe98b7b0
     try {
       //const currentQty = getStockQuantity(selectedStockItem);
       const currentQty =
@@ -177,23 +152,9 @@ const Stock = () => {
     }
   }, [canCreateProduct, fetchCategories]);
 
-<<<<<<< HEAD
-  useEffect(() => {
-    if (canCreateProduct) {
-      fetchCategories();
-    }
-  }, [canCreateProduct, fetchCategories]);
-
   const handleAddProduct = () => {
     if (!canCreateProduct) return;
 
-    if (!canCreateProduct) return;
-
-=======
-  const handleAddProduct = () => {
-    if (!canCreateProduct) return;
-
->>>>>>> 41ecfd1a33e5df750d0150edb2c4768cfe98b7b0
     productForm.resetFields();
     setImageList([]);
     setIsProductModalOpen(true);
@@ -208,11 +169,6 @@ const Stock = () => {
   const handleProductSubmit = async (values) => {
     if (!canCreateProduct) return;
 
-<<<<<<< HEAD
-    if (!canCreateProduct) return;
-
-=======
->>>>>>> 41ecfd1a33e5df750d0150edb2c4768cfe98b7b0
     setProductLoading(true);
     try {
       const newProduct = await createProduct({
@@ -256,16 +212,9 @@ const Stock = () => {
           onAddProduct={handleAddProduct}
           canManageStock={canManageStock}
           canCreateProduct={canCreateProduct}
-          canManageStock={canManageStock}
-          canCreateProduct={canCreateProduct}
+
         />
 
-        {/* <StockAlerts
-        {/* <StockAlerts
-          critical={stockStats.critical}
-          outOfStock={stockStats.outOfStock}
-        /> */}
-        /> */}
 
         <StockStats stats={stockStats} loading={stocksLoading} />
 
@@ -279,7 +228,6 @@ const Stock = () => {
           onSearchChange={setSearchText}
           onFilterChange={setStockFilter}
           onEditStock={handleEditStock}
-          canManageStock={canManageStock}
           canManageStock={canManageStock}
           onLoadMore={() => loadStocks(searchText, nextCursor, false)}
           getStockQuantity={getStockQuantity}
@@ -302,35 +250,8 @@ const Stock = () => {
             onProductPopupScroll={handleProductPopupScroll}
           />
         )}
-        {canManageStock && (
-          <StockUpdateModal
-            open={isStockModalOpen}
-            onCancel={() => setIsStockModalOpen(false)}
-            onFinish={handleStockFormFinish}
-            form={stockForm}
-            actionLoading={actionLoading}
-            selectedItem={selectedStockItem}
-            onProductSelect={handleProductSelect}
-            productList={productList}
-            productListLoading={productListLoading}
-            onProductSearch={handleProductSearch}
-            onProductPopupScroll={handleProductPopupScroll}
-          />
-        )}
 
-        {canCreateProduct && (
-          <ProductModal
-            visible={isProductModalOpen}
-            onCancel={handleProductModalClose}
-            onSubmit={handleProductSubmit}
-            form={productForm}
-            categories={categories}
-            loading={productLoading}
-            imageList={imageList}
-            setImageList={setImageList}
-            title="Add Product"
-          />
-        )}
+
         {canCreateProduct && (
           <ProductModal
             visible={isProductModalOpen}

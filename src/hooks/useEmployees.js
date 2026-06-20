@@ -5,11 +5,6 @@ import {
     DELETE_EMPLOYEE,
     UPDATE_EMPLOYEE,
 } from '../graphql/employeeMutations';
-<<<<<<< HEAD
-UPDATE_EMPLOYEE,
-} from '../graphql/employeeMutations';
-=======
->>>>>>> 41ecfd1a33e5df750d0150edb2c4768cfe98b7b0
 import { GET_EMPLOYEES } from '../graphql/queries';
 
 const formatEmployee = (emp) => ({
@@ -35,12 +30,9 @@ export const useEmployees = () => {
     const [hasMore, setHasMore] = useState(false);
     const [nextCursor, setNextCursor] = useState(null);
     const [fetchingMore, setFetchingMore] = useState(false);
-<<<<<<< HEAD
 
     const skipSearchEffect = useRef(true);
     const isFetching = useRef(false);
-=======
->>>>>>> 41ecfd1a33e5df750d0150edb2c4768cfe98b7b0
 
     useEffect(() => {
         loadEmployees();
@@ -65,7 +57,6 @@ export const useEmployees = () => {
 
         try {
             const { graphqlRequest } = await import('../api/graphql');
-<<<<<<< HEAD
             const data = await graphqlRequest(GET_EMPLOYEES, {
                 first: 15,
                 after: cursor,
@@ -74,10 +65,7 @@ export const useEmployees = () => {
             const newEmployees = (data.employees?.employees || []).map(formatEmployee);
 
             setEmployees(prev => append ? [...prev, ...newEmployees] : newEmployees);
-=======
-            const data = await graphqlRequest(GET_EMPLOYEES);
-            setEmployees((data.employees?.employees || []).map(formatEmployee));
->>>>>>> 41ecfd1a33e5df750d0150edb2c4768cfe98b7b0
+
             setHasMore(data.employees?.hasMore ?? false);
             setNextCursor(data.employees?.nextCursor ?? null);
         } catch (error) {
@@ -103,27 +91,6 @@ export const useEmployees = () => {
         await loadEmployees();
     };
 
-    const updateEmployee = async (values) => {
-        try {
-            const { graphqlRequest } = await import('../api/graphql');
-
-            await graphqlRequest(UPDATE_EMPLOYEE, {
-                id: Number(values.id),
-                firstName: values.firstName,
-                lastName: values.lastName,
-                phone: values.phone,
-                roleName: values.roleName,
-                isActive: values.isActive,
-            });
-
-            message.success('Employee updated successfully');
-
-            await loadEmployees();
-        } catch (error) {
-            message.error('Failed to update employee');
-            throw error;
-        }
-    };
 
     const updateEmployee = async (values) => {
         try {

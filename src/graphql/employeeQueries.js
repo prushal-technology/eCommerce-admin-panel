@@ -31,6 +31,7 @@ export const GET_EMPLOYEE_PERMISSIONS = gql`
     employeePermissions(employeeId: $employeeId) {
       id
       module
+      subModule
       access
     }
   }

@@ -46,11 +46,7 @@ const EditEmployeeModal = ({
             okText="Save Changes"
             confirmLoading={loading}
             width={700}
-<<<<<<< HEAD
             destroyOnHidden
-=======
-            destroyOnClose
->>>>>>> 41ecfd1a33e5df750d0150edb2c4768cfe98b7b0
         >
             <Form
                 form={form}

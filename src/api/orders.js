@@ -43,20 +43,22 @@ export const getProductsForOrder = async () => {
 
 
 export const createAdminOrder = async (
-  userId,
+  customerId,
   shippingAddress,
   items,
   orderType,
   paymentMethod,
   purchaseType,
+  notes,
   isAdvanceBooking,
-  advanceDeliveryDatetime
+  advanceDeliveryDatetime,
+  deliveryCharge = 0
 ) => {
 
   const response = await graphqlRequest(
     GRAPHQL_QUERIES.CREATE_ADMIN_ORDER,
     {
-      userId: parseInt(userId),
+      customerId: customerId,
 
       shippingAddress,
 
@@ -66,10 +68,13 @@ export const createAdminOrder = async (
 
       paymentMethod,
       purchaseType,
+      notes,
 
       isAdvanceBooking,
 
       advanceDeliveryDatetime,
+
+      deliveryCharge,
     }
   );
 
@@ -79,6 +84,27 @@ export const createAdminOrder = async (
   };
 };
 
+
+export const calculateDeliveryCharge = async (address, phone) => {
+  try {
+    const data = await graphqlRequest(GRAPHQL_QUERIES.CALCULATE_DELIVERY_CHARGE, {
+      address,
+      phone,
+    });
+    const result = data?.calculateDeliveryCharge;
+    return {
+      success: result?.success ?? false,
+      deliveryCharge: result?.deliveryCharge ?? 0,
+      message: result?.message || '',
+    };
+  } catch (error) {
+    return {
+      success: false,
+      deliveryCharge: 0,
+      message: error.message || 'Failed to calculate delivery charge',
+    };
+  }
+};
 
 
 // Get all orders

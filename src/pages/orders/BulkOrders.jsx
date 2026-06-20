@@ -3,8 +3,8 @@ import { Button, Card, Typography } from 'antd';
 import dayjs from 'dayjs';
 import { useEffect, useRef, useState } from 'react';
 import OrderDetailsModal from '../../components/modals/OrderDetailsModal';
-import OrderTrackingModal from '../../components/modals/OrderTrackingModal';
 import useBulkOrders from '../../hooks/useBulkOrders';
+import usePermissions from '../../hooks/usePermissions';
 import ManualOrderModal from './components/ManualOrderModal';
 import SystemOrdersFilters from './components/SystemOrdersFilters';
 import SystemOrdersStats from './components/SystemOrdersStats';
@@ -18,10 +18,12 @@ const BulkOrders = () => {
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [newStatus, setNewStatus] = useState('');
   const [statusNote, setStatusNote] = useState('');
-  const [trackingModalVisible, setTrackingModalVisible] = useState(false);
+  //const [trackingModalVisible, setTrackingModalVisible] = useState(false);
   const [trackingLoading, setTrackingLoading] = useState(false);
   const [trackingData, setTrackingData] = useState([]);
   const [manualOrderVisible, setManualOrderVisible] = useState(false);
+  const { canUpdate } = usePermissions()
+  const canManageOrders = canUpdate('order', 'bulk');
 
   const { orders, loading, fetchOrders, fetchMoreOrders, hasMore, updateOrder, ordersStats } = useBulkOrders();
   const [tableScrollLoading, setTableScrollLoading] = useState(false);
@@ -39,74 +41,6 @@ const BulkOrders = () => {
     return () => clearTimeout(timeout);
   }, [fetchOrders, searchText]);
 
-  // useEffect(() => {
-
-  //   const timeout = setTimeout(() => {
-
-  //     const tableBody =
-  //       tableWrapperRef.current?.querySelector(
-  //         '.ant-table-body'
-  //       );
-
-  //     if (!tableBody) return;
-
-  //     const handleScroll = (event) => {
-
-  //       const target = event.target;
-
-  //       if (
-  //         loading ||
-  //         tableScrollLoading ||
-  //         fetchingRef.current ||
-  //         !hasMore
-  //       ) {
-  //         return;
-  //       }
-
-  //       if (
-  //         target.scrollTop +
-  //         target.clientHeight >=
-  //         target.scrollHeight - 80
-  //       ) {
-
-  //         fetchingRef.current = true;
-
-  //         setTableScrollLoading(true);
-
-  //         fetchMoreOrders()
-  //           .finally(() => {
-
-  //             fetchingRef.current = false;
-
-  //             setTableScrollLoading(false);
-  //           });
-  //       }
-  //     };
-
-  //     tableBody.addEventListener(
-  //       'scroll',
-  //       handleScroll
-  //     );
-
-  //     return () => {
-  //       tableBody.removeEventListener(
-  //         'scroll',
-  //         handleScroll
-  //       );
-  //     };
-
-  //   }, 200);
-
-  //   return () => clearTimeout(timeout);
-
-  // }, [
-  //   loading,
-  //   tableScrollLoading,
-  //   hasMore,
-  //   fetchMoreOrders,
-  //   orders
-  // ]);
-
   const handleViewDetails = (order) => {
     setSelectedOrder(order);
     setNewStatus(order.status);
@@ -114,39 +48,40 @@ const BulkOrders = () => {
     setDetailModalVisible(true);
   };
 
-  const handleTrackOrder = async (order) => {
-    setSelectedOrder(order);
-    // SET CURRENT STATUS
-    setNewStatus(order.status || 'pending');
+  // const handleTrackOrder = async (order) => {
+  //   setSelectedOrder(order);
+  //   // SET CURRENT STATUS
+  //   setNewStatus(order.status || 'pending');
 
-    // RESET NOTE
-    setStatusNote('');
-    setTrackingModalVisible(true);
-    setTrackingLoading(true);
-    try {
-      const { getOrderTracking } = await import('../../api/orders');
-      const res = await getOrderTracking(order.id);
-      setTrackingData(res.success ? res.tracking || [] : []);
-    } catch (error) {
-      setTrackingData([]);
-    } finally {
-      setTrackingLoading(false);
-    }
-  };
+  //   // RESET NOTE
+  //   setStatusNote('');
+  //   setTrackingModalVisible(true);
+  //   setTrackingLoading(true);
+  //   try {
+  //     const { getOrderTracking } = await import('../../api/orders');
+  //     const res = await getOrderTracking(order.id);
+  //     setTrackingData(res.success ? res.tracking || [] : []);
+  //   } catch (error) {
+  //     setTrackingData([]);
+  //   } finally {
+  //     setTrackingLoading(false);
+  //   }
+  // };
 
-  const handleStatusUpdate = async () => {
-    if (!selectedOrder) return;
-    try {
-      const res = await updateOrder(selectedOrder.id, newStatus, statusNote);
-      if (res.success) {
-        fetchOrders(searchText || null);
-        setDetailModalVisible(false);
-        setTrackingModalVisible(false);
-      }
-    } catch (error) {
-      console.error(error);
-    }
-  };
+  // const handleStatusUpdate = async () => {
+  //   if (!canManageOrders) return false;
+  //   if (!selectedOrder) return;
+  //   try {
+  //     const res = await updateOrder(selectedOrder.id, newStatus, statusNote);
+  //     if (res.success) {
+  //       fetchOrders(searchText || null);
+  //       setDetailModalVisible(false);
+  //       setTrackingModalVisible(false);
+  //     }
+  //   } catch (error) {
+  //     console.error(error);
+  //   }
+  // };
 
   const filteredOrders = orders.filter((order) => {
     const matchesStatus = statusFilter === 'all' || order.status === statusFilter;
@@ -184,17 +119,18 @@ const BulkOrders = () => {
           Bulk Orders Management
         </Title>
 
-        <Button
-          type="primary"
-          icon={<PlusOutlined />}
-          onClick={() =>
-            setManualOrderVisible(true)
-          }
-          size="small"
-        >
-          Take Bulk Order
-        </Button>
-
+        {canManageOrders && (
+          <Button
+            type="primary"
+            icon={<PlusOutlined />}
+            onClick={() =>
+              setManualOrderVisible(true)
+            }
+            size="small"
+          >
+            Take Bulk Order
+          </Button>
+        )}
       </div>
 
       {/* STATS */}
@@ -247,7 +183,7 @@ const BulkOrders = () => {
             hasMore={hasMore}
             tableScrollLoading={tableScrollLoading}
             onViewDetails={handleViewDetails}
-            onTrackOrder={handleTrackOrder}
+            //onTrackOrder={handleTrackOrder}
             onLoadMore={async () => {
               if (
                 loading ||
@@ -293,17 +229,16 @@ const BulkOrders = () => {
           setDetailModalVisible(false)
         }
         newStatus={newStatus}
-        setNewStatus={setNewStatus}
+        //setNewStatus={setNewStatus}
         statusNote={statusNote}
-        setStatusNote={setStatusNote}
-        onStatusUpdate={
-          handleStatusUpdate
-        }
+      //setStatusNote={setStatusNote}
+      //onStatusUpdate={handleStatusUpdate}
+      //canUpdateStatus={canManageOrders}
       />
 
       {/* TRACKING MODAL */}
 
-      <OrderTrackingModal
+      {/* <OrderTrackingModal
         open={trackingModalVisible}
         order={selectedOrder}
         trackingLoading={trackingLoading}
@@ -319,25 +254,28 @@ const BulkOrders = () => {
           handleStatusUpdate
         }
         statusUpdateLoading={loading}
-      />
+        canUpdateStatus={canManageOrders}
+      /> */}
 
       {/* MANUAL ORDER MODAL */}
+      {canManageOrders && (
 
-      <ManualOrderModal
-        visible={manualOrderVisible}
-        onClose={() =>
-          setManualOrderVisible(false)
-        }
-        defaultOrderType="bulk"
-        onOrderCreated={() => {
+        <ManualOrderModal
+          visible={manualOrderVisible}
+          onClose={() =>
+            setManualOrderVisible(false)
+          }
+          defaultOrderType="bulk"
+          onOrderCreated={() => {
 
-          setManualOrderVisible(false);
+            setManualOrderVisible(false);
 
-          fetchOrders(
-            searchText || null
-          );
-        }}
-      />
+            fetchOrders(
+              searchText || null
+            );
+          }}
+        />
+      )}
 
     </div>
 

@@ -48,6 +48,7 @@ export default function useBulkOrderEnquiry() {
     // ── Update status (and optionally bulkOrderDetails) ───────────────────────
     const changeBulkOrderStatus = useCallback(
         async (bulkOrderId, status, bulkOrderDetails = '') => {
+            if (!canManageOrders) return false;
             setUpdateLoading(true);
             try {
                 const res = await updateBulkOrderEnquiry(bulkOrderId, status, bulkOrderDetails);

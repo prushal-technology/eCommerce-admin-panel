@@ -1,4 +1,4 @@
-// import { ShoppingCartOutlined } from '@ant-design/icons';
+// import { HomeOutlined, ShoppingCartOutlined, UserOutlined } from '@ant-design/icons';
 // import {
 //   Button,
 //   Card,
@@ -7,13 +7,14 @@
 //   Form,
 //   Modal,
 //   Row,
+//   Segmented,
 //   Select,
 //   Space,
 //   message,
 // } from 'antd';
 // import dayjs from 'dayjs';
 // import { useEffect, useState } from 'react';
-// import { addShippingAddress } from '../../../api/orders';
+// import { addShippingAddress, calculateDeliveryCharge } from '../../../api/orders';
 // import AddCustomerModal from '../../../components/modals/AddCustomerModal';
 // import ShippingAddressModal from '../../../components/modals/ShippingAddressModal';
 // import useOrders from '../../../hooks/useOrders';
@@ -23,6 +24,11 @@
 // import useProductSearch from './manualordermodal/useProductSearch';
 
 // const { Option } = Select;
+
+// const PURCHASE_TYPE = {
+//   WALK_IN: 'walk_in',
+//   HOME_DELIVERY: 'home_delivery',
+// };
 
 // const formatCurrency = (amount) => `₹${(amount || 0).toFixed(2)}`;
 
@@ -34,6 +40,10 @@
 // }) => {
 //   const [form] = Form.useForm();
 //   const [addressForm] = Form.useForm();
+
+//   // ── Purchase type ──────────────────────────────────────────────────────────
+//   const [purchaseType, setPurchaseType] = useState(PURCHASE_TYPE.WALK_IN);
+//   const isHomeDelivery = purchaseType === PURCHASE_TYPE.HOME_DELIVERY;
 
 //   // ── Customer state ─────────────────────────────────────────────────────────
 //   const {
@@ -49,6 +59,8 @@
 //   const [customerSearchText, setCustomerSearchText] = useState('');
 //   const [advanceBooking, setAdvanceBooking] = useState(false);
 //   const [paymentMethod, setPaymentMethod] = useState('cash');
+//   const [deliveryCharge, setDeliveryCharge] = useState(0);
+//   const [deliveryChargeLoading, setDeliveryChargeLoading] = useState(false);
 
 //   // ── Modal visibility ───────────────────────────────────────────────────────
 //   const [addAddressModalVisible, setAddAddressModalVisible] = useState(false);
@@ -64,12 +76,10 @@
 //     handleAddItem,
 //     handleRemoveItem,
 //     handleItemChange,
-//     handleOrderTypeChange,
 //     handleSubmit: submitOrder,
 //     reset: resetOrder,
-//   } = useManualOrder({ onOrderCreated, onClose, defaultOrderType, });
+//   } = useManualOrder({ onOrderCreated, onClose, defaultOrderType });
 
-//   // ── Product search hook ────────────────────────────────────────────────────
 //   const {
 //     productOptions,
 //     productListLoading,
@@ -82,10 +92,12 @@
 //   // ── Reset on open ──────────────────────────────────────────────────────────
 //   useEffect(() => {
 //     if (!visible) return;
+//     setPurchaseType(PURCHASE_TYPE.WALK_IN);
 //     setCustomerSearchText('');
 //     fetchCustomers('', false);
 //     setSelectedCustomer(null);
 //     setSelectedAddress(null);
+//     setDeliveryCharge(0);
 //     setAdvanceBooking(false);
 //     setPaymentMethod('cash');
 //     resetOrder();
@@ -93,19 +105,51 @@
 //     form.resetFields();
 //   }, [visible]);
 
+//   // When switching from Home Delivery → Walk-in, clear customer validation
+//   // errors so the form doesn't show red on optional fields.
+//   const handlePurchaseTypeChange = (value) => {
+//     setPurchaseType(value);
+//     // Re-validate so required rules re-evaluate under the new mode
+//     form.validateFields().catch(() => { });
+//   };
+
+//   // ── Delivery charge helper ─────────────────────────────────────────────────
+//   const fetchDeliveryCharge = async (customer, address) => {
+//     if (!customer || !address) { setDeliveryCharge(0); return; }
+//     const addressStr = [address.addressLine, address.city, address.state].filter(Boolean).join(' ');
+//     const phone = customer.phone && customer.phone !== 'N/A' ? customer.phone : '';
+//     if (!addressStr) { setDeliveryCharge(0); return; }
+//     setDeliveryChargeLoading(true);
+//     try {
+//       const res = await calculateDeliveryCharge(addressStr, phone);
+//       if (res.success) {
+//         setDeliveryCharge(res.deliveryCharge ?? 0);
+//       } else {
+//         setDeliveryCharge(0);
+//       }
+//     } catch {
+//       setDeliveryCharge(0);
+//     } finally {
+//       setDeliveryChargeLoading(false);
+//     }
+//   };
+
 //   // ── Customer handlers ──────────────────────────────────────────────────────
 //   const handleCustomerSelect = (customerId) => {
 //     const customer = customers.find((c) => c.id === customerId);
 //     if (!customer) return;
 //     setSelectedCustomer(customer);
-//     const defaultAddr = customer.addresses?.find((a) => a.isDefault) || customer.addresses?.[0];
+//     const defaultAddr =
+//       customer.addresses?.find((a) => a.isDefault) || customer.addresses?.[0];
 //     setSelectedAddress(defaultAddr || null);
 //     form.setFieldsValue({ deliveryAddress: formatAddress(defaultAddr) });
+//     fetchDeliveryCharge(customer, defaultAddr || null);
 //   };
 
 //   const handleCustomerClear = () => {
 //     setSelectedCustomer(null);
 //     setSelectedAddress(null);
+//     setDeliveryCharge(0);
 //     setCustomerSearchText('');
 //     fetchCustomers('', false);
 //     form.resetFields(['customerName', 'customerEmail', 'customerPhone', 'deliveryAddress']);
@@ -128,6 +172,7 @@
 //     if (!address) return;
 //     setSelectedAddress(address);
 //     form.setFieldsValue({ deliveryAddress: formatAddress(address) });
+//     fetchDeliveryCharge(selectedCustomer, address);
 //   };
 
 //   // ── Address handlers ───────────────────────────────────────────────────────
@@ -173,44 +218,122 @@
 
 //   // ── Form submission ────────────────────────────────────────────────────────
 //   const handleFormFinish = async () => {
+//     // Exclude 'customerId' from antd validation — it's a controlled Select
+//     // managed via state, not the form store. We validate it manually below.
+//     const allKeys = Object.keys(form.getFieldsValue(true));
+//     const keysToValidate = allKeys.filter((k) => k !== 'customerId');
+//     const values = await form.validateFields(keysToValidate);
 
-//     const values = await form.validateFields();
+//     // Customer is only required for Home Delivery
+//     if (isHomeDelivery && !selectedCustomer?.id) {
+//       form.setFields([{ name: 'customerId', errors: ['Please select a customer'] }]);
+//       return;
+//     }
+
+//     // Clear any stale customer error before submitting
+//     form.setFields([{ name: 'customerId', errors: [] }]);
 
 //     const payload = {
 //       selectedCustomer,
 //       selectedAddress,
 //       paymentMethod,
 //       formatAddress,
-
+//       purchaseType,
+//       notes: values.notes,
 //       isAdvanceBooking: advanceBooking,
-
 //       advanceDeliveryDatetime:
 //         advanceBooking && values.deliveryDate
-//           ? dayjs(values.deliveryDate)
-//             .hour(18)
-//             .minute(30)
-//             .second(0)
-//             .format()
+//           ? dayjs(values.deliveryDate).hour(18).minute(30).second(0).format()
 //           : null,
+//       deliveryCharge: selectedAddress ? deliveryCharge : 0,
 //     };
 
 //     submitOrder(payload);
 //   };
 
+//   // ── Modal title row: segmented left, description right ────────────────────
+//   const modalTitle = (
+//     <Row align="middle" justify="space-between" wrap={false} style={{ paddingRight: 32 }}>
+//       <Col>
+//         <Segmented
+//           value={purchaseType}
+//           onChange={handlePurchaseTypeChange}
+//           options={[
+//             {
+//               label: (
+//                 <Space size={4}>
+//                   <UserOutlined />
+//                   Walk-in Purchase
+//                 </Space>
+//               ),
+//               value: PURCHASE_TYPE.WALK_IN,
+//             },
+//             {
+//               label: (
+//                 <Space size={4}>
+//                   <HomeOutlined />
+//                   Home Delivery
+//                 </Space>
+//               ),
+//               value: PURCHASE_TYPE.HOME_DELIVERY,
+//             },
+//           ]}
+//         />
+//       </Col>
+//       <Col>
+//         <span style={{ fontSize: 13, color: '#8c8c8c', fontWeight: 400 }}>
+//           {isHomeDelivery
+//             ? 'Customer & address required'
+//             : 'Customer details optional'}
+//         </span>
+//       </Col>
+//     </Row>
+//   );
+
+//   // ── Customer card title: label + optional badge ────────────────────────────
+//   const customerCardTitle = (
+//     <Space size={8}>
+//       <span>Customer Information</span>
+//       {!isHomeDelivery && (
+//         <span
+//           style={{
+//             fontSize: 11,
+//             fontWeight: 400,
+//             color: '#fff',
+//             background: '#8c8c8c',
+//             padding: '1px 7px',
+//             borderRadius: 10,
+//           }}
+//         >
+//           Optional
+//         </span>
+//       )}
+//     </Space>
+//   );
+
 //   // ── Render ─────────────────────────────────────────────────────────────────
 //   return (
 //     <>
-//       <Modal title="Take Manual Order" open={visible} onCancel={onClose} footer={null} width={900}>
+//       <Modal
+//         title={modalTitle}
+//         open={visible}
+//         onCancel={onClose}
+//         footer={null}
+//         width={900}
+//       >
 //         <Form form={form} layout="vertical" onFinish={handleFormFinish}>
 
 //           {/* ── Customer + address ─────────────────────── */}
-//           <Card title="Customer Information" size="small">
+//           <Card title={customerCardTitle} size="small">
+//             {/* Pass isRequired so CustomerSection can conditionally
+//                 mark its Form.Item rules as required or not */}
 //             <CustomerSection
 //               customers={customers}
 //               customersLoading={customersLoading}
 //               selectedCustomer={selectedCustomer}
 //               selectedAddress={selectedAddress}
 //               advanceBooking={advanceBooking}
+//               isRequired={isHomeDelivery}
 //               onCustomerSearch={handleCustomerSearch}
 //               onCustomerPopupScroll={handleCustomerPopupScroll}
 //               onCustomerSelect={handleCustomerSelect}
@@ -230,7 +353,12 @@
 //           <Row gutter={[16, 16]} style={{ marginTop: 12 }}>
 //             <Col xs={24} sm={12}>
 //               <Form.Item label="Payment Method">
-//                 <Select value={paymentMethod} onChange={setPaymentMethod} style={{ width: 200 }} size="small">
+//                 <Select
+//                   value={paymentMethod}
+//                   onChange={setPaymentMethod}
+//                   style={{ width: 200 }}
+//                   size="small"
+//                 >
 //                   <Option value="cash">Cash</Option>
 //                   <Option value="upi">UPI</Option>
 //                   <Option value="cheque">Cheque</Option>
@@ -258,11 +386,25 @@
 
 //             <Row justify="end">
 //               <Col>
-//                 <div style={{ fontSize: 16, textAlign: 'right' }}>
-//                   Total Amount:{' '}
-//                   <span style={{ fontWeight: 'bold', color: '#1890ff' }}>
-//                     {formatCurrency(orderTotal)}
-//                   </span>
+//                 <div style={{ textAlign: 'right', lineHeight: 2 }}>
+//                   <div style={{ fontSize: 14, color: '#595959' }}>
+//                     Items Total:{' '}
+//                     <span style={{ fontWeight: 600 }}>{formatCurrency(orderTotal)}</span>
+//                   </div>
+//                   {selectedAddress && (
+//                     <div style={{ fontSize: 14, color: '#595959' }}>
+//                       Delivery Charge:{' '}
+//                       <span style={{ fontWeight: 600, color: deliveryChargeLoading ? '#8c8c8c' : '#fa8c16' }}>
+//                         {deliveryChargeLoading ? 'Calculating...' : formatCurrency(deliveryCharge)}
+//                       </span>
+//                     </div>
+//                   )}
+//                   <div style={{ fontSize: 16, borderTop: '1px solid #f0f0f0', paddingTop: 4, marginTop: 2 }}>
+//                     Grand Total:{' '}
+//                     <span style={{ fontWeight: 'bold', color: '#1890ff' }}>
+//                       {formatCurrency(orderTotal + (selectedAddress ? deliveryCharge : 0))}
+//                     </span>
+//                   </div>
 //                 </div>
 //               </Col>
 //             </Row>
@@ -278,9 +420,11 @@
 //                 size="small"
 //                 icon={<ShoppingCartOutlined />}
 //               >
-//                 Create Order
+//                 {isHomeDelivery ? 'Create Delivery Order' : 'Create Walk-in Order'}
 //               </Button>
-//               <Button onClick={onClose} size="small">Cancel</Button>
+//               <Button onClick={onClose} size="small">
+//                 Cancel
+//               </Button>
 //             </Space>
 //           </div>
 //         </Form>
@@ -288,7 +432,10 @@
 
 //       <ShippingAddressModal
 //         open={addAddressModalVisible}
-//         onCancel={() => { setAddAddressModalVisible(false); addressForm.resetFields(); }}
+//         onCancel={() => {
+//           setAddAddressModalVisible(false);
+//           addressForm.resetFields();
+//         }}
 //         onSubmit={handleAddNewAddress}
 //         form={addressForm}
 //         loading={addAddressLoading}
@@ -309,6 +456,8 @@
 
 // export default ManualOrderModal;
 
+
+
 import { HomeOutlined, ShoppingCartOutlined, UserOutlined } from '@ant-design/icons';
 import {
   Button,
@@ -325,7 +474,7 @@ import {
 } from 'antd';
 import dayjs from 'dayjs';
 import { useEffect, useState } from 'react';
-import { addShippingAddress } from '../../../api/orders';
+import { addShippingAddress, calculateDeliveryCharge } from '../../../api/orders';
 import AddCustomerModal from '../../../components/modals/AddCustomerModal';
 import ShippingAddressModal from '../../../components/modals/ShippingAddressModal';
 import useOrders from '../../../hooks/useOrders';
@@ -370,6 +519,8 @@ const ManualOrderModal = ({
   const [customerSearchText, setCustomerSearchText] = useState('');
   const [advanceBooking, setAdvanceBooking] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState('cash');
+  const [deliveryCharge, setDeliveryCharge] = useState(0);
+  const [deliveryChargeLoading, setDeliveryChargeLoading] = useState(false);
 
   // ── Modal visibility ───────────────────────────────────────────────────────
   const [addAddressModalVisible, setAddAddressModalVisible] = useState(false);
@@ -385,16 +536,10 @@ const ManualOrderModal = ({
     handleAddItem,
     handleRemoveItem,
     handleItemChange,
-    handleOrderTypeChange,
     handleSubmit: submitOrder,
     reset: resetOrder,
-<<<<<<< HEAD
   } = useManualOrder({ onOrderCreated, onClose, defaultOrderType });
-=======
-  } = useManualOrder({ onOrderCreated, onClose, defaultOrderType, });
->>>>>>> 41ecfd1a33e5df750d0150edb2c4768cfe98b7b0
 
-  // ── Product search hook ────────────────────────────────────────────────────
   const {
     productOptions,
     productListLoading,
@@ -404,6 +549,9 @@ const ManualOrderModal = ({
     reset: resetProducts,
   } = useProductSearch(visible);
 
+  // ── Only show delivery charge when at least one product is selected ────────
+  const hasProducts = orderItems.some((item) => item.productId);
+
   // ── Reset on open ──────────────────────────────────────────────────────────
   useEffect(() => {
     if (!visible) return;
@@ -412,6 +560,7 @@ const ManualOrderModal = ({
     fetchCustomers('', false);
     setSelectedCustomer(null);
     setSelectedAddress(null);
+    setDeliveryCharge(0);
     setAdvanceBooking(false);
     setPaymentMethod('cash');
     resetOrder();
@@ -419,12 +568,30 @@ const ManualOrderModal = ({
     form.resetFields();
   }, [visible]);
 
-  // When switching from Home Delivery → Walk-in, clear customer validation
-  // errors so the form doesn't show red on optional fields.
   const handlePurchaseTypeChange = (value) => {
     setPurchaseType(value);
-    // Re-validate so required rules re-evaluate under the new mode
     form.validateFields().catch(() => { });
+  };
+
+  // ── Delivery charge helper ─────────────────────────────────────────────────
+  const fetchDeliveryCharge = async (customer, address) => {
+    if (!customer || !address) { setDeliveryCharge(0); return; }
+    const addressStr = [address.addressLine, address.city, address.state].filter(Boolean).join(' ');
+    const phone = customer.phone && customer.phone !== 'N/A' ? customer.phone : '';
+    if (!addressStr) { setDeliveryCharge(0); return; }
+    setDeliveryChargeLoading(true);
+    try {
+      const res = await calculateDeliveryCharge(addressStr, phone);
+      if (res.success) {
+        setDeliveryCharge(res.deliveryCharge ?? 0);
+      } else {
+        setDeliveryCharge(0);
+      }
+    } catch {
+      setDeliveryCharge(0);
+    } finally {
+      setDeliveryChargeLoading(false);
+    }
   };
 
   // ── Customer handlers ──────────────────────────────────────────────────────
@@ -436,11 +603,13 @@ const ManualOrderModal = ({
       customer.addresses?.find((a) => a.isDefault) || customer.addresses?.[0];
     setSelectedAddress(defaultAddr || null);
     form.setFieldsValue({ deliveryAddress: formatAddress(defaultAddr) });
+    fetchDeliveryCharge(customer, defaultAddr || null);
   };
 
   const handleCustomerClear = () => {
     setSelectedCustomer(null);
     setSelectedAddress(null);
+    setDeliveryCharge(0);
     setCustomerSearchText('');
     fetchCustomers('', false);
     form.resetFields(['customerName', 'customerEmail', 'customerPhone', 'deliveryAddress']);
@@ -463,6 +632,7 @@ const ManualOrderModal = ({
     if (!address) return;
     setSelectedAddress(address);
     form.setFieldsValue({ deliveryAddress: formatAddress(address) });
+    fetchDeliveryCharge(selectedCustomer, address);
   };
 
   // ── Address handlers ───────────────────────────────────────────────────────
@@ -508,19 +678,15 @@ const ManualOrderModal = ({
 
   // ── Form submission ────────────────────────────────────────────────────────
   const handleFormFinish = async () => {
-    // Exclude 'customerId' from antd validation — it's a controlled Select
-    // managed via state, not the form store. We validate it manually below.
     const allKeys = Object.keys(form.getFieldsValue(true));
     const keysToValidate = allKeys.filter((k) => k !== 'customerId');
     const values = await form.validateFields(keysToValidate);
 
-    // Customer is only required for Home Delivery
     if (isHomeDelivery && !selectedCustomer?.id) {
       form.setFields([{ name: 'customerId', errors: ['Please select a customer'] }]);
       return;
     }
 
-    // Clear any stale customer error before submitting
     form.setFields([{ name: 'customerId', errors: [] }]);
 
     const payload = {
@@ -529,17 +695,19 @@ const ManualOrderModal = ({
       paymentMethod,
       formatAddress,
       purchaseType,
+      notes: values.notes,
       isAdvanceBooking: advanceBooking,
       advanceDeliveryDatetime:
         advanceBooking && values.deliveryDate
           ? dayjs(values.deliveryDate).hour(18).minute(30).second(0).format()
           : null,
+      deliveryCharge: selectedAddress ? deliveryCharge : 0,
     };
 
     submitOrder(payload);
   };
 
-  // ── Modal title row: segmented left, description right ────────────────────
+  // ── Modal title ────────────────────────────────────────────────────────────
   const modalTitle = (
     <Row align="middle" justify="space-between" wrap={false} style={{ paddingRight: 32 }}>
       <Col>
@@ -578,7 +746,6 @@ const ManualOrderModal = ({
     </Row>
   );
 
-  // ── Customer card title: label + optional badge ────────────────────────────
   const customerCardTitle = (
     <Space size={8}>
       <span>Customer Information</span>
@@ -599,6 +766,10 @@ const ManualOrderModal = ({
     </Space>
   );
 
+  // ── Derived totals ─────────────────────────────────────────────────────────
+  const showDeliveryCharge = hasProducts && selectedAddress;
+  const grandTotal = orderTotal + (showDeliveryCharge ? deliveryCharge : 0);
+
   // ── Render ─────────────────────────────────────────────────────────────────
   return (
     <>
@@ -613,8 +784,6 @@ const ManualOrderModal = ({
 
           {/* ── Customer + address ─────────────────────── */}
           <Card title={customerCardTitle} size="small">
-            {/* Pass isRequired so CustomerSection can conditionally
-                mark its Form.Item rules as required or not */}
             <CustomerSection
               customers={customers}
               customersLoading={customersLoading}
@@ -674,11 +843,28 @@ const ManualOrderModal = ({
 
             <Row justify="end">
               <Col>
-                <div style={{ fontSize: 16, textAlign: 'right' }}>
-                  Total Amount:{' '}
-                  <span style={{ fontWeight: 'bold', color: '#1890ff' }}>
-                    {formatCurrency(orderTotal)}
-                  </span>
+                <div style={{ textAlign: 'right', lineHeight: 2 }}>
+                  <div style={{ fontSize: 14, color: '#595959' }}>
+                    Items Total:{' '}
+                    <span style={{ fontWeight: 600 }}>{formatCurrency(orderTotal)}</span>
+                  </div>
+
+                  {/* Delivery charge — only shown once a product is selected */}
+                  {showDeliveryCharge && (
+                    <div style={{ fontSize: 14, color: '#595959' }}>
+                      Delivery Charge:{' '}
+                      <span style={{ fontWeight: 600, color: deliveryChargeLoading ? '#8c8c8c' : '#fa8c16' }}>
+                        {deliveryChargeLoading ? 'Calculating...' : formatCurrency(deliveryCharge)}
+                      </span>
+                    </div>
+                  )}
+
+                  <div style={{ fontSize: 16, borderTop: '1px solid #f0f0f0', paddingTop: 4, marginTop: 2 }}>
+                    Grand Total:{' '}
+                    <span style={{ fontWeight: 'bold', color: '#1890ff' }}>
+                      {formatCurrency(grandTotal)}
+                    </span>
+                  </div>
                 </div>
               </Col>
             </Row>
