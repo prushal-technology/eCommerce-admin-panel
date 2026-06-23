@@ -151,13 +151,13 @@ const Categories = () => {
       }
 
       if (res.success) {
-        message.success("Saved successfully");
+        message.success("Categories updated Successfully");
         setIsModalVisible(false);
         form.resetFields();
         setImageList([]);
         loadCategories(null, true);
       } else {
-        message.error(res.message || "Failed to save");
+        message.error(res.message || "Failed to Update Category");
       }
     } catch {
       message.error("Something went wrong");

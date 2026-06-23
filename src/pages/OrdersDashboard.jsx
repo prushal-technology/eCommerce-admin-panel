@@ -254,9 +254,9 @@ const OrdersDashboard = () => {
                 <div>
 
                     <Title
-                        level={3}
+                        level={4}
                         style={{
-                            marginBottom: 4,
+                            marginBottom: 3,
                         }}
                     >
                         Orders Dashboard
@@ -284,8 +284,8 @@ const OrdersDashboard = () => {
                     {/* SYSTEM ORDERS */}
 
                     <Col xs={24}>
-
                         <Card
+
                             title={
                                 <Space>
                                     <CreditCardOutlined />
@@ -293,7 +293,6 @@ const OrdersDashboard = () => {
                                 </Space>
                             }
                         >
-
                             <SystemOrdersStats
                                 stats={systemStats}
                                 loading={loading}

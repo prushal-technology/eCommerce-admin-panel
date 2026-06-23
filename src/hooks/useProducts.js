@@ -158,7 +158,7 @@ export default function useProducts() {
     try {
       const response = await deleteProductImageApi(imageId);
       if (response.success) {
-        message.success('Image deleted successfully');
+        //message.success('Image deleted successfully');
         return true;
       }
       message.error(response.message || 'Failed to delete image');

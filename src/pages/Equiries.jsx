@@ -5,7 +5,6 @@ import {
     UserOutlined
 } from '@ant-design/icons';
 import {
-    Badge,
     Card,
     Input,
     message,
@@ -14,7 +13,7 @@ import {
     Table,
     Tabs,
     Tooltip,
-    Typography,
+    Typography
 } from 'antd';
 import dayjs from 'dayjs';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -260,7 +259,7 @@ const NewsletterTab = ({ onCountChange }) => {
 
     const columns = [
         {
-            title: '#',
+            title: 'S No',
             key: 'index',
             width: 52,
             render: (_, __, index) => (
@@ -312,17 +311,17 @@ const Enquiries = () => {
     const [contactCount, setContactCount] = useState(null);
     const [subscriberCount, setSubscriberCount] = useState(null);
 
-    const tabLabel = (label, count, icon) => (
+    const tabLabel = (label, icon) => (
         <Space size={6}>
             {icon}
             {label}
-            {count !== null && (
+            {/* {count !== null && (
                 <Badge
                     count={count}
                     style={{ backgroundColor: '#1890ff', fontSize: 10 }}
                     overflowCount={999}
                 />
-            )}
+            )} */}
         </Space>
     );
 
@@ -340,12 +339,12 @@ const Enquiries = () => {
                     items={[
                         {
                             key: 'contact',
-                            label: tabLabel('Contact Forms', contactCount, <MessageOutlined />),
+                            label: tabLabel('Contact Forms', <MessageOutlined />),
                             children: <ContactFormsTab onCountChange={setContactCount} />,
                         },
                         {
                             key: 'newsletter',
-                            label: tabLabel('Newsletter', subscriberCount, <MailOutlined />),
+                            label: tabLabel('Newsletter', <MailOutlined />),
                             children: <NewsletterTab onCountChange={setSubscriberCount} />,
                         },
                     ]}
