@@ -206,9 +206,10 @@ export const useCustomers = () => {
                         : c
                 )
             );
-            message.success('Customer updated successfully');
+            // message.success('Customer updated successfully');
+
         } else {
-            throw new Error('Failed to update customer');
+            //throw new Error('Failed to update customer');
         }
     };
 

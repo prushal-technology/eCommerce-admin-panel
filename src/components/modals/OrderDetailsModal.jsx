@@ -1,165 +1,328 @@
-import { Button, Card, Col, Input, Modal, Row, Select } from 'antd';
+import { Modal, Tag } from 'antd';
 import dayjs from 'dayjs';
+import OrderTrackingTimeline from './OrderTrackingTimeline';
 
-const { Option } = Select;
+const fmt = (val) => `₹${parseFloat(val || 0).toFixed(2)}`;
 
-const OrderDetailsModal = ({
-  open,
-  order,
-  onCancel,
-  newStatus,
-  setNewStatus,
-  statusNote,
-  setStatusNote,
-  onStatusUpdate,
-  statusUpdateLoading = false,
-  canUpdateStatus = false,
-}) => {
-  const renderOrderImage = (item) => {
-    const validImage = item.product?.images && item.product.images.length > 0
-      ? item.product.images.find(img => img.image && img.image.trim() !== '')
-      : null;
+const STATUS_CONFIG = {
+  pending: { color: 'warning', icon: '⏳' },
+  confirmed: { color: 'processing', icon: '✅' },
+  dispatched: { color: 'blue', icon: '🚚' },
+  delivered: { color: 'success', icon: '📦' },
+  cancelled: { color: 'error', icon: '✖' },
+};
 
-    if (!validImage) {
-      return (
-        <div style={{ width: 50, height: 50, backgroundColor: '#f0f0f0', borderRadius: 4, display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid #e0e0e0' }}>
-          <span style={{ fontSize: 10, color: '#999' }}>No Img</span>
-        </div>
-      );
-    }
+/* ── Helpers ──────────────────────────────────────────────────── */
 
-    const imageSrc = validImage.image.startsWith('data:')
-      ? validImage.image
-      : `${import.meta.env.VITE_GRAPHQL_URI.replace('/graphql/', '').replace('/graphql', '')}/media/${validImage.image}`;
+const SectionLabel = ({ children }) => (
+  <div style={{
+    fontSize: 11, fontWeight: 600, color: '#8c8c8c',
+    textTransform: 'uppercase', letterSpacing: '0.06em',
+    marginBottom: 12,
+  }}>
+    {children}
+  </div>
+);
 
-    return (
-      <img
-        src={imageSrc}
-        alt={item.product?.name || 'Product'}
-        style={{ width: 50, height: 50, objectFit: 'cover', borderRadius: 4, border: '1px solid #f0f0f0' }}
-        onError={(e) => { e.target.style.display = 'none'; }}
-      />
-    );
-  };
+const Field = ({ label, children, style = {} }) => (
+  <div style={{ marginBottom: 10, ...style }}>
+    <div style={{ fontSize: 12, color: '#8c8c8c', marginBottom: 2 }}>{label}</div>
+    <div style={{ fontSize: 13, fontWeight: 500, color: '#1f1f1f' }}>{children}</div>
+  </div>
+);
+
+const PriceRow = ({ label, value, valueStyle = {}, bold = false }) => (
+  <div style={{
+    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+    padding: '4px 0', fontSize: bold ? 14 : 13,
+    fontWeight: bold ? 600 : 400,
+    color: bold ? '#1f1f1f' : '#595959',
+  }}>
+    <span>{label}</span>
+    <span style={valueStyle}>{value}</span>
+  </div>
+);
+
+/* ── Product image ─────────────────────────────────────────────── */
+
+const ItemImage = ({ item }) => {
+  const validImage = item.product?.images?.find(
+    (img) => img.image && img.image.trim() !== ''
+  );
+
+  const placeholder = (
+    <div style={{
+      width: 48, height: 48, borderRadius: 8, flexShrink: 0,
+      background: '#f5f5f5', border: '1px solid #e8e8e8',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+    }}>
+      <span style={{ fontSize: 10, color: '#bbb' }}>No img</span>
+    </div>
+  );
+
+  if (!validImage) return placeholder;
+
+  const base = import.meta.env.VITE_GRAPHQL_URI
+    .replace('/graphql/', '')
+    .replace('/graphql', '');
+  const src = validImage.image.startsWith('data:')
+    ? validImage.image
+    : `${base}/media/${validImage.image}`;
+
+  return (
+    <img
+      src={src}
+      alt={item.product?.name || 'Product'}
+      style={{ width: 48, height: 48, objectFit: 'cover', borderRadius: 8, border: '1px solid #f0f0f0', flexShrink: 0 }}
+      onError={(e) => { e.target.replaceWith(placeholder); }}
+    />
+  );
+};
+
+/* ── Main modal ────────────────────────────────────────────────── */
+
+const OrderDetailsModal = ({ open, order, onCancel, trackingData, trackingLoading }) => {
+  if (!order) return null;
+
+  const isHomeDelivery =
+    order.purchaseType === 'HOME_DELIVERY' ||
+    order.purchaseType === 'home_delivery';
+
+  const totalAmount = parseFloat(order.totalAmount || 0);
+  const finalAmount = parseFloat(order.finalAmount || 0);
+  const itemsSubtotal = (order.items || []).reduce(
+    (acc, item) => acc + parseFloat(item.subtotal || 0), 0
+  );
+  const discountAmount = Math.max(0, totalAmount - itemsSubtotal);
+  const deliveryCharge = Math.max(0, finalAmount - itemsSubtotal);
+
+  const statusKey = order.status?.toLowerCase();
+  const statusCfg = STATUS_CONFIG[statusKey] || {};
 
   return (
     <Modal
-      title={`Order Details - ${order?.id}`}
+      title={
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <span style={{ fontSize: 15, fontWeight: 600, color: '#1f1f1f' }}>Order details</span>
+          <span style={{
+            fontSize: 13, fontWeight: 500, color: '#1890ff',
+            background: '#e6f4ff', padding: '1px 10px', borderRadius: 6,
+          }}>
+            #{order.orderNumber || order.id}
+          </span>
+        </div>
+      }
       open={open}
       onCancel={onCancel}
       footer={null}
-      width={800}
+      width={720}
+      styles={{
+        body: { padding: 0 },
+        header: { padding: '14px 20px', borderBottom: '1px solid #f0f0f0', marginBottom: 0 },
+      }}
     >
-      {order && (
-        <div>
-          <Card title="Customer Information" size="small" style={{ marginBottom: 16 }}>
-            <Row gutter={16}>
-              <Col span={12}>
-                <p><strong>Name:</strong> {order.customer?.firstName} {order.customer?.lastName}</p>
-                <p><strong>Email:</strong> {order.customer?.email || 'N/A'}</p>
-                <p><strong>Phone:</strong> {order.customer?.phone || 'N/A'}</p>
-              </Col>
-              <Col span={12}>
-                <p><strong>Shipping Address:</strong></p>
-                <p style={{ color: '#666', fontSize: 13 }}>
-                  {order.shippingAddress || 'N/A'}
-                </p>
-              </Col>
-            </Row>
-          </Card>
+      <div style={{ maxHeight: '78vh', overflowY: 'auto' }}>
 
-          <Card title="Order Summary" size="small" style={{ marginBottom: 16 }}>
-            <Row gutter={16}>
-              <Col span={12}>
-                <p><strong>Order Number:</strong> {order.orderNumber}</p>
-                <p><strong>Date:</strong> {dayjs(order.createdAt).format('MMMM D, YYYY h:mm A')}</p>
-              </Col>
-              <Col span={12}>
-                <p><strong>Total Amount:</strong> ₹{parseFloat(order.totalAmount || 0).toFixed(2)}</p>
-                {canUpdateStatus && (
-                  <>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-                      <strong>Status:</strong>
-                      <Select
-                        value={newStatus}
-                        onChange={setNewStatus}
-                        style={{ width: 130 }}
-                        size="small"
-                      >
-                        <Option value="pending">Pending</Option>
-                        <Option value="confirmed">Confirmed</Option>
-                        <Option value="dispatched">Dispatched</Option>
-                        <Option value="delivered">Delivered</Option>
-                        <Option value="cancelled">Cancelled</Option>
-                      </Select>
-                    </div>
-                    <div style={{ marginTop: 8 }}>
-                      <Input.TextArea
-                        size="small"
-                        placeholder="Add a note (optional)"
-                        value={statusNote}
-                        onChange={(e) => setStatusNote(e.target.value)}
-                        rows={2}
-                      />
-                      <Button
-                        type="primary"
-                        size="small"
-                        style={{ marginTop: 8 }}
-                        onClick={onStatusUpdate}
-                        loading={statusUpdateLoading}
-                      >
-                        Update Status
-                      </Button>
-                    </div>
-                  </>
-                )}
-              </Col>
-            </Row>
-          </Card>
-
-          <Card title="Order Items" size="small" style={{ marginBottom: 16 }}>
+        {/* ── Customer & Shipping ─────────────────────────────── */}
+        <Section>
+          <SectionLabel>Customer &amp; shipping</SectionLabel>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px 24px' }}>
             <div>
-              {order.items?.map((item, index) => (
-                <div key={index} style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  padding: '8px 0',
-                  borderBottom: '1px solid #f0f0f0'
-                }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                    {renderOrderImage(item)}
-                    <div>
-                      <div style={{ fontWeight: 'bold' }}>{item.product?.name || 'Unknown Product'}</div>
-                      <div style={{ fontSize: 12, color: '#666' }}>
-                        Qty: {item.quantity}
-                        {item.product?.measureValue && item.product?.unit && ` (${item.product.measureValue} ${item.product.unit})`}
+              <Field label="Name">
+                {order.customer
+                  ? `${order.customer.firstName || ''} ${order.customer.lastName || ''}`.trim()
+                  : <span style={{ color: '#bbb' }}>Guest / Walk-in</span>
+                }
+              </Field>
+              <Field label="Email">
+                <span style={{ color: order.customer?.email ? '#1890ff' : '#bbb' }}>
+                  {order.customer?.email || '—'}
+                </span>
+              </Field>
+              <Field label="Phone">{order.customer?.phone || '—'}</Field>
+            </div>
+            <div>
+              <div style={{ fontSize: 12, color: '#8c8c8c', marginBottom: 6 }}>Shipping address</div>
+              <div style={{
+                fontSize: 13, color: '#1f1f1f', lineHeight: 1.7,
+                background: '#fafafa', border: '1px solid #f0f0f0',
+                borderRadius: 8, padding: '10px 12px',
+              }}>
+                {order.shippingAddress && order.shippingAddress !== 'Walk In Purchase'
+                  ? order.shippingAddress
+                  : <span style={{ color: '#bbb' }}>Walk-in — no address</span>}
+              </div>
+            </div>
+          </div>
+        </Section>
+
+        {/* ── Order Summary ───────────────────────────────────── */}
+        <Section>
+          <SectionLabel>Order summary</SectionLabel>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px 24px' }}>
+            <div>
+              <Field label="Order number">{order.orderNumber}</Field>
+              <Field label="Date">{dayjs(order.createdAt).format('D MMM YYYY, h:mm A')}</Field>
+              <Field label="Order type">
+                <Tag
+                  color={order.orderType === 'BULK' ? 'purple' : order.orderType === 'CUSTOM' ? 'orange' : 'blue'}
+                  style={{ textTransform: 'capitalize', marginTop: 2 }}
+                >
+                  {order.orderType?.toLowerCase() || 'normal'}
+                </Tag>
+              </Field>
+            </div>
+            <div>
+              <Field label="Status">
+                <Tag color={statusCfg.color || 'default'} style={{ marginTop: 2 }}>
+                  {statusCfg.icon} {order.status}
+                </Tag>
+              </Field>
+              <Field label="Purchase type">
+                <Tag color={isHomeDelivery ? 'blue' : 'green'} style={{ marginTop: 2 }}>
+                  {isHomeDelivery ? '🏠 Home delivery' : '🛒 Walk-in'}
+                </Tag>
+              </Field>
+            </div>
+          </div>
+
+          {order.notes && (
+            <div style={{
+              marginTop: 14, fontSize: 13, color: '#1f1f1f',
+              background: '#fffbe6', border: '0 solid', borderLeft: '3px solid #faad14',
+              borderRadius: '0 8px 8px 0', padding: '10px 12px', lineHeight: 1.6,
+            }}>
+              <div style={{ fontSize: 11, fontWeight: 600, color: '#d48806', marginBottom: 3 }}>NOTE</div>
+              {order.notes}
+            </div>
+          )}
+        </Section>
+
+        {/* ── Order Items ─────────────────────────────────────── */}
+        <Section>
+          <SectionLabel>Items ordered</SectionLabel>
+
+          <div>
+            {order.items?.map((item, index) => {
+              const qty = item.quantity || 1;
+              const subtotal = parseFloat(item.subtotal || 0);
+              const origPrice = parseFloat(item.product?.price || 0);
+              const effectiveUnit = subtotal / qty;
+              const origTotal = origPrice * qty;
+              const itemDiscount = Math.max(0, origTotal - subtotal);
+              const hasDiscount = itemDiscount > 0;
+
+              return (
+                <div
+                  key={index}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 12,
+                    padding: '12px 0',
+                    borderBottom: index < (order.items.length - 1)
+                      ? '1px solid #f5f5f5' : 'none',
+                  }}
+                >
+                  <ItemImage item={item} />
+
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: '#1f1f1f' }}>
+                      {item.product?.name || 'Unknown product'}
+                    </div>
+                    {item.product?.measureValue && item.product?.unit && (
+                      <div style={{ fontSize: 11, color: '#8c8c8c', marginTop: 1 }}>
+                        {item.product.measureValue} {item.product.unit}
                       </div>
+                    )}
+                    <div style={{ marginTop: 5, fontSize: 12 }}>
+                      {hasDiscount ? (
+                        <>
+                          <span style={{ color: '#8c8c8c', textDecoration: 'line-through', marginRight: 6 }}>
+                            {fmt(origPrice)}
+                          </span>
+                          <span style={{ color: '#52c41a', fontWeight: 600 }}>
+                            {fmt(effectiveUnit)}
+                          </span>
+                          <span style={{ color: '#bbb', marginLeft: 4 }}>/ unit</span>
+                        </>
+                      ) : (
+                        <span style={{ color: '#595959' }}>
+                          {fmt(effectiveUnit)}
+                          <span style={{ color: '#bbb', marginLeft: 4 }}>/ unit</span>
+                        </span>
+                      )}
                     </div>
                   </div>
-                  <div style={{ fontWeight: 'bold' }}>
-                    ₹{parseFloat(item.subtotal || 0).toFixed(2)}
+
+                  <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                    <div style={{ fontSize: 12, color: '#8c8c8c' }}>
+                      {qty} × {fmt(effectiveUnit)}
+                    </div>
+                    {hasDiscount && (
+                      <div style={{ fontSize: 11, color: '#ff4d4f', textDecoration: 'line-through' }}>
+                        {fmt(origTotal)}
+                      </div>
+                    )}
+                    <div style={{ fontSize: 14, fontWeight: 700, color: '#1f1f1f' }}>
+                      {fmt(subtotal)}
+                    </div>
                   </div>
                 </div>
-              ))}
-            </div>
+              );
+            })}
+          </div>
+
+          {/* Price breakdown */}
+          <div style={{ borderTop: '1px solid #f0f0f0', marginTop: 12, paddingTop: 12 }}>
+            <PriceRow label="Original price" value={fmt(totalAmount)} />
+            {discountAmount > 0 && (
+              <PriceRow
+                label="Discount"
+                value={`− ${fmt(discountAmount)}`}
+                valueStyle={{ color: '#52c41a', fontWeight: 600 }}
+              />
+            )}
+            <PriceRow label="Items subtotal" value={fmt(itemsSubtotal)} valueStyle={{ fontWeight: 600, color: '#1f1f1f' }} />
+            {deliveryCharge > 0 && (
+              <PriceRow
+                label="Delivery charge"
+                value={`+ ${fmt(deliveryCharge)}`}
+                valueStyle={{ color: '#fa8c16', fontWeight: 600 }}
+              />
+            )}
             <div style={{
-              marginTop: 16,
-              paddingTop: 16,
-              borderTop: '2px solid #f0f0f0',
-              display: 'flex',
-              justifyContent: 'space-between',
-              fontSize: '16px',
-              fontWeight: 'bold'
+              display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+              borderTop: '2px solid #f0f0f0', marginTop: 10, paddingTop: 12,
             }}>
-              <span>Total Amount:</span>
-              <span>₹{parseFloat(order.totalAmount || 0).toFixed(2)}</span>
+              <span style={{ fontSize: 14, fontWeight: 600, color: '#1f1f1f' }}>Grand total</span>
+              <span style={{ fontSize: 18, fontWeight: 700, color: '#1890ff' }}>{fmt(finalAmount)}</span>
             </div>
-          </Card>
-        </div>
-      )}
+          </div>
+        </Section>
+
+        {/* ── Order Tracking ──────────────────────────────────── */}
+        <Section last>
+          <SectionLabel>Order tracking</SectionLabel>
+          <OrderTrackingTimeline
+            order={order}
+            trackingData={trackingData}
+            trackingLoading={trackingLoading}
+          />
+        </Section>
+
+      </div>
     </Modal>
   );
 };
+
+/* ── Section wrapper ──────────────────────────────────────────── */
+
+const Section = ({ children, last = false }) => (
+  <div style={{
+    padding: '16px 20px',
+    borderBottom: last ? 'none' : '1px solid #f0f0f0',
+  }}>
+    {children}
+  </div>
+);
 
 export default OrderDetailsModal;

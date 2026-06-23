@@ -53,15 +53,41 @@ const RecentProductsList = ({ products, loading }) => (
                                 <div className="fw-bold" style={{ fontSize: 13 }}>
                                     {product.name}
                                 </div>
-                                <div className="text-muted" style={{ fontSize: 12 }}>
-                                    Stock:&nbsp;
+                                <div
+                                    style={{
+                                        display: 'flex',
+                                        gap: 6,
+                                        flexWrap: 'wrap',
+                                        marginTop: 4,
+                                    }}
+                                >
                                     <Tag
-                                        color={product.stock === 0 ? 'red' : product.stock < 10 ? 'orange' : 'green'}
+                                        color={
+                                            (product.storefrontStock?.quantity || 0) === 0
+                                                ? 'red'
+                                                : (product.storefrontStock?.quantity || 0) < 10
+                                                    ? 'orange'
+                                                    : 'green'
+                                        }
                                         style={{ fontSize: 11 }}
                                     >
-                                        {product.stock} units
+                                        Storefront Stock: {product.storefrontStock?.quantity || 0}
+                                    </Tag>
+
+                                    <Tag
+                                        color={
+                                            (product.systemStock?.quantity || 0) === 0
+                                                ? 'red'
+                                                : (product.systemStock?.quantity || 0) < 10
+                                                    ? 'orange'
+                                                    : 'green'
+                                        }
+                                        style={{ fontSize: 11 }}
+                                    >
+                                        System Stock: {product.systemStock?.quantity || 0}
                                     </Tag>
                                 </div>
+
                             </div>
                             <div className="fw-bold" style={{ color: '#1890ff', fontSize: 13 }}>
                                 {formatCurrency(product.price)}

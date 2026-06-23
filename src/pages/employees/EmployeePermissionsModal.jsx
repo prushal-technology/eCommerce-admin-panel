@@ -1,95 +1,211 @@
+// import { LockOutlined } from '@ant-design/icons';
+// import { Modal, Select, Skeleton, Space, Table, Tag, Typography } from 'antd';
+// import { ACCESS_LEVELS, ALL_MODULES, useEmployeePermissions } from '../../hooks/useEmployeePermissions';
+
+// const { Text } = Typography;
+// const { Option } = Select;
+
+// const accessColor = (access) => {
+//     const found = ACCESS_LEVELS.find((a) => a.value === access);
+//     return found?.color || 'default';
+// };
+
+// const EmployeePermissionsModal = ({ open, onCancel, employee }) => {
+//     const {
+//         loading,
+//         saving,
+//         getPermissionForModule,
+//         handleAccessChange,
+//     } = useEmployeePermissions(
+//         open ? Number(employee?.id) : null
+//     );
+
+//     const columns = [
+//         {
+//             title: 'Module',
+//             dataIndex: 'label',
+//             key: 'module',
+//             render: (label) => <Text strong>{label}</Text>,
+//         },
+
+//         {
+//             title: 'Set Access',
+//             key: 'action',
+//             width: 180,
+//             render: (_, row) => {
+//                 const perm = getPermissionForModule(row.key);
+//                 const current = perm?.access || 'no_access';
+//                 return (
+//                     <Select
+//                         size="small"
+//                         value={current}
+//                         style={{ width: 150 }}
+//                         disabled={saving}
+//                         onChange={(val) => handleAccessChange(row.key, val)}
+//                     >
+//                         {ACCESS_LEVELS.map((lvl) => (
+//                             <Option key={lvl.value} value={lvl.value}>
+//                                 <Space>
+//                                     <Tag color={lvl.color} style={{ margin: 0 }}>{lvl.label}</Tag>
+//                                 </Space>
+//                             </Option>
+//                         ))}
+//                     </Select>
+//                 );
+//             },
+//         },
+//     ];
+
+//     return (
+//         <Modal
+//             title={
+//                 <Space>
+//                     <LockOutlined />
+//                     {`Permissions — ${employee?.name || ''}`}
+//                 </Space>
+//             }
+//             open={open}
+//             onCancel={onCancel}
+//             footer={null}
+//             width={600}
+//             destroyOnHidden
+//         >
+//             {loading ? (
+//                 <Skeleton active />
+//             ) : (
+//                 <Table
+//                     size="small"
+//                     dataSource={ALL_MODULES}
+//                     columns={columns}
+//                     rowKey="key"
+//                     pagination={false}
+//                     style={{ marginTop: 8 }}
+//                 />
+//             )}
+//         </Modal>
+//     );
+// };
+
+// export default EmployeePermissionsModal;
+
+
+
+
 import { LockOutlined } from '@ant-design/icons';
 import { Modal, Select, Skeleton, Space, Table, Tag, Typography } from 'antd';
-import { ACCESS_LEVELS, ALL_MODULES, useEmployeePermissions } from '../../hooks/useEmployeePermissions';
+import {
+    ACCESS_LEVELS,
+    ALL_PERMISSION_ROWS,
+    useEmployeePermissions,
+} from '../../hooks/useEmployeePermissions';
 
 const { Text } = Typography;
 const { Option } = Select;
 
-const accessColor = (access) => {
-    const found = ACCESS_LEVELS.find((a) => a.value === access);
-    return found?.color || 'default';
-};
+const AccessSelect = ({ current, disabled, onChange }) => (
+    <Select
+        size="small"
+        value={current}
+        style={{ width: 140 }}
+        disabled={disabled}
+        onChange={onChange}
+    >
+        {ACCESS_LEVELS.map((lvl) => (
+            <Option key={lvl.value} value={lvl.value}>
+                <Space size={4}>
+                    <Tag color={lvl.color} style={{ margin: 0 }}>{lvl.label}</Tag>
+                </Space>
+            </Option>
+        ))}
+    </Select>
+);
 
 const EmployeePermissionsModal = ({ open, onCancel, employee }) => {
     const {
         loading,
         saving,
-        getPermissionForModule,
+        getPermissionForRow,
         handleAccessChange,
-    } = useEmployeePermissions(
-        open ? Number(employee?.id) : null
-    );
+    } = useEmployeePermissions(open ? Number(employee?.id) : null);
 
     const columns = [
         {
             title: 'Module',
             dataIndex: 'label',
             key: 'module',
-            render: (label) => <Text strong>{label}</Text>,
+            render: (label, row) => (
+                <Text strong={!row.subModule}>{label}</Text>
+            ),
         },
-        // {
-        //     title: 'Current Access',
-        //     key: 'current',
-        //     render: (_, row) => {
-        //         const perm = getPermissionForModule(row.key);
-        //         if (!perm) return <Tag color="default">No Access</Tag>;
-        //         return <Tag color={accessColor(perm.access)}>{perm.access?.replace('_', ' ')}</Tag>;
-        //     },
-        // },
         {
-            title: 'Set Access',
-            key: 'action',
-            width: 180,
+            title: 'Access Level',
+            key: 'access',
+            width: 160,
             render: (_, row) => {
-                const perm = getPermissionForModule(row.key);
+                const perm = getPermissionForRow(row.key, row.subModule);
                 const current = perm?.access || 'no_access';
                 return (
-                    <Select
-                        size="small"
-                        value={current}
-                        style={{ width: 150 }}
+                    <AccessSelect
+                        current={current}
                         disabled={saving}
-                        onChange={(val) => handleAccessChange(row.key, val)}
-                    >
-                        {ACCESS_LEVELS.map((lvl) => (
-                            <Option key={lvl.value} value={lvl.value}>
-                                <Space>
-                                    <Tag color={lvl.color} style={{ margin: 0 }}>{lvl.label}</Tag>
-                                </Space>
-                            </Option>
-                        ))}
-                    </Select>
+                        onChange={(val) => handleAccessChange(row.key, row.subModule, val)}
+                    />
                 );
             },
         },
     ];
+
+    // Group order rows under a visual section header
+    const dataSource = ALL_PERMISSION_ROWS.map((row) => ({
+        ...row,
+        // rowKey is already set in ALL_PERMISSION_ROWS
+    }));
 
     return (
         <Modal
             title={
                 <Space>
                     <LockOutlined />
-                    {`Permissions — ${employee?.name || ''}`}
+                    <span>Permissions — {employee?.name || ''}</span>
                 </Space>
             }
             open={open}
             onCancel={onCancel}
             footer={null}
-            width={600}
+            width={560}
             destroyOnHidden
         >
             {loading ? (
-                <Skeleton active />
+                <Skeleton active paragraph={{ rows: 8 }} />
             ) : (
                 <Table
                     size="small"
-                    dataSource={ALL_MODULES}
+                    dataSource={dataSource}
                     columns={columns}
-                    rowKey="key"
+                    rowKey="rowKey"
                     pagination={false}
                     style={{ marginTop: 8 }}
+                    rowClassName={(row) =>
+                        row.subModule ? 'permission-row-submodule' : ''
+                    }
+                    // Visual section break before the first order row
+                    onRow={(row, index) => {
+                        const isFirstOrderRow = row.rowKey === 'order__system';
+                        return {
+                            style: isFirstOrderRow
+                                ? { borderTop: '2px solid #f0f0f0' }
+                                : {},
+                        };
+                    }}
                 />
             )}
+
+            <style>{`
+        .permission-row-submodule td:first-child {
+          padding-left: 24px !important;
+          color: #595959;
+        }
+      `}</style>
         </Modal>
     );
 };

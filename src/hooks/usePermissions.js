@@ -12,8 +12,8 @@ export const usePermissions = () => {
       roleName: auth.roleName,
       isAdmin: auth.isAdmin,
       hasPermission: auth.hasPermission,
-      canView: (module) => auth.hasPermission(module, 'view'),
-      canUpdate: (module) => auth.hasPermission(module, 'update'),
+      canView: (module, subModule = null) => auth.hasPermission(module, 'view', subModule),
+      canUpdate: (module, subModule = null) => auth.hasPermission(module, 'update', subModule),
     }),
     [auth]
   );

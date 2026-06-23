@@ -47,9 +47,12 @@ const Customers = () => {
     try {
       await updateCustomer(editingCustomer.id, values);
 
+      await loadCustomers(null, true); // reload customers
+
       setIsEditModalOpen(false);
       setEditingCustomer(null);
 
+      message.success('Customer updated successfully');
     } catch (error) {
       message.error('Error updating customer: ' + error.message);
     }

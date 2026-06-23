@@ -11,7 +11,6 @@ export const graphqlRequest = async (
 ) => {
 
   try {
-    // Handle gql Document objects
     const queryString =
       typeof query === 'object' &&
         query.kind === 'Document'
@@ -160,12 +159,14 @@ export const GRAPHQL_QUERIES = {
         permissions {
           module
           access
+          subModule
         }
         employeeId
         roleName
         permissions {
           module
           access
+          subModule
         }
         user {
           id
@@ -626,21 +627,62 @@ query GetAllStocks(
         id
         name
         totalSold
-        stock
+        storefrontStock {
+      inventoryType
+      quantity
+      reservedQuantity
+      availableQuantity
+      isOutOfStock
+    }
+
+    systemStock {
+      inventoryType
+      quantity
+      reservedQuantity
+      availableQuantity
+      isOutOfStock
+    }
         price
       }
       recentProducts {
         id
         name
-        stock
+        storefrontStock {
+      inventoryType
+      quantity
+      reservedQuantity
+      availableQuantity
+      isOutOfStock
+    }
+
+    systemStock {
+      inventoryType
+      quantity
+      reservedQuantity
+      availableQuantity
+      isOutOfStock
+    }
         price
       }
       recentOrders {
         id
         orderNumber
         customerName
+        orderType
         status
         createdAt
+
+        items {
+          id
+          quantity
+          product {
+            id
+            name
+            images {
+              image
+            }
+          }
+        }
       }
     }
   `,
@@ -680,24 +722,28 @@ query GetAllStocks(
 
   CREATE_ADMIN_ORDER: `
   mutation CreateAdminOrder(
-    $userId: Int,
+    $customerId: Int,
     $shippingAddress: String,
     $orderType: String!,
     $paymentMethod: String,
     $purchaseType: String!,
+    $notes: String,
     $isAdvanceBooking: Boolean!,
     $advanceDeliveryDatetime: DateTime,
-    $items: [OrderItemInput!]!
+    $items: [OrderItemInput!]!,
+    $deliveryCharge: Float
   ) {
     createAdminOrder(
-      userId: $userId,
+      customerId: $customerId,
       shippingAddress: $shippingAddress,
       orderType: $orderType,
       paymentMethod: $paymentMethod,
       purchaseType: $purchaseType,
+      notes: $notes,
       isAdvanceBooking: $isAdvanceBooking,
       advanceDeliveryDatetime: $advanceDeliveryDatetime,
-      items: $items
+      items: $items,
+      deliveryCharge: $deliveryCharge
     ) {
       order {
         id
@@ -738,6 +784,7 @@ query GetAllStocks(
     $orderFrom: String
     $query: String
     $orderType: String
+    
   ) {
     allOrders(
       first: $first
@@ -745,11 +792,13 @@ query GetAllStocks(
       orderFrom: $orderFrom
       query: $query
       orderType: $orderType
+      
     ) {
       orders {
         id
         orderNumber
         orderType
+        purchaseType
         status
         totalAmount
         finalAmount
@@ -762,7 +811,7 @@ query GetAllStocks(
           email
           phone
         }
-
+        notes
         shippingAddress
 
         items {
@@ -774,6 +823,8 @@ query GetAllStocks(
             name
             unit
             measureValue
+            price
+            discountPrice
 
             images {
               image
@@ -894,6 +945,16 @@ query GetAllStocks(
         }
         nextCursor
         hasMore
+      }
+    }
+  `,
+
+  CALCULATE_DELIVERY_CHARGE: `
+    mutation CalculateDeliveryCharge($address: String!, $phone: String!) {
+      calculateDeliveryCharge(address: $address, phone: $phone) {
+        success
+        deliveryCharge
+        message
       }
     }
   `,

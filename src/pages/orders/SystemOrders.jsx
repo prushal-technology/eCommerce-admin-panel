@@ -3,8 +3,6 @@ import { Button, Card, Typography } from 'antd';
 import dayjs from 'dayjs';
 import { useEffect, useRef, useState } from 'react';
 import OrderDetailsModal from '../../components/modals/OrderDetailsModal';
-import OrderTrackingModal from '../../components/modals/OrderTrackingModal';
-import usePermissions from '../../hooks/usePermissions';
 import useOrders from '../../hooks/useOrders';
 import usePermissions from '../../hooks/usePermissions';
 import ManualOrderModal from './components/ManualOrderModal';
@@ -14,7 +12,7 @@ import SystemOrdersTable from './components/SystemOrdersTable';
 
 const SystemOrders = () => {
   const { canUpdate } = usePermissions();
-  const canManageOrders = canUpdate('order');
+  const canManageOrders = canUpdate('order', 'system_order');
   const [searchText, setSearchText] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [dateRange, setDateRange] = useState(null);
@@ -22,9 +20,9 @@ const SystemOrders = () => {
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [newStatus, setNewStatus] = useState('');
   const [statusNote, setStatusNote] = useState('');
-  const [trackingModalVisible, setTrackingModalVisible] = useState(false);
-  const [trackingLoading, setTrackingLoading] = useState(false);
-  const [trackingData, setTrackingData] = useState([]);
+  //const [trackingModalVisible, setTrackingModalVisible] = useState(false);
+  //const [trackingLoading, setTrackingLoading] = useState(false);
+  //const [trackingData, setTrackingData] = useState([]);
   const [manualOrderVisible, setManualOrderVisible] = useState(false);
 
   const { orders, loading, fetchOrders, fetchMoreOrders, ordersHasMore, changeOrderStatus, ordersStats } = useOrders();
@@ -99,47 +97,47 @@ const SystemOrders = () => {
     setDetailModalVisible(true);
   };
 
-  const handleTrackOrder = async (order) => {
-    setSelectedOrder(order);
-    // SET CURRENT STATUS
-    setNewStatus(order.status || 'pending');
+  // const handleTrackOrder = async (order) => {
+  //   setSelectedOrder(order);
+  //   // SET CURRENT STATUS
+  //   setNewStatus(order.status || 'pending');
 
-    // RESET NOTE
-    setStatusNote('');
-    setTrackingModalVisible(true);
-    setTrackingLoading(true);
-    try {
-      const { getOrderTracking } = await import('../../api/orders');
-      const res = await getOrderTracking(order.id);
-      setTrackingData(res.success ? res.tracking || [] : []);
-    } catch {
-      setTrackingData([]);
-    } finally {
-      setTrackingLoading(false);
-    }
-  };
+  //   // RESET NOTE
+  //   setStatusNote('');
+  //   setTrackingModalVisible(true);
+  //   setTrackingLoading(true);
+  //   try {
+  //     const { getOrderTracking } = await import('../../api/orders');
+  //     const res = await getOrderTracking(order.id);
+  //     setTrackingData(res.success ? res.tracking || [] : []);
+  //   } catch {
+  //     setTrackingData([]);
+  //   } finally {
+  //     setTrackingLoading(false);
+  //   }
+  // };
 
-  const handleStatusUpdate = async () => {
-    if (!canManageOrders) return false;
+  // const handleStatusUpdate = async () => {
+  //   if (!canManageOrders) return false;
 
-    if (!selectedOrder) return false;
-    try {
-      const res = await changeOrderStatus(
-        selectedOrder.id,
-        newStatus,
-        statusNote
-      );
-      if (res.success) {
-        fetchOrders('admin_panel');
-        setDetailModalVisible(false);
-        return true;
-      }
-      return false;
-    } catch (error) {
-      console.error(error);
-      return false;
-    }
-  };
+  //   if (!selectedOrder) return false;
+  //   try {
+  //     const res = await changeOrderStatus(
+  //       selectedOrder.id,
+  //       newStatus,
+  //       statusNote
+  //     );
+  //     if (res.success) {
+  //       fetchOrders('admin_panel');
+  //       setDetailModalVisible(false);
+  //       return true;
+  //     }
+  //     return false;
+  //   } catch (error) {
+  //     console.error(error);
+  //     return false;
+  //   }
+  // };
 
   const filteredOrders = orders.filter((order) => {
     const matchesStatus = statusFilter === 'all' || order.status === statusFilter;
@@ -242,7 +240,7 @@ const SystemOrders = () => {
             onViewDetails={handleViewDetails}
             hasMore={ordersHasMore}
 
-            onTrackOrder={handleTrackOrder}
+          //onTrackOrder={handleTrackOrder}
           />
 
           {ordersHasMore && tableScrollLoading && (
@@ -273,14 +271,14 @@ const SystemOrders = () => {
         order={selectedOrder}
         onCancel={() => setDetailModalVisible(false)}
         newStatus={newStatus}
-        setNewStatus={setNewStatus}
+        //setNewStatus={setNewStatus}
         statusNote={statusNote}
-        setStatusNote={setStatusNote}
-        onStatusUpdate={handleStatusUpdate}
-        canUpdateStatus={canManageOrders}
+      //setStatusNote={setStatusNote}
+      //onStatusUpdate={handleStatusUpdate}
+      // canUpdateStatus={canManageOrders}
       />
 
-      <OrderTrackingModal
+      {/* <OrderTrackingModal
         open={trackingModalVisible}
         order={selectedOrder}
         trackingLoading={trackingLoading}
@@ -296,7 +294,7 @@ const SystemOrders = () => {
         onStatusUpdate={handleStatusUpdate}
         statusUpdateLoading={loading}
         canUpdateStatus={canManageOrders}
-      />
+      /> */}
 
       {canManageOrders && (
         <ManualOrderModal

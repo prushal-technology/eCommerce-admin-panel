@@ -72,7 +72,7 @@ export default function CategoryModal({
             destroyOnHidden
             width={500}
         >
-             <Form
+            <Form
                 form={form}
                 layout="vertical"
                 onFinish={onSubmit}
@@ -108,7 +108,7 @@ export default function CategoryModal({
                         </Radio.Group>
                     </Form.Item>
                 )}
-                
+
                 <Row gutter={10}>
                     {/* CATEGORY NAME */}
                     <Col
@@ -243,10 +243,11 @@ export default function CategoryModal({
                 </Form.Item>
                 {/* BUTTONS */}
                 <Space>
-                    <Button onClick={onClose}>
+                    <Button size="small" onClick={onClose}>
                         Cancel
                     </Button>
                     <Button
+                        size="small"
                         type="primary"
                         htmlType="submit"
                         loading={loading}

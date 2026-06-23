@@ -25,15 +25,58 @@ const columns = [
             ),
     },
     {
-        title: 'Stock',
-        dataIndex: 'stock',
-        key: 'stock',
-        render: (qty, record) =>
+        title: 'Storefront',
+        key: 'storefrontStock',
+        render: (_, record) =>
             record.isSkeleton ? (
-                <Skeleton.Button active size="small" style={{ width: 85, height: 24, borderRadius: 20 }} />
+                <Skeleton.Button
+                    active
+                    size="small"
+                    style={{
+                        width: 85,
+                        height: 24,
+                        borderRadius: 20,
+                    }}
+                />
             ) : (
-                <Tag color={qty === 0 ? 'red' : qty < 10 ? 'orange' : 'green'}>
-                    {qty} units
+                <Tag
+                    color={
+                        (record.storefrontStock?.quantity || 0) === 0
+                            ? 'red'
+                            : (record.storefrontStock?.quantity || 0) < 10
+                                ? 'orange'
+                                : 'green'
+                    }
+                >
+                    {record.storefrontStock?.quantity || 0}
+                </Tag>
+            ),
+    },
+    {
+        title: 'System',
+        key: 'systemStock',
+        render: (_, record) =>
+            record.isSkeleton ? (
+                <Skeleton.Button
+                    active
+                    size="small"
+                    style={{
+                        width: 85,
+                        height: 24,
+                        borderRadius: 20,
+                    }}
+                />
+            ) : (
+                <Tag
+                    color={
+                        (record.systemStock?.quantity || 0) === 0
+                            ? 'red'
+                            : (record.systemStock?.quantity || 0) < 10
+                                ? 'orange'
+                                : 'green'
+                    }
+                >
+                    {record.systemStock?.quantity || 0}
                 </Tag>
             ),
     },

@@ -623,3 +623,61 @@ export const updateFaq = async (id, payload) => {
     return { success: false, message: error.message };
   }
 };
+
+
+export const getAllContactForms = async ({ search = '', first = 10, after = null } = {}) => {
+  try {
+    const data = await graphqlRequest(`
+      query GetContactForms($first: Int!, $after: String, $search: String) {
+        allContactUs(first: $first, after: $after, search: $search) {
+          nextCursor
+          hasMore
+          contacts {
+            id
+            name
+            email
+            phone
+            message
+            createdAt
+          }
+        }
+      }
+    `, { first, after, search });
+    const result = data?.allContactUs;
+    return {
+      success: true,
+      contacts: result?.contacts || [],
+      nextCursor: result?.nextCursor || null,
+      hasMore: result?.hasMore || false,
+    };
+  } catch (error) {
+    return { success: false, message: error.message };
+  }
+};
+
+export const getAllNewsletterSubscribers = async ({ first = 15, after = null } = {}) => {
+  try {
+    const data = await graphqlRequest(`
+      query GetNewsletterSubscribers($first: Int!, $after: String) {
+        allNewsletterSubscribers(first: $first, after: $after) {
+          nextCursor
+          hasMore
+          subscribers {
+            id
+            email
+            subscribedAt
+          }
+        }
+      }
+    `, { first, after });
+    const result = data?.allNewsletterSubscribers;
+    return {
+      success: true,
+      subscribers: result?.subscribers || [],
+      nextCursor: result?.nextCursor || null,
+      hasMore: result?.hasMore || false,
+    };
+  } catch (error) {
+    return { success: false, message: error.message };
+  }
+};

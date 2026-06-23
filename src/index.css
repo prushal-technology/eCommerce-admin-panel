@@ -94,3 +94,20 @@ button:focus-visible {
   opacity: 0;
   transition: opacity 0.3s ease;
 }
+
+.categories-toolbar {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+@media (max-width: 768px) {
+  .categories-toolbar {
+    flex-direction: column;
+  }
+
+  .categories-toolbar .ant-input-search,
+  .categories-toolbar button {
+    width: 100% !important;
+  }
+}

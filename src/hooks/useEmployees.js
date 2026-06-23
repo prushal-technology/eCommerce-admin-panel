@@ -5,8 +5,6 @@ import {
     DELETE_EMPLOYEE,
     UPDATE_EMPLOYEE,
 } from '../graphql/employeeMutations';
-UPDATE_EMPLOYEE,
-} from '../graphql/employeeMutations';
 import { GET_EMPLOYEES } from '../graphql/queries';
 
 const formatEmployee = (emp) => ({
@@ -67,6 +65,7 @@ export const useEmployees = () => {
             const newEmployees = (data.employees?.employees || []).map(formatEmployee);
 
             setEmployees(prev => append ? [...prev, ...newEmployees] : newEmployees);
+
             setHasMore(data.employees?.hasMore ?? false);
             setNextCursor(data.employees?.nextCursor ?? null);
         } catch (error) {
@@ -92,27 +91,6 @@ export const useEmployees = () => {
         await loadEmployees();
     };
 
-    const updateEmployee = async (values) => {
-        try {
-            const { graphqlRequest } = await import('../api/graphql');
-
-            await graphqlRequest(UPDATE_EMPLOYEE, {
-                id: Number(values.id),
-                firstName: values.firstName,
-                lastName: values.lastName,
-                phone: values.phone,
-                roleName: values.roleName,
-                isActive: values.isActive,
-            });
-
-            message.success('Employee updated successfully');
-
-            await loadEmployees();
-        } catch (error) {
-            message.error('Failed to update employee');
-            throw error;
-        }
-    };
 
     const updateEmployee = async (values) => {
         try {
@@ -165,22 +143,7 @@ export const useEmployees = () => {
         } catch (error) {
             console.log(error);
         }
-        try {
-            await updateEmployee({
-                id: record.id,
-                firstName: record.firstName,
-                lastName: record.lastName,
-                phone: record.phone,
-                roleName: record.roleName,
-                isActive: !record.isActive,
-            });
 
-            message.success(
-                `Employee ${!record.isActive ? 'activated' : 'deactivated'} successfully`
-            );
-        } catch (error) {
-            console.log(error);
-        }
     };
 
     const filteredEmployees = useMemo(

@@ -171,13 +171,16 @@ const StockTable = ({
                     <Skeleton.Input active size="small" style={{ width: 60 }} />
                 ) : (
                     <div>
-                        <div style={{ fontWeight: 600 }}>
+                        <div style={{
+                            fontWeight: 600,
+                            fontSize: 13
+                        }}>
                             {record.storefrontStock}
                         </div>
 
                         <div
                             style={{
-                                fontSize: 11,
+                                fontSize: 13,
                                 color: '#999'
                             }}
                         >
@@ -197,13 +200,16 @@ const StockTable = ({
                     <Skeleton.Input active size="small" style={{ width: 60 }} />
                 ) : (
                     <div>
-                        <div style={{ fontWeight: 600 }}>
+                        <div style={{
+                            fontSize: 13,
+                            fontWeight: 600,
+                        }}>
                             {record.systemStock}
                         </div>
 
                         <div
                             style={{
-                                fontSize: 11,
+                                fontSize: 13,
                                 color: '#999'
                             }}
                         >
@@ -213,17 +219,75 @@ const StockTable = ({
                 ),
         },
 
+
+        // {
+        //     title: 'Reserved',
+        //     key: 'reserved',
+        //     width: 110,
+        //     align: 'center',
+
+        //     render: (_, record) =>
+        //         record.isSkeleton ? (
+        //             <Skeleton.Input active size="small" />
+        //         ) : (
+        //             <Tag color="orange">
+        //                 {(record.storefrontReserved || 0) +
+        //                     (record.systemReserved || 0)}
+        //             </Tag>
+        //         ),
+        // },
+        // {
+        //     title: 'Available',
+        //     key: 'available',
+        //     width: 110,
+        //     align: 'center',
+
+        //     render: (_, record) =>
+        //         record.isSkeleton ? (
+        //             <Skeleton.Input active size="small" />
+        //         ) : (
+        //             <Tag color="green">
+        //                 {(record.storefrontStock || 0) +
+        //                     (record.systemStock || 0) -
+        //                     (record.storefrontReserved || 0) -
+        //                     (record.systemReserved || 0)}
+        //             </Tag>
+        //         ),
+        // },
+
+        // {
+        //     title: 'Total',
+        //     key: 'total',
+        //     align: 'center',
+        //     width: 100,
+        //     render: (_, record) =>
+        //         record.isSkeleton ? (
+        //             <Skeleton.Input active size="small" style={{ width: 50 }} />
+        //         ) : (
+        //             <Tag color="blue" fontWeight="600">
+        //                 {(record.storefrontStock || 0) +
+        //                     (record.systemStock || 0)}
+        //             </Tag>
+        //         ),
+        // },
         {
             title: 'Reserved',
             key: 'reserved',
-            width: 110,
+            width: 120,
             align: 'center',
 
             render: (_, record) =>
                 record.isSkeleton ? (
-                    <Skeleton.Input active size="small" />
+                    <Skeleton.Input active />
                 ) : (
-                    <Tag color="orange">
+                    <Tag
+                        color="orange"
+                        style={{
+                            padding: '4px 12px',
+                            fontSize: 13,
+                            fontWeight: 600,
+                        }}
+                    >
                         {(record.storefrontReserved || 0) +
                             (record.systemReserved || 0)}
                     </Tag>
@@ -232,14 +296,21 @@ const StockTable = ({
         {
             title: 'Available',
             key: 'available',
-            width: 110,
+            width: 120,
             align: 'center',
 
             render: (_, record) =>
                 record.isSkeleton ? (
-                    <Skeleton.Input active size="small" />
+                    <Skeleton.Input active />
                 ) : (
-                    <Tag color="green">
+                    <Tag
+                        color="green"
+                        style={{
+                            padding: '4px 12px',
+                            fontSize: 13,
+                            fontWeight: 600,
+                        }}
+                    >
                         {(record.storefrontStock || 0) +
                             (record.systemStock || 0) -
                             (record.storefrontReserved || 0) -
@@ -247,17 +318,24 @@ const StockTable = ({
                     </Tag>
                 ),
         },
-
         {
             title: 'Total',
             key: 'total',
+            width: 120,
             align: 'center',
-            width: 100,
+
             render: (_, record) =>
                 record.isSkeleton ? (
-                    <Skeleton.Input active size="small" style={{ width: 50 }} />
+                    <Skeleton.Input active />
                 ) : (
-                    <Tag color="blue">
+                    <Tag
+                        color="blue"
+                        style={{
+                            padding: '4px 12px',
+                            fontSize: 13,
+                            fontWeight: 600,
+                        }}
+                    >
                         {(record.storefrontStock || 0) +
                             (record.systemStock || 0)}
                     </Tag>
@@ -315,7 +393,10 @@ const StockTable = ({
     ];
 
     return (
-        <Card>
+        <Card
+            style={{
+                height: '100%',
+            }}>
             <Space direction="vertical" size="middle" style={{ display: 'flex' }}>
                 {/* Toolbar */}
                 <Space>
@@ -342,16 +423,20 @@ const StockTable = ({
                 </Space>
 
                 {/* Table */}
-                <div ref={tableContainerRef} style={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                }}>
+                <div ref={tableContainerRef}
+
+                    style={{
+                        flex: 1,
+                        minHeight: 0,
+                        display: 'flex',
+                        flexDirection: 'column',
+                    }}>
                     <Table
                         columns={columns}
                         dataSource={loading ? SKELETON_ROWS : items}
                         size="small"
                         rowKey="id"
-                        scroll={{ x: 'max-content', y: 260 }}
+                        scroll={{ x: 'max-content', y: 'calc(100vh - 320px)', }}
                         pagination={false}
                     />
                 </div>

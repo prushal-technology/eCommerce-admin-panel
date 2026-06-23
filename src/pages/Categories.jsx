@@ -130,11 +130,17 @@ const Categories = () => {
         name: values.name,
         description: values.description,
         isActive: values.isActive,
-        parentId: values.parentId !== undefined && values.parentId !== null && values.parentId !== ''
-          ? Number(values.parentId)
-          : null,
-        image: imageBase64
+        parentId:
+          values.parentId !== undefined &&
+            values.parentId !== null &&
+            values.parentId !== ''
+            ? Number(values.parentId)
+            : null,
       };
+
+      if (imageBase64) {
+        payload.image = imageBase64;
+      }
 
       let res;
 
@@ -145,13 +151,13 @@ const Categories = () => {
       }
 
       if (res.success) {
-        message.success("Saved successfully");
+        message.success("Categories updated Successfully");
         setIsModalVisible(false);
         form.resetFields();
         setImageList([]);
         loadCategories(null, true);
       } else {
-        message.error(res.message || "Failed to save");
+        message.error(res.message || "Failed to Update Category");
       }
     } catch {
       message.error("Something went wrong");
@@ -209,7 +215,7 @@ const Categories = () => {
   const getParentCategories = () => {
     return categories.filter(c => !c.parent);
   };
-  const skeletonRows = Array.from({ length: 6 }).map((_, index) => ({
+  const skeletonRows = Array.from({ length: 11 }).map((_, index) => ({
     id: `skeleton-${index}`,
     isSkeleton: true,
   }));
@@ -457,37 +463,48 @@ const Categories = () => {
   return (
     <div style={{ height: "100%", display: "flex", flexDirection: "column", overflow: "hidden" }}>
       <Title level={4} style={{ marginBottom: 20 }}>Categories Management</Title>
-      <Space
-        style={{
-          width: "100%",
-          justifyContent: "space-between",
-          marginBottom: 12,
-        }}
-      >
-        <Search
-          placeholder="Search categories..."
-          size="small"
-          className="small-search"
-          value={searchText}
-          onChange={(e) => setSearchText(e.target.value)}
-          style={{ width: 250 }} // 🔥 control width here
-        />
-        {canManageCategories && (
-          <Button
-            type="primary"
+      <div className="categories-toolbar" >
+
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            gap: 12,
+            marginBottom: 16,
+            flexWrap: "wrap",
+          }}
+        >
+          <Search
+            placeholder="Search categories..."
             size="small"
-            icon={<PlusOutlined />}
-            onClick={() => {
-              setEditingCategory(null);
-              form.resetFields();
-              setImageList([]);
-              setIsModalVisible(true);
+            className="small-search"
+            value={searchText}
+            onChange={(e) => setSearchText(e.target.value)}
+            style={{
+              width: 250,
+              maxWidth: "100%",
             }}
-          >
-            Add Category
-          </Button>
-        )}
-      </Space>
+          />
+
+          {canManageCategories && (
+            <Button
+              type="primary"
+              size="small"
+              icon={<PlusOutlined />}
+              onClick={() => {
+                setEditingCategory(null);
+                form.resetFields();
+                setImageList([]);
+                setIsModalVisible(true);
+              }}
+            >
+              Add Category
+            </Button>
+          )}
+        </div>
+
+      </div>
 
       <Card style={{ flex: 1, overflow: "hidden", display: "flex", flexDirection: "column" }}>
         <div ref={tableContainerRef} style={{ flex: 1, overflow: "hidden" }}>

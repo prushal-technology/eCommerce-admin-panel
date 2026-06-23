@@ -94,7 +94,7 @@ export const DELETE_CATEGORY = gql`
 export const CREATE_ORDER = gql`
   mutation CreateOrder($input: CreateOrderInput!) {
     createOrder(input: $input) {
-      id
+      customerId
       orderNumber
       status
       total

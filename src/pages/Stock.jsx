@@ -1,12 +1,9 @@
 import { Form, Space, message } from 'antd';
 import { useEffect, useState } from 'react';
-import { useEffect, useState } from 'react';
 import ProductModal from '../components/modals/ProductModal';
-import usePermissions from '../hooks/usePermissions';
 import usePermissions from '../hooks/usePermissions';
 import useProducts from '../hooks/useProducts';
 import useStockManager from '../hooks/useStockManager';
-//import StockAlerts from './stocks/StockAlerts';
 //import StockAlerts from './stocks/StockAlerts';
 import StockHeader from './stocks/StockHeader';
 import StockStats from './stocks/StockStats';
@@ -26,9 +23,6 @@ const Stock = () => {
   const canManageStock = canUpdate('stock');
   const canCreateProduct = canUpdate('product');
 
-  const { canUpdate } = usePermissions();
-  const canManageStock = canUpdate('stock');
-  const canCreateProduct = canUpdate('product');
 
   const {
     categories,
@@ -73,14 +67,13 @@ const Stock = () => {
   const handleOpenManageStock = () => {
     if (!canManageStock) return;
 
-    if (!canManageStock) return;
-
     stockForm.resetFields();
     setSelectedStockItem(null);
     setIsStockModalOpen(true);
   };
 
   const handleEditStock = (record, type, inventoryType = 'storefront') => {
+
     if (!canManageStock) return;
 
     const currentQty = getStockQuantity(record);
@@ -121,8 +114,6 @@ const Stock = () => {
   const handleStockFormFinish = async (values) => {
     if (!canManageStock) return;
 
-    if (!canManageStock) return;
-
     try {
       //const currentQty = getStockQuantity(selectedStockItem);
       const currentQty =
@@ -161,15 +152,7 @@ const Stock = () => {
     }
   }, [canCreateProduct, fetchCategories]);
 
-  useEffect(() => {
-    if (canCreateProduct) {
-      fetchCategories();
-    }
-  }, [canCreateProduct, fetchCategories]);
-
   const handleAddProduct = () => {
-    if (!canCreateProduct) return;
-
     if (!canCreateProduct) return;
 
     productForm.resetFields();
@@ -184,8 +167,6 @@ const Stock = () => {
   };
 
   const handleProductSubmit = async (values) => {
-    if (!canCreateProduct) return;
-
     if (!canCreateProduct) return;
 
     setProductLoading(true);
@@ -231,16 +212,9 @@ const Stock = () => {
           onAddProduct={handleAddProduct}
           canManageStock={canManageStock}
           canCreateProduct={canCreateProduct}
-          canManageStock={canManageStock}
-          canCreateProduct={canCreateProduct}
+
         />
 
-        {/* <StockAlerts
-        {/* <StockAlerts
-          critical={stockStats.critical}
-          outOfStock={stockStats.outOfStock}
-        /> */}
-        /> */}
 
         <StockStats stats={stockStats} loading={stocksLoading} />
 
@@ -254,7 +228,6 @@ const Stock = () => {
           onSearchChange={setSearchText}
           onFilterChange={setStockFilter}
           onEditStock={handleEditStock}
-          canManageStock={canManageStock}
           canManageStock={canManageStock}
           onLoadMore={() => loadStocks(searchText, nextCursor, false)}
           getStockQuantity={getStockQuantity}
@@ -277,35 +250,8 @@ const Stock = () => {
             onProductPopupScroll={handleProductPopupScroll}
           />
         )}
-        {canManageStock && (
-          <StockUpdateModal
-            open={isStockModalOpen}
-            onCancel={() => setIsStockModalOpen(false)}
-            onFinish={handleStockFormFinish}
-            form={stockForm}
-            actionLoading={actionLoading}
-            selectedItem={selectedStockItem}
-            onProductSelect={handleProductSelect}
-            productList={productList}
-            productListLoading={productListLoading}
-            onProductSearch={handleProductSearch}
-            onProductPopupScroll={handleProductPopupScroll}
-          />
-        )}
 
-        {canCreateProduct && (
-          <ProductModal
-            visible={isProductModalOpen}
-            onCancel={handleProductModalClose}
-            onSubmit={handleProductSubmit}
-            form={productForm}
-            categories={categories}
-            loading={productLoading}
-            imageList={imageList}
-            setImageList={setImageList}
-            title="Add Product"
-          />
-        )}
+
         {canCreateProduct && (
           <ProductModal
             visible={isProductModalOpen}

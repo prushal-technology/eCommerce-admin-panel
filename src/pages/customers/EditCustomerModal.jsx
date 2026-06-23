@@ -1,4 +1,4 @@
-import { Button, Form, Input, Modal, Space } from 'antd';
+import { Button, Form, Input, Modal, Space, Switch } from 'antd';
 import { useEffect } from 'react';
 
 const EditCustomerModal = ({ open, customer, onCancel, onSubmit }) => {
@@ -6,7 +6,10 @@ const EditCustomerModal = ({ open, customer, onCancel, onSubmit }) => {
 
     useEffect(() => {
         if (open && customer) {
-            form.setFieldsValue(customer);
+            form.setFieldsValue({
+                ...customer,
+                isActive: customer.isActive ?? true,
+            });
         } else {
             form.resetFields();
         }
@@ -28,7 +31,12 @@ const EditCustomerModal = ({ open, customer, onCancel, onSubmit }) => {
                 <Form.Item
                     name="firstName"
                     label="First Name"
-                    rules={[{ required: true, message: 'Please enter first name' }]}
+                    rules={[
+                        {
+                            required: true,
+                            message: 'Please enter first name',
+                        },
+                    ]}
                 >
                     <Input placeholder="John" />
                 </Form.Item>
@@ -36,7 +44,12 @@ const EditCustomerModal = ({ open, customer, onCancel, onSubmit }) => {
                 <Form.Item
                     name="lastName"
                     label="Last Name"
-                    rules={[{ required: true, message: 'Please enter last name' }]}
+                    rules={[
+                        {
+                            required: true,
+                            message: 'Please enter last name',
+                        },
+                    ]}
                 >
                     <Input placeholder="Doe" />
                 </Form.Item>
@@ -45,18 +58,39 @@ const EditCustomerModal = ({ open, customer, onCancel, onSubmit }) => {
                     name="phone"
                     label="Phone"
                     rules={[
-                        { pattern: /^\d{10}$/, message: 'Phone number must be exactly 10 digits' },
+                        {
+                            pattern: /^\d{10}$/,
+                            message:
+                                'Phone number must be exactly 10 digits',
+                        },
                     ]}
                 >
-                    <Input placeholder="9999999999" maxLength={10} />
+                    <Input
+                        placeholder="9999999999"
+                        maxLength={10}
+                    />
+                </Form.Item>
+
+                <Form.Item
+                    name="isActive"
+                    label="Active Status"
+                    valuePropName="checked"
+                >
+                    <Switch
+                        checkedChildren="Active"
+                        unCheckedChildren="Inactive"
+                    />
                 </Form.Item>
 
                 <Form.Item>
                     <Space>
-                        <Button type="primary" htmlType="submit">
+                        <Button size="small" type="primary" htmlType="submit">
                             Update
                         </Button>
-                        <Button onClick={onCancel}>Cancel</Button>
+
+                        <Button size="small" onClick={onCancel}>
+                            Cancel
+                        </Button>
                     </Space>
                 </Form.Item>
             </Form>
