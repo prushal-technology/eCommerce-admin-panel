@@ -461,47 +461,6 @@ mutation UpdateStock(
 }
 `,
 
-
-  //   GET_ALL_STOCKS: `
-  //   query GetAllStocks(
-  //     $query: String,
-  //     $first: Int!,
-  //     $after: String
-  //   ) {
-  //     allStocks(
-  //       query: $query,
-  //       first: $first,
-  //       after: $after
-  //     ) {
-
-  //       stocks {
-  //         id
-  //         quantity
-  //         reservedQuantity
-  //         availableQuantity
-  //         isOutOfStock
-
-  //         product {
-  //           id
-  //           name
-  //           price
-  //           unit
-
-  //           images {
-  //             id
-  //             image
-  //           }
-  //         }
-  //       }
-  //          totalProducts
-  //     lowStock
-  //     criticalStock
-  //     outOfStock
-  //       nextCursor
-  //       hasMore
-  //     }
-  //   }
-  // `,
   GET_ALL_STOCKS: `
 query GetAllStocks(
   $query: String,
@@ -687,38 +646,6 @@ query GetAllStocks(
     }
   `,
 
-
-  //   CREATE_ADMIN_ORDER: `
-  //   mutation CreateAdminOrder($userId: Int,$shippingAddress: String,$orderType: String!,$paymentMethod: String,$purchaseType: String!, $isAdvanceBooking: Boolean!,$advanceDeliveryDatetime: DateTime,$items: [OrderItemInput!]!) {
-  //     createAdminOrder(userId: $userId,shippingAddress: $shippingAddress,orderType: $orderType,paymentMethod: $paymentMethod,purchaseType: $purchaseType,isAdvanceBooking: $isAdvanceBooking,advanceDeliveryDatetime: $advanceDeliveryDatetime,items: $items) {
-  //       order {
-  //         id
-  //         orderNumber
-  //         orderType
-  //         finalAmount
-  //         customerName
-  //         isAdvanceBooking
-  //         advanceDeliveryDatetime
-  //         items {
-  //           product {
-  //             name
-  //           }
-  //           quantity
-  //           subtotal
-  //         }
-  //         status
-  //         createdAt
-  //       }
-  //     }
-  //   }
-  // `,
-
-  // ─── 1. Fix in graphql.js — replace CREATE_ADMIN_ORDER with this ─────────────
-  //
-  // Changes:
-  //  - $userId: Int   (removed ! — optional for Walk-in)
-  //  - Fixed stray $ on purchaseType arg in mutation body
-  //  - $shippingAddress stays optional (no !)
 
   CREATE_ADMIN_ORDER: `
   mutation CreateAdminOrder(

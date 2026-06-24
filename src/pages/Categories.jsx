@@ -448,7 +448,6 @@ const Categories = () => {
             >
               <Button
                 size='small'
-
                 danger
                 icon={<DeleteOutlined />}
               >

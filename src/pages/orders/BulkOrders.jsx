@@ -48,40 +48,6 @@ const BulkOrders = () => {
     setDetailModalVisible(true);
   };
 
-  // const handleTrackOrder = async (order) => {
-  //   setSelectedOrder(order);
-  //   // SET CURRENT STATUS
-  //   setNewStatus(order.status || 'pending');
-
-  //   // RESET NOTE
-  //   setStatusNote('');
-  //   setTrackingModalVisible(true);
-  //   setTrackingLoading(true);
-  //   try {
-  //     const { getOrderTracking } = await import('../../api/orders');
-  //     const res = await getOrderTracking(order.id);
-  //     setTrackingData(res.success ? res.tracking || [] : []);
-  //   } catch (error) {
-  //     setTrackingData([]);
-  //   } finally {
-  //     setTrackingLoading(false);
-  //   }
-  // };
-
-  // const handleStatusUpdate = async () => {
-  //   if (!canManageOrders) return false;
-  //   if (!selectedOrder) return;
-  //   try {
-  //     const res = await updateOrder(selectedOrder.id, newStatus, statusNote);
-  //     if (res.success) {
-  //       fetchOrders(searchText || null);
-  //       setDetailModalVisible(false);
-  //       setTrackingModalVisible(false);
-  //     }
-  //   } catch (error) {
-  //     console.error(error);
-  //   }
-  // };
 
   const filteredOrders = orders.filter((order) => {
     const matchesStatus = statusFilter === 'all' || order.status === statusFilter;

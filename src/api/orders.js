@@ -107,26 +107,6 @@ export const calculateDeliveryCharge = async (address, phone) => {
 };
 
 
-// Get all orders
-// export const getAllOrders = async (orderFrom = null, query = null, orderType = null) => {
-//   try {
-//     const variables = {
-//       ...(orderFrom ? { orderFrom } : {}),
-//       ...(query ? { query } : {}),
-//       ...(orderType ? { orderType } : {})
-//     };
-//     const data = await graphqlRequest(GRAPHQL_QUERIES.GET_ALL_ORDERS, variables);
-//     return {
-//       success: true,
-//       orders: data.allOrders || []
-//     };
-//   } catch (error) {
-//     return {
-//       success: false,
-//       message: error.message || 'Failed to fetch orders'
-//     };
-//   }
-// };
 export const getAllOrders = async (
   orderFrom = null,
   query = null,

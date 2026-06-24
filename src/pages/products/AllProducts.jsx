@@ -178,7 +178,7 @@ const AllProducts = () => {
           : `${import.meta.env.VITE_GRAPHQL_URI.replace('/graphql/', '').replace('/graphql', '')}/media/${img.image}`;
         return {
           uid: `-${index}`,
-          id: img.id, // Important: include the image ID for deletion
+          id: img.id,
           name: img.image || `image-${index}.png`,
           status: 'done',
           url: imageUrl,

@@ -20,7 +20,7 @@ const ImagePreviewModal = ({ visible, imageSrc, onClose }) => {
       open={visible}
       onCancel={onClose}
       footer={[
-        <Button key="close" onClick={onClose}>
+        <Button size="small" key="close" onClick={onClose}>
           Close
         </Button>
       ]}

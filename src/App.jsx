@@ -28,6 +28,7 @@ import OrdersDashboard from "./pages/OrdersDashboard";
 // Other pages
 import Employees from "./pages/Employees";
 import Stock from "./pages/Stock";
+import Transactions from "./pages/Transactions";
 
 export default function App() {
   return (
@@ -56,6 +57,9 @@ export default function App() {
           </Route>
 
           {/* Other Routes */}
+
+          <Route path="transactions" element={<Transactions />} />
+
           <Route path="customers" element={<Customers />} />
           <Route element={<PermissionRoute module="category" />}>
             <Route path="categories" element={<Categories />} />
