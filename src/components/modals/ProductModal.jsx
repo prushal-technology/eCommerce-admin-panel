@@ -1,3 +1,4 @@
+import { PlusOutlined } from '@ant-design/icons';
 import {
   Button,
   Col,
@@ -13,7 +14,8 @@ import {
   Typography,
   Upload
 } from 'antd';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import CategoryModal from './CategoryModal';
 const { Text } = Typography;
 
 const { TextArea } = Input;
@@ -34,9 +36,15 @@ const ProductModal = ({
   setImageList,
   title,
   onDeleteImage,
-  onAddImage
+  onAddImage,
+  onCreateCategory,
+  onRefreshCategories
 }) => {
   const [form] = Form.useForm();
+  const [categoryModalOpen, setCategoryModalOpen] = useState(false);
+  const [categoryForm] = Form.useForm();
+  const [categoryImageList, setCategoryImageList] = useState([]);
+  const [categoryLoading, setCategoryLoading] = useState(false);
 
   const removingRef = useRef(new Set());
 
@@ -138,7 +146,7 @@ const ProductModal = ({
           onSuccess?.('ok');
         }
       } catch (error) {
-        console.error(error);
+        //console.error(error);
         message.error('Image upload failed');
         onError?.(error);
       }
@@ -169,7 +177,7 @@ const ProductModal = ({
           removingRef.current.delete(file.uid);
           return false;
         } catch (error) {
-          console.error(error);
+          //console.error(error);
           message.error('Failed to delete image');
           removingRef.current.delete(file.uid);
           return false;
@@ -255,14 +263,10 @@ const ProductModal = ({
       form.resetFields();
       setImageList([]);
     } catch (error) {
-      console.error(
-        'Submit error:',
-        error
-      );
-      console.error(
-        'Submit error:',
-        error
-      );
+      //console.error(
+      //  'Submit error:',
+      //  error
+      //);
     }
   };
 
@@ -389,7 +393,7 @@ const ProductModal = ({
 
 
         <Row gutter={[8, 4]}>
-          <Col xs={24} md={12}>
+          <Col xs={24} md={8}>
             <Form.Item
               name="measureValue"
               label="Measure Value"
@@ -401,7 +405,7 @@ const ProductModal = ({
               />
             </Form.Item>
           </Col>
-          <Col xs={24} md={12}>
+          <Col xs={24} md={8}>
             <Form.Item
               name="unit"
               label="Unit"
@@ -417,8 +421,27 @@ const ProductModal = ({
               </Select>
             </Form.Item>
           </Col>
-
-
+          <Col xs={24} md={8}>
+            <Form.Item
+              name="weight"
+              label="Weight (kg)"
+              extra="Weight must be in kg"
+              rules={[
+                { required: true, message: "Enter weight" },
+                {
+                  type: 'number',
+                  max: 100,
+                  message: 'Weight cannot be more than 100 kg',
+                }
+              ]}
+            >
+              <InputNumber
+                min={0}
+                style={{ width: "100%" }}
+                placeholder="e.g. 1.5"
+              />
+            </Form.Item>
+          </Col>
         </Row>
 
         {/* 🔹 STOCK */}
@@ -478,6 +501,26 @@ const ProductModal = ({
               <Select
                 placeholder="Select category"
                 disabled={!!initialValues}
+                dropdownRender={(menu) => (
+                  <>
+                    {menu}
+                    <Divider style={{ margin: '8px 0' }} />
+                    <div
+                      style={{ padding: '8px' }}
+                      onMouseDown={(e) => e.preventDefault()}
+                    >
+                      <Button
+                        type="primary"
+                        icon={<PlusOutlined />}
+                        size="small"
+                        onClick={() => setCategoryModalOpen(true)}
+                        style={{ width: '100%' }}
+                      >
+                        Add Category
+                      </Button>
+                    </div>
+                  </>
+                )}
               >
                 {categories.map((category) => (
                   <Option key={category.id} value={category.id}>
@@ -542,6 +585,43 @@ const ProductModal = ({
         </div>
 
       </Form>
+
+      {/* Category Modal */}
+      <CategoryModal
+        open={categoryModalOpen}
+        onClose={() => {
+          setCategoryModalOpen(false);
+          categoryForm.resetFields();
+          setCategoryImageList([]);
+        }}
+        onSubmit={async (values) => {
+          setCategoryLoading(true);
+          try {
+            const categoryData = {
+              ...values,
+              image: categoryImageList[0]?.originFileObj || null
+            };
+            const result = await onCreateCategory(categoryData);
+            if (result) {
+              message.success('Category created successfully');
+              setCategoryModalOpen(false);
+              categoryForm.resetFields();
+              setCategoryImageList([]);
+              await onRefreshCategories();
+            }
+          } catch (error) {
+            message.error('Failed to create category');
+          } finally {
+            setCategoryLoading(false);
+          }
+        }}
+        editingCategory={null}
+        parentCategories={categories.filter(cat => !cat.parent)}
+        imageList={categoryImageList}
+        setImageList={setCategoryImageList}
+        loading={categoryLoading}
+        form={categoryForm}
+      />
     </Modal>
   );
 };

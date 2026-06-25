@@ -112,19 +112,19 @@ export const graphqlRequest = async (
     ) {
       const errorMessage =
         result.errors[0].message;
-      console.error(
-        'GraphQL Error:',
-        errorMessage
-      );
+      // console.error(
+      //   'GraphQL Error:',
+      //   errorMessage
+      // );
       throw new Error(errorMessage);
     }
     return result.data;
 
   } catch (error) {
-    console.error(
-      'GraphQL Error:',
-      error
-    );
+    // console.error(
+    //   'GraphQL Error:',
+    //   error
+    // );
     throw error;
   }
 };
@@ -228,6 +228,7 @@ export const GRAPHQL_QUERIES = {
           unit
           sku
           measureValue
+          weight
           isActive
           isFeatured
           isWishlisted
@@ -275,6 +276,7 @@ export const GRAPHQL_QUERIES = {
     $isActive: Boolean,
     $unit: String!,
     $measureValue: Decimal!,
+    $weight: Decimal!,
     $isFeatured: Boolean,
     $storefrontQuantity: Int!,
     $systemQuantity: Int!,
@@ -296,6 +298,7 @@ export const GRAPHQL_QUERIES = {
       isActive: $isActive
       unit: $unit
       measureValue: $measureValue
+      weight: $weight
       isFeatured: $isFeatured
       storefrontQuantity: $storefrontQuantity
       systemQuantity: $systemQuantity
@@ -312,6 +315,7 @@ export const GRAPHQL_QUERIES = {
         deliveryRuleDays
         unit
         measureValue
+        weight
         isFeatured
 
         stock {
@@ -325,8 +329,8 @@ export const GRAPHQL_QUERIES = {
 
 
   UPDATE_PRODUCT: `
-    mutation UpdateProduct($id: Int!, $name: String, $keywords: [String!], $shortDescription: String, $description: String, $sku: String, $price: Float, $discountPrice: Float,$bulkOrderPrice:Float, $deliveryRuleDays: Int, $isActive: Boolean, $isFeatured: Boolean, $unit: String, $measureValue: Decimal, $categoryId: Int, $storefrontQuantity: Int, $systemQuantity: Int, $storefrontReservedQuantity: Int, $systemReservedQuantity: Int) {
-      updateProduct(id: $id, name: $name, keywords: $keywords, shortDescription: $shortDescription, description: $description, sku: $sku, price: $price, discountPrice: $discountPrice, bulkOrderPrice:$bulkOrderPrice, deliveryRuleDays: $deliveryRuleDays, isActive: $isActive, isFeatured: $isFeatured, unit: $unit, measureValue: $measureValue, categoryId: $categoryId, storefrontQuantity: $storefrontQuantity, systemQuantity: $systemQuantity, storefrontReservedQuantity: $storefrontReservedQuantity, systemReservedQuantity: $systemReservedQuantity) {
+    mutation UpdateProduct($id: Int!, $name: String, $keywords: [String!], $shortDescription: String, $description: String, $sku: String, $price: Float, $discountPrice: Float,$bulkOrderPrice:Float, $deliveryRuleDays: Int, $isActive: Boolean, $isFeatured: Boolean, $unit: String, $measureValue: Decimal, $categoryId: Int, $storefrontQuantity: Int, $systemQuantity: Int, $storefrontReservedQuantity: Int, $systemReservedQuantity: Int, $weight: Decimal) {
+      updateProduct(id: $id, name: $name, keywords: $keywords, shortDescription: $shortDescription, description: $description, sku: $sku, price: $price, discountPrice: $discountPrice, bulkOrderPrice:$bulkOrderPrice, deliveryRuleDays: $deliveryRuleDays, isActive: $isActive, isFeatured: $isFeatured, unit: $unit, measureValue: $measureValue, categoryId: $categoryId, storefrontQuantity: $storefrontQuantity, systemQuantity: $systemQuantity, storefrontReservedQuantity: $storefrontReservedQuantity, systemReservedQuantity: $systemReservedQuantity, weight: $weight) {
         product {
           id
           name
@@ -342,6 +346,7 @@ export const GRAPHQL_QUERIES = {
           isFeatured
           unit
           measureValue
+          weight
           category {
             id
           }
@@ -406,6 +411,7 @@ export const GRAPHQL_QUERIES = {
       isActive
       unit
       measureValue
+      weight
       isFeatured
       storefrontReservedQuantity
       systemReservedQuantity
@@ -728,6 +734,7 @@ query GetAllStocks(
         purchaseType
         status
         totalAmount
+        approximateWeight
         finalAmount
         createdAt
 
@@ -740,6 +747,38 @@ query GetAllStocks(
         }
         notes
         shippingAddress
+
+        borzoOrder {
+          borzoOrderId
+          orderName
+          status
+          statusDescription
+          paymentAmount
+          deliveryFee
+          trackingUrl
+          deliveryStatus
+
+          pickup {
+            address
+            name
+            phone
+          }
+
+          drop {
+            address
+            name
+            phone
+          }
+
+          courier {
+            courierId
+            name
+            phone
+            photoUrl
+            latitude
+            longitude
+          }
+        }
 
         items {
           quantity

@@ -681,3 +681,75 @@ export const getAllNewsletterSubscribers = async ({ first = 15, after = null } =
     return { success: false, message: error.message };
   }
 };
+
+
+// ───────────────── STORE SETTINGS ─────────────────
+
+export const getStoreSettings = async () => {
+  try {
+    const data = await graphqlRequest(`
+      query {
+        storeSettings {
+          storeName
+          storeLogo
+          storeAddress
+          contactNo
+          storefrontTheme
+        }
+      }
+    `);
+
+    return {
+      success: true,
+      settings: data?.storeSettings || null,
+    };
+  } catch (error) {
+    return {
+      success: false,
+      message: error.message,
+    };
+  }
+};
+
+export const updateStoreSettings = async (values) => {
+  try {
+    const data = await graphqlRequest(
+      `
+      mutation UpdateStoreSettings(
+        $storeName: String
+        $storeLogo: Upload
+        $storeAddress: String
+        $contactNo: String
+        $storefrontTheme: GenericScalar
+      ) {
+        updateStoreSettings(
+          storeName: $storeName
+          storeLogo: $storeLogo
+          storeAddress: $storeAddress
+          contactNo: $contactNo
+          storefrontTheme: $storefrontTheme
+        ) {
+          storeSettings {
+            storeName
+            storeLogo
+            storeAddress
+            contactNo
+            storefrontTheme
+          }
+        }
+      }
+    `,
+      values
+    );
+
+    return {
+      success: true,
+      settings: data?.updateStoreSettings?.storeSettings,
+    };
+  } catch (error) {
+    return {
+      success: false,
+      message: error.message,
+    };
+  }
+};

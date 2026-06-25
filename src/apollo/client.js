@@ -15,7 +15,7 @@ const httpLink = createHttpLink({
 const authLink = setContext((_, { headers }) => {
   // Get the authentication token from local storage if it exists
   const token = localStorage.getItem('authToken');
-  
+
   return {
     headers: {
       ...headers,
@@ -28,21 +28,21 @@ const authLink = setContext((_, { headers }) => {
 const errorLink = onError(({ graphQLErrors, networkError }) => {
   if (graphQLErrors) {
     graphQLErrors.forEach(({ message, locations, path }) =>
-     console.error(
+      console.error(
         `[GraphQL error]: Message: ${message}, Location: ${locations}, Path: ${path}`
       )
     );
-    
+
     // Handle authentication errors
     if (graphQLErrors.some(error => error.message === 'Authentication required')) {
       localStorage.removeItem('authToken');
       window.location.href = '/login';
     }
   }
-  
+
   if (networkError) {
-   console.error(`[Network error]: ${networkError}`);
-    
+    //console.error(`[Network error]: ${networkError}`);
+
     // Handle network errors (e.g., server is down)
     if (networkError.statusCode === 401) {
       localStorage.removeItem('authToken');

@@ -164,7 +164,7 @@ export const useCustomers = () => {
                 `Customer ${!record.isActive ? 'activated' : 'deactivated'} successfully`
             );
         } catch (error) {
-            console.log(error);
+            //console.log(error);
         }
     };
 

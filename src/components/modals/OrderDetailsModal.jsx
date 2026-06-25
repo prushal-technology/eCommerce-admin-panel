@@ -183,6 +183,11 @@ const OrderDetailsModal = ({ open, order, onCancel, trackingData, trackingLoadin
                   {isHomeDelivery ? '🏠 Home delivery' : '🛒 Walk-in'}
                 </Tag>
               </Field>
+              {order.approximateWeight && (
+                <Field label="Approximate weight">
+                  {order.approximateWeight} kg
+                </Field>
+              )}
             </div>
           </div>
 

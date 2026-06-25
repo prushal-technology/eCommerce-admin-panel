@@ -1,4 +1,5 @@
 import {
+  CarOutlined,
   DashboardOutlined,
   LogoutOutlined,
   MailOutlined,
@@ -44,6 +45,7 @@ const ADMIN_MENU = [
     ],
   },
   { key: "/transactions", label: "Transactions", icon: <TransactionOutlined /> },
+  { key: "/delivery", label: "Delivery", icon: <CarOutlined /> },
   { key: "/customers", label: "Customers", icon: <UserOutlined /> },
   { key: "/employees", label: "Employees", icon: <TeamOutlined /> },
   { key: "/enquiries", label: "Enquiries", icon: <MailOutlined /> },
@@ -79,6 +81,8 @@ const buildPermissionMenu = (hasPermission) => {
 
   if (hasPermission("transaction", "view"))
     items.push({ key: "/transactions", label: "Transactions", icon: <TransactionOutlined /> });
+  if (hasPermission("delivery", "view"))
+    items.push({ key: "/delivery", label: "Delivery", icon: <CarOutlined /> });
 
   items.push({ key: "/enquiries", label: "Enquiries", icon: <MailOutlined /> });
   items.push({ key: "logout", label: "Logout", icon: <LogoutOutlined /> });

@@ -65,7 +65,7 @@ const UserOrders = () => {
       }
       return false;
     } catch (error) {
-      console.error(error);
+      //console.error(error);
       return false;
     }
   };

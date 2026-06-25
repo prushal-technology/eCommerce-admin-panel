@@ -19,6 +19,7 @@ import {
 } from 'antd';
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { createCategory } from '../../api/categories';
 import ImagePreviewModal from '../../components/modals/ImagePreviewModal';
 import ProductModal from '../../components/modals/ProductModal';
 import usePermissions from '../../hooks/usePermissions';
@@ -162,6 +163,7 @@ const AllProducts = () => {
       isActive: record.isActive,
       unit: record.unit,
       measureValue: record.measureValue,
+      weight: record.weight,
       isFeatured: record.isFeatured,
       storefrontQuantity: record.storefrontStock?.quantity ?? 0,
       systemQuantity: record.systemStock?.quantity ?? 0,
@@ -200,6 +202,55 @@ const AllProducts = () => {
       }
     } catch {
       message.error('Failed to delete product');
+    }
+  };
+
+  const handleCreateCategory = async (values) => {
+    try {
+      let imageBase64 = null;
+
+      if (values.image) {
+        const file = values.image;
+
+        imageBase64 = await new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.readAsDataURL(file);
+          reader.onload = () => resolve(reader.result);
+          reader.onerror = reject;
+        });
+      }
+
+      const payload = {
+        name: values.name,
+        description: values.description,
+        isActive: values.isActive,
+        parentId:
+          values.parentId !== undefined &&
+            values.parentId !== null &&
+            values.parentId !== ''
+            ? Number(values.parentId)
+            : null,
+      };
+
+      if (imageBase64) {
+        payload.image = imageBase64;
+      }
+
+      const res = await createCategory(payload);
+
+      if (res.success) {
+        return res;
+      }
+
+      message.error(
+        res.message || 'Failed to create category'
+      );
+
+      return null;
+    } catch (error) {
+      //console.error(error);
+      message.error('Something went wrong');
+      return null;
     }
   };
 
@@ -761,6 +812,9 @@ const AllProducts = () => {
           title={editingProduct ? 'Edit Product' : 'Add Product'}
           onDeleteImage={deleteProductImage}
           onAddImage={addProductImage}
+
+          onCreateCategory={handleCreateCategory}
+          onRefreshCategories={fetchCategories}
         />
       )}
 

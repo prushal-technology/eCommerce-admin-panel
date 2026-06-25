@@ -28,7 +28,7 @@ export const getAllProducts = async (first = 10, after = null, search = null, ca
 // Create new product
 export const createProduct = async (productData) => {
   try {
-    const { categoryId, name, description, sku, price, discountPrice, bulkOrderPrice, isActive = true, unit, measureValue, isFeatured = false, storefrontQuantity, systemQuantity, storefrontReservedQuantity, systemReservedQuantity, shortDescription, deliveryRuleDays, keywords } = productData;
+    const { categoryId, name, description, sku, price, discountPrice, bulkOrderPrice, isActive = true, unit, measureValue, weight, isFeatured = false, storefrontQuantity, systemQuantity, storefrontReservedQuantity, systemReservedQuantity, shortDescription, deliveryRuleDays, keywords } = productData;
 
     // Convert categoryId to number if it's a string
     const numericCategoryId = typeof categoryId === 'string' ? parseInt(categoryId, 10) : categoryId;
@@ -53,6 +53,7 @@ export const createProduct = async (productData) => {
       isActive,
       unit,
       measureValue: measureValue ? String(measureValue) : null,
+      weight: weight ? String(weight) : null,
       isFeatured,
       storefrontQuantity: Number(storefrontQuantity),
       systemQuantity: Number(systemQuantity),
@@ -111,6 +112,7 @@ export const updateProduct = async (id, productData) => {
       isFeatured: productData.isFeatured,
       unit: productData.unit,
       measureValue: productData.measureValue ? parseFloat(productData.measureValue) : null,
+      weight: productData.weight ? parseFloat(productData.weight) : null,
       categoryId: productData.categoryId ? Number(productData.categoryId) : null,
       storefrontQuantity: Number(productData.storefrontQuantity),
       systemQuantity: Number(productData.systemQuantity),
@@ -269,7 +271,7 @@ export const getProductCategories = async () => {
       message: 'No categories found',
     };
   } catch (error) {
-    console.error('Categories API Error:', error);
+    // console.error('Categories API Error:', error);
 
     return {
       success: false,

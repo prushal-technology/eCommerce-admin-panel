@@ -13,7 +13,6 @@ import Settings from "./pages/Settings";
 import Unauthorized from "./pages/Unauthorized";
 
 // Product pages
-import AddProduct from "./pages/products/AddProduct";
 import AllProducts from "./pages/products/AllProducts";
 import ProductDetail from "./pages/products/ProductDetail";
 
@@ -26,6 +25,7 @@ import UserOrders from "./pages/orders/UserOrders";
 import OrdersDashboard from "./pages/OrdersDashboard";
 
 // Other pages
+import Delivery from "./pages/Delivery";
 import Employees from "./pages/Employees";
 import Stock from "./pages/Stock";
 import Transactions from "./pages/Transactions";
@@ -42,9 +42,7 @@ export default function App() {
             <Route path="products/all" element={<AllProducts />} />
             <Route path="products/:id" element={<ProductDetail />} />
           </Route>
-          <Route element={<PermissionRoute module="product" access="update" />}>
-            <Route path="products/add" element={<AddProduct />} />
-          </Route>
+
 
           {/* Order Routes */}
           <Route element={<PermissionRoute module="order" />}>
@@ -59,6 +57,7 @@ export default function App() {
           {/* Other Routes */}
 
           <Route path="transactions" element={<Transactions />} />
+          <Route path="delivery" element={<Delivery />} />
 
           <Route path="customers" element={<Customers />} />
           <Route element={<PermissionRoute module="category" />}>

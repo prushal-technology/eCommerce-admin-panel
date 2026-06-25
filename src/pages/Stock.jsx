@@ -177,6 +177,7 @@ const Stock = () => {
         price: Number(values.price),
         discountPrice: values.discountPrice ? Number(values.discountPrice) : undefined,
         measureValue: values.measureValue ? Number(values.measureValue) : undefined,
+        weight: values.weight ? Number(values.weight) : undefined,
       });
 
       if (newProduct?.id) {

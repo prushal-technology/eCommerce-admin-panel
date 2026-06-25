@@ -142,6 +142,12 @@ const ProductDetail = () => {
           <Descriptions.Item label="Category">
             {product.category?.name}
           </Descriptions.Item>
+          <Descriptions.Item label="Measure Value & Unit">
+            {product.measureValue != null && product.unit != null ? `${product.measureValue} ${product.unit}` : "-"}
+          </Descriptions.Item>
+          <Descriptions.Item label="Weight">
+            {product.weight != null ? `${product.weight} kg` : "-"}
+          </Descriptions.Item>
           <Descriptions.Item label="Description" span={2}>
             {product.description || "-"}
           </Descriptions.Item>

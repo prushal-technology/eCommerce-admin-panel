@@ -172,7 +172,7 @@ const useStockManager = () => {
                 setProductsHasMore(res.hasMore);
             }
         } catch (error) {
-            console.error(error);
+            //console.error(error);
         } finally {
             setProductListLoading(false);
         }

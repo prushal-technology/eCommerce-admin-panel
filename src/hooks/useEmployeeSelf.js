@@ -30,7 +30,7 @@ export const useEmployeeSelf = (employeeId) => {
                 });
                 setPermissions(data.employeePermissions || []);
             } catch (err) {
-                console.error('Could not fetch self permissions:', err);
+                //console.error('Could not fetch self permissions:', err);
             } finally {
                 setLoading(false);
             }
