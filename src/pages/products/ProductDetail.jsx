@@ -134,6 +134,12 @@ const ProductDetail = () => {
           <Descriptions.Item label="Discount Price">
             {product.discountPrice ? formatPrice(product.discountPrice) : "-"}
           </Descriptions.Item>
+          <Descriptions.Item label="Bulk Price">
+            {product.bulkOrderPrice ? formatPrice(product.bulkOrderPrice) : "-"}
+          </Descriptions.Item>
+          <Descriptions.Item label="Delivery Rule (Days)">
+            {product.deliveryRuleDays != null ? product.deliveryRuleDays : "-"}
+          </Descriptions.Item>
           <Descriptions.Item label="Status">
             <Tag color={product.isActive ? "green" : "red"}>
               {product.isActive ? "Active" : "Inactive"}
@@ -145,7 +151,7 @@ const ProductDetail = () => {
           <Descriptions.Item label="Measure Value & Unit">
             {product.measureValue != null && product.unit != null ? `${product.measureValue} ${product.unit}` : "-"}
           </Descriptions.Item>
-          <Descriptions.Item label="Weight">
+          <Descriptions.Item label="Approximate Weight">
             {product.weight != null ? `${product.weight} kg` : "-"}
           </Descriptions.Item>
           <Descriptions.Item label="Description" span={2}>
@@ -159,9 +165,7 @@ const ProductDetail = () => {
               <Tag key={index}>{keyword}</Tag>
             )) || "-"}
           </Descriptions.Item>
-          <Descriptions.Item label="Delivery Rule (Days)">
-            {product.deliveryRuleDays != null ? product.deliveryRuleDays : "-"}
-          </Descriptions.Item>
+
         </Descriptions>
       </Card>
 
